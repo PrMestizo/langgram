@@ -1,4 +1,4 @@
-import Diagram from "@/components/Diagram";
+import Diagram from "./components/diagram";
 
 export default function Home() {
   return (

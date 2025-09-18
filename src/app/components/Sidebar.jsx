@@ -1,5 +1,5 @@
 // Sidebar.jsx
-
+"use client";
 import { useState } from "react";
 import { useDnD } from "./DnDContext";
 

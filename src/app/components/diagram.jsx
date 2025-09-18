@@ -1,3 +1,4 @@
+"use client";
 import { useState, useCallback } from "react";
 import {
   ReactFlow,
@@ -14,8 +15,8 @@ import {
 import "reactflow/dist/style.css";
 import Sidebar from "./Sidebar";
 import { DnDProvider, useDnD } from "./DnDContext";
-import nodeCodeTemplates from "./NodeTemplates";
-import { generateCodeFromGraph } from "./codeGenerator";
+import nodeCodeTemplates from "../lib/NodeTemplates";
+import { generateCodeFromGraph } from "../lib/codeGenerator";
 
 let id = 0;
 const getId = () => `dndnode_${id++}`;
