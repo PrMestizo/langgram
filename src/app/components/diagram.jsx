@@ -155,7 +155,7 @@ function Diagram() {
         </button>
       </div>
 
-      {/* Popup */}
+      {/* Popup  */}
       {popupText && (
         <div className="poppup-text">
           <pre>{popupText}</pre>
