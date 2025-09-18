@@ -2,11 +2,13 @@
 "use client";
 import { useState } from "react";
 import { useDnD } from "./DnDContext";
+import Popup from "../lib/pop-up";
 
 const Sidebar = () => {
   const [, setType] = useDnD();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState(0);
+  const [isPopupVisible, setIsPopupVisible] = useState(false);
 
   const onDragStart = (event, nodeType) => {
     setType(nodeType);
@@ -17,6 +19,10 @@ const Sidebar = () => {
   const handleNavClick = (index, event) => {
     event.preventDefault();
     setActiveTab(index);
+  };
+
+  const popupAction = async () => {
+    setIsPopupVisible(true);
   };
 
   const renderTabContent = () => {
@@ -129,7 +135,10 @@ const Sidebar = () => {
               </div>
             </div>
             <div className="sidebar-action-buttons">
-              <button className="sidebar-action-btn primary">
+              <button
+                className="sidebar-action-btn primary"
+                onClick={popupAction}
+              >
                 <span className="btn-icon">➕</span>
                 Add Custom Node
               </button>
@@ -197,7 +206,10 @@ const Sidebar = () => {
               </div>
             </div>
             <div className="sidebar-action-buttons">
-              <button className="sidebar-action-btn primary">
+              <button
+                className="sidebar-action-btn primary"
+                onClick={popupAction}
+              >
                 <span className="btn-icon">➕</span>
                 Add Custom Edge
               </button>
@@ -259,6 +271,11 @@ const Sidebar = () => {
           <span></span>
         </div>
       </button>
+
+      <Popup
+        isVisible={isPopupVisible}
+        onClose={() => setIsPopupVisible(false)}
+      />
     </>
   );
 };

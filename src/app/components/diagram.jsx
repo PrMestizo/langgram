@@ -159,16 +159,7 @@ function Diagram() {
       {popupText && (
         <div className="poppup-text">
           <pre>{popupText}</pre>
-          <button
-            onClick={() => setPopupText("")}
-            style={{
-              marginTop: "10px",
-              padding: "6px 12px",
-              background: "black",
-              color: "white",
-              borderRadius: "4px",
-            }}
-          >
+          <button className="poppup.close" onClick={() => setPopupText("")}>
             Cerrar
           </button>
         </div>
