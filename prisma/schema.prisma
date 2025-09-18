@@ -13,3 +13,90 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  nodeTemplates NodeTemplate[] @relation("UserNodeTemplates")
+  edgeTemplates EdgeTemplate[] @relation("UserEdgeTemplates")
+  diagrams      Diagram[]      @relation("UserDiagrams")
+}
+
+model NodeTemplate {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  code        String   @db.Text
+  language    String?  // p.ej. "javascript", "python", "langgraph"
+  metadata    Json?    // icon, default props, etc.
+  owner       User?    @relation("UserNodeTemplates", fields: [ownerId], references: [id])
+  ownerId     String?
+  isPublic    Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Back relation to nodes that use this template
+  diagramNodes DiagramNode[] @relation("NodeTemplateDiagramNodes")
+}
+
+model EdgeTemplate {
+  id          String  @id @default(uuid())
+  name        String
+  description String?
+  code        String  @db.Text  // si tu edge lleva código
+  metadata    Json?
+  owner       User?   @relation("UserEdgeTemplates", fields: [ownerId], references: [id])
+  ownerId     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Diagram {
+  id         String  @id @default(uuid())
+  name       String
+  owner      User?   @relation("UserDiagrams", fields: [ownerId], references: [id])
+  ownerId    String?
+  // Guarda el snapshot completo y cualquier layout (usar JSONB)
+  content    Json    @db.JsonB
+  isPublic   Boolean @default(false)
+  version    Int     @default(1) // opcional: versión del diagrama
+  tags       String[] @default([]) // etiquetas simples
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  nodes DiagramNode[]
+  edges DiagramEdge[]
+}
+
+model DiagramNode {
+  id             String   @id @default(uuid())
+  diagram        Diagram  @relation(fields: [diagramId], references: [id])
+  diagramId      String
+  nodeTemplate   NodeTemplate? @relation("NodeTemplateDiagramNodes", fields: [nodeTemplateId], references: [id])
+  nodeTemplateId String?
+  // snapshot del código en el momento de guardado (TEXT)
+  code           String   @db.Text
+  // posición en canvas, props específicos de la instancia...
+  position       Json?    @db.JsonB
+  props          Json?    @db.JsonB
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model DiagramEdge {
+  id          String   @id @default(uuid())
+  diagram     Diagram  @relation(fields: [diagramId], references: [id])
+  diagramId   String
+  fromNodeId  String   // referencia a DiagramNode.id
+  toNodeId    String
+  // snapshot del código asociado a la edge (opcional)
+  code        String?  @db.Text
+  metadata    Json?    @db.JsonB
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
