@@ -410,7 +410,7 @@ body {
   display: flex;
   justify-content: center; /* Centra horizontalmente el popup */
   align-items: center; /* Centra verticalmente el popup */
-  z-index: 1000; /* Asegura que esté por encima de otros elementos */
+  z-index: 9999; /* Increased z-index to be above sidebar toggle */
 }
 
 /* popup-container: La ventana del popup */
@@ -420,10 +420,13 @@ body {
   padding: 30px 40px;
   border-radius: 10px;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-  max-width: 500px;
+  max-width: 800px; /* Increased width for editor */
   width: 90%; /* Ancho responsivo */
+  height: 70vh; /* Set explicit height */
   text-align: center;
   animation: fadeIn 0.3s ease-out; /* Animación de entrada */
+  display: flex;
+  flex-direction: column;
 }
 
 /* popup-close-btn: El botón de cierre 'X' */
@@ -446,6 +449,18 @@ body {
 /* popup-content: Contenedor del contenido del popup */
 .popup-content {
   color: #333;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+/* Monaco Editor container */
+.popup-content .monaco-editor-container {
+  flex: 1;
+  min-height: 300px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
 }
 
 /* Animación para que el popup aparezca suavemente */
