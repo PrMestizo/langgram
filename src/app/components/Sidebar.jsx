@@ -1,14 +1,53 @@
 // Sidebar.jsx
 "use client";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useDnD } from "./DnDContext";
-import Popup from "../lib/pop-up";
+import Popup from "./pop-up";
+import ContextMenu from "./contextMenu";
 
 const Sidebar = () => {
   const [, setType] = useDnD();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState(0);
   const [isPopupVisible, setIsPopupVisible] = useState(false);
+  const [customNodes, setCustomNodes] = useState([]);
+  const [contextMenu, setContextMenu] = useState({
+    position: { x: 0, y: 0 },
+    toogle: false,
+  });
+  const contextMenuRef = useRef(null);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("customNodeTemplates");
+      if (saved) setCustomNodes(JSON.parse(saved));
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("customNodeTemplates", JSON.stringify(customNodes));
+    } catch {}
+  }, [customNodes]);
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (contextMenuRef.current) {
+        if (!contextMenuRef.current.contains(e.target)) {
+          setContextMenu({
+            position: { x: 0, y: 0 },
+            toogle: false,
+          });
+        }
+      }
+    }
+
+    document.addEventListener("click", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("click", handleClickOutside);
+    };
+  }, []);
 
   const onDragStart = (event, nodeType) => {
     setType(nodeType);
@@ -25,12 +64,44 @@ const Sidebar = () => {
     setIsPopupVisible(true);
   };
 
+  const handleSaveCustomNode = (code, nodeName) => {
+    const name = nodeName;
+    const newNode = { name, code, language: "python" };
+    setCustomNodes((prev) => [...prev, newNode]);
+  };
+
+  const handleOnContextMenu = (e, rightClickItem) => {
+    e.preventDefault();
+
+    const contextMenuAttr = contextMenuRef.current.getBoundingClientRect();
+    const isLeft = e.clientX < window?.innerWidth / 2;
+
+    let x;
+    let y = e.clientY;
+
+    if (isLeft) {
+      x = e.clientX;
+    } else {
+      x = e.clientX - contextMenuAttr.width;
+    }
+
+    setContextMenu({
+      position: { x, y },
+      toogle: true,
+    });
+    console.log(rightClickItem);
+  };
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 0: // Diagram
         return (
           <div className="tab-content">
-            <div className="node-section">
+            <div
+              className="node-section"
+              onContextMenu={(event) => handleOnContextMenu(event, "Base")}
+              key="base"
+            >
               <div className="section-title">Diagram Tools</div>
               <div className="node-item">
                 <div className="node-icon" style={{ background: "#4f46e5" }}>
@@ -71,7 +142,11 @@ const Sidebar = () => {
       case 1: // Nodes
         return (
           <div className="tab-content">
-            <div className="node-section">
+            <div
+              className="node-section"
+              onContextMenu={(event) => handleOnContextMenu(event, "Base")}
+              key="index"
+            >
               <div className="section-title">Input Nodes</div>
               <div
                 className="node-item"
@@ -92,48 +167,27 @@ const Sidebar = () => {
                 Input Node
               </div>
             </div>
-            <div className="node-section">
-              <div className="section-title">Processing Nodes</div>
-              <div
-                className="node-item"
-                onDragStart={(event) => onDragStart(event, "Conv")}
-                draggable
-              >
-                <div className="node-icon conv">C</div>
-                Conversation Node
+            {customNodes.length > 0 && (
+              <div className="node-section">
+                <div className="section-title">Custom Nodes</div>
+                {customNodes.map((n) => (
+                  <div
+                    key={n.name}
+                    className="node-item"
+                    onDragStart={(event) => onDragStart(event, n.name)}
+                    draggable
+                  >
+                    <div
+                      className="node-icon"
+                      style={{ background: "#64748b", color: "white" }}
+                    >
+                      A
+                    </div>
+                    {n.name}
+                  </div>
+                ))}
               </div>
-              <div
-                className="node-item"
-                onDragStart={(event) => onDragStart(event, "Transform")}
-                draggable
-              >
-                <div className="node-icon" style={{ background: "#f59e0b" }}>
-                  T
-                </div>
-                Transform Node
-              </div>
-            </div>
-            <div className="node-section">
-              <div className="section-title">Output Nodes</div>
-              <div
-                className="node-item"
-                onDragStart={(event) => onDragStart(event, "Compile")}
-                draggable
-              >
-                <div className="node-icon compile">O</div>
-                Compile Node
-              </div>
-              <div
-                className="node-item"
-                onDragStart={(event) => onDragStart(event, "Export")}
-                draggable
-              >
-                <div className="node-icon" style={{ background: "#8b5cf6" }}>
-                  E
-                </div>
-                Export Node
-              </div>
-            </div>
+            )}
             <div className="sidebar-action-buttons">
               <button
                 className="sidebar-action-btn primary"
@@ -275,6 +329,20 @@ const Sidebar = () => {
       <Popup
         isVisible={isPopupVisible}
         onClose={() => setIsPopupVisible(false)}
+        onSave={handleSaveCustomNode}
+        initialCode={`# Edita el código del nodo a tus necesidades:\n\n# Función mínima para un nodo\ndef mi_nodo(state):\n    return state  # debe devolver el estado (o algo mergeable con él)`}
+      />
+      <ContextMenu
+        positionX={contextMenu.position.x}
+        positionY={contextMenu.position.y}
+        isToggled={contextMenu.toogle}
+        buttons={[
+          { text: "Editar", onClick: () => {} },
+          { text: "Otro", onClick: () => {} },
+          { isSeparator: true },
+          { text: "Eliminar", onClick: () => {} },
+        ]}
+        contextMenuRef={contextMenuRef}
       />
     </>
   );
