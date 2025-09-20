@@ -96,12 +96,12 @@ const Sidebar = () => {
     switch (activeTab) {
       case 0: // Diagram
         return (
-          <div className="tab-content">
-            <div
-              className="node-section"
-              onContextMenu={(event) => handleOnContextMenu(event, "Base")}
-              key="base"
-            >
+          <div
+            className="tab-content"
+            onContextMenu={(event) => handleOnContextMenu(event, "Base")}
+            key="base"
+          >
+            <div className="node-section">
               <div className="section-title">Diagram Tools</div>
               <div className="node-item">
                 <div className="node-icon" style={{ background: "#4f46e5" }}>
@@ -141,12 +141,12 @@ const Sidebar = () => {
         );
       case 1: // Nodes
         return (
-          <div className="tab-content">
-            <div
-              className="node-section"
-              onContextMenu={(event) => handleOnContextMenu(event, "Base")}
-              key="index"
-            >
+          <div
+            className="tab-content"
+            onContextMenu={(event) => handleOnContextMenu(event, "Base")}
+            key="base"
+          >
+            <div className="node-section">
               <div className="section-title">Input Nodes</div>
               <div
                 className="node-item"
@@ -201,7 +201,11 @@ const Sidebar = () => {
         );
       case 2: // Edges
         return (
-          <div className="tab-content">
+          <div
+            className="tab-content"
+            onContextMenu={(event) => handleOnContextMenu(event, "Base")}
+            key="base"
+          >
             <div className="node-section">
               <div className="section-title">Connection Types</div>
               <div className="node-item">
