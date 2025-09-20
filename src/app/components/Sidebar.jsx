@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useDnD } from "./DnDContext";
 import Popup from "./pop-up";
 import ContextMenu from "./contextMenu";
+import LongMenu from "./KebabMenu";
 
 const Sidebar = () => {
   const [, setType] = useDnD();
@@ -16,6 +17,7 @@ const Sidebar = () => {
     toogle: false,
   });
   const contextMenuRef = useRef(null);
+  const [menuOpenId, setMenuOpenId] = useState(null);
 
   useEffect(() => {
     try {
@@ -96,68 +98,65 @@ const Sidebar = () => {
     switch (activeTab) {
       case 0: // Diagram
         return (
-          <div
-            className="tab-content"
-            onContextMenu={(event) => handleOnContextMenu(event, "Base")}
-            key="base"
-          >
+          <div className="tab-content">
             <div className="node-section">
               <div className="section-title">Diagram Tools</div>
-              <div className="node-item">
+              <div
+                className={`node-item ${
+                  menuOpenId === "create-flow" ? "active" : ""
+                }`}
+              >
                 <div className="node-icon" style={{ background: "#4f46e5" }}>
                   📊
                 </div>
                 Create Flow
-              </div>
-              <div className="node-item">
-                <div className="node-icon" style={{ background: "#7c3aed" }}>
-                  🎨
-                </div>
-                Design Layout
+                <LongMenu
+                  className="kebab-menu"
+                  onOpenChange={(open) =>
+                    setMenuOpenId(open ? "create-flow" : null)
+                  }
+                />
               </div>
               <div className="node-item">
                 <div className="node-icon" style={{ background: "#ec4899" }}>
                   💾
                 </div>
                 Save Diagram
-              </div>
-            </div>
-            <div className="node-section">
-              <div className="section-title">View Options</div>
-              <div className="node-item">
-                <div className="node-icon" style={{ background: "#06b6d4" }}>
-                  🔍
-                </div>
-                Zoom Controls
-              </div>
-              <div className="node-item">
-                <div className="node-icon" style={{ background: "#10b981" }}>
-                  📐
-                </div>
-                Grid Toggle
+                <LongMenu
+                  className="kebab-menu"
+                  onOpenChange={(open) =>
+                    setMenuOpenId(open ? "node-Base" : null)
+                  }
+                />
               </div>
             </div>
           </div>
         );
       case 1: // Nodes
         return (
-          <div
-            className="tab-content"
-            onContextMenu={(event) => handleOnContextMenu(event, "Base")}
-            key="base"
-          >
+          <div className="tab-content">
             <div className="node-section">
               <div className="section-title">Input Nodes</div>
               <div
-                className="node-item"
+                className={`node-item ${
+                  menuOpenId === "node-Base" ? "active" : ""
+                }`}
                 onDragStart={(event) => onDragStart(event, "Base")}
                 draggable
               >
                 <div className="node-icon base">B</div>
                 Base Node
+                <LongMenu
+                  className="kebab-menu"
+                  onOpenChange={(open) =>
+                    setMenuOpenId(open ? "node-Base" : null)
+                  }
+                />
               </div>
               <div
-                className="node-item"
+                className={`node-item ${
+                  menuOpenId === "node-Input" ? "active" : ""
+                }`}
                 onDragStart={(event) => onDragStart(event, "Input")}
                 draggable
               >
@@ -165,6 +164,12 @@ const Sidebar = () => {
                   I
                 </div>
                 Input Node
+                <LongMenu
+                  className="kebab-menu"
+                  onOpenChange={(open) =>
+                    setMenuOpenId(open ? "node-Input" : null)
+                  }
+                />
               </div>
             </div>
             {customNodes.length > 0 && (
@@ -173,7 +178,9 @@ const Sidebar = () => {
                 {customNodes.map((n) => (
                   <div
                     key={n.name}
-                    className="node-item"
+                    className={`node-item ${
+                      menuOpenId === `custom-${n.name}` ? "active" : ""
+                    }`}
                     onDragStart={(event) => onDragStart(event, n.name)}
                     draggable
                   >
@@ -184,6 +191,12 @@ const Sidebar = () => {
                       A
                     </div>
                     {n.name}
+                    <LongMenu
+                      className="kebab-menu"
+                      onOpenChange={(open) =>
+                        setMenuOpenId(open ? `custom-${n.name}` : null)
+                      }
+                    />
                   </div>
                 ))}
               </div>
@@ -201,11 +214,7 @@ const Sidebar = () => {
         );
       case 2: // Edges
         return (
-          <div
-            className="tab-content"
-            onContextMenu={(event) => handleOnContextMenu(event, "Base")}
-            key="base"
-          >
+          <div className="tab-content">
             <div className="node-section">
               <div className="section-title">Connection Types</div>
               <div className="node-item">
@@ -213,54 +222,24 @@ const Sidebar = () => {
                   →
                 </div>
                 Direct Connection
+                <LongMenu
+                  className="kebab-menu"
+                  onOpenChange={(open) =>
+                    setMenuOpenId(open ? "node-Base" : null)
+                  }
+                />
               </div>
               <div className="node-item">
                 <div className="node-icon" style={{ background: "#f97316" }}>
                   ⤴
                 </div>
                 Conditional Flow
-              </div>
-              <div className="node-item">
-                <div className="node-icon" style={{ background: "#eab308" }}>
-                  ↻
-                </div>
-                Loop Connection
-              </div>
-            </div>
-            <div className="node-section">
-              <div className="section-title">Edge Properties</div>
-              <div className="node-item">
-                <div className="node-icon" style={{ background: "#22c55e" }}>
-                  ⚡
-                </div>
-                Connection Speed
-              </div>
-              <div className="node-item">
-                <div className="node-icon" style={{ background: "#06b6d4" }}>
-                  🏷️
-                </div>
-                Label Editor
-              </div>
-              <div className="node-item">
-                <div className="node-icon" style={{ background: "#8b5cf6" }}>
-                  🎨
-                </div>
-                Style Options
-              </div>
-            </div>
-            <div className="node-section">
-              <div className="section-title">Actions</div>
-              <div className="node-item">
-                <div className="node-icon" style={{ background: "#dc2626" }}>
-                  🗑️
-                </div>
-                Delete Edge
-              </div>
-              <div className="node-item">
-                <div className="node-icon" style={{ background: "#7c3aed" }}>
-                  ⚙️
-                </div>
-                Edit Properties
+                <LongMenu
+                  className="kebab-menu"
+                  onOpenChange={(open) =>
+                    setMenuOpenId(open ? "node-Base" : null)
+                  }
+                />
               </div>
             </div>
             <div className="sidebar-action-buttons">

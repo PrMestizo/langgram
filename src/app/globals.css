@@ -254,6 +254,12 @@ body {
   border-color: #404040;
 }
 
+/* keep hover styles while a menu is open (active state) */
+.node-item.active {
+  background: #2d2d2d;
+  border-color: #404040;
+}
+
 .node-item:active {
   cursor: grabbing;
 }
@@ -520,6 +526,22 @@ body {
 }
 
 /* Context menu  -------------------------------------------------------------*/
+.kebab-menu {
+  margin-left: auto; /* push to far right inside node-item */
+  display: inline-flex;
+  align-items: center;
+  opacity: 0;              /* hidden by default */
+  pointer-events: none;    /* prevent clicks when hidden */
+  transition: opacity 120ms ease;
+}
+
+/* Show kebab only on hover or when row is active */
+.node-item:hover .kebab-menu,
+.node-item.active .kebab-menu {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 .context-menu {
   visibility: hidden;
   opacity: 0;
@@ -582,6 +604,6 @@ body {
 }
 
 .context-menu-text {
-  margin-left: auto;   /* push text to the right */
+  margin-left: auto; /* push text to the right */
   text-align: right;
 }
