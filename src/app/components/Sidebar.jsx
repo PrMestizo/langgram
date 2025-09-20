@@ -1,9 +1,8 @@
 // Sidebar.jsx
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useDnD } from "./DnDContext";
 import Popup from "./pop-up";
-import ContextMenu from "./contextMenu";
 import LongMenu from "./KebabMenu";
 
 const Sidebar = () => {
@@ -12,11 +11,6 @@ const Sidebar = () => {
   const [activeTab, setActiveTab] = useState(0);
   const [isPopupVisible, setIsPopupVisible] = useState(false);
   const [customNodes, setCustomNodes] = useState([]);
-  const [contextMenu, setContextMenu] = useState({
-    position: { x: 0, y: 0 },
-    toogle: false,
-  });
-  const contextMenuRef = useRef(null);
   const [menuOpenId, setMenuOpenId] = useState(null);
 
   useEffect(() => {
@@ -31,25 +25,6 @@ const Sidebar = () => {
       localStorage.setItem("customNodeTemplates", JSON.stringify(customNodes));
     } catch {}
   }, [customNodes]);
-
-  useEffect(() => {
-    function handleClickOutside(e) {
-      if (contextMenuRef.current) {
-        if (!contextMenuRef.current.contains(e.target)) {
-          setContextMenu({
-            position: { x: 0, y: 0 },
-            toogle: false,
-          });
-        }
-      }
-    }
-
-    document.addEventListener("click", handleClickOutside);
-
-    return () => {
-      document.removeEventListener("click", handleClickOutside);
-    };
-  }, []);
 
   const onDragStart = (event, nodeType) => {
     setType(nodeType);
@@ -70,28 +45,6 @@ const Sidebar = () => {
     const name = nodeName;
     const newNode = { name, code, language: "python" };
     setCustomNodes((prev) => [...prev, newNode]);
-  };
-
-  const handleOnContextMenu = (e, rightClickItem) => {
-    e.preventDefault();
-
-    const contextMenuAttr = contextMenuRef.current.getBoundingClientRect();
-    const isLeft = e.clientX < window?.innerWidth / 2;
-
-    let x;
-    let y = e.clientY;
-
-    if (isLeft) {
-      x = e.clientX;
-    } else {
-      x = e.clientX - contextMenuAttr.width;
-    }
-
-    setContextMenu({
-      position: { x, y },
-      toogle: true,
-    });
-    console.log(rightClickItem);
   };
 
   const renderTabContent = () => {
@@ -217,7 +170,13 @@ const Sidebar = () => {
           <div className="tab-content">
             <div className="node-section">
               <div className="section-title">Connection Types</div>
-              <div className="node-item">
+              <div
+                className={`node-item ${
+                  menuOpenId === "node-Input" ? "active" : ""
+                }`}
+                onDragStart={(event) => onDragStart(event, "Input")}
+                draggable
+              >
                 <div className="node-icon" style={{ background: "#ef4444" }}>
                   →
                 </div>
@@ -229,7 +188,11 @@ const Sidebar = () => {
                   }
                 />
               </div>
-              <div className="node-item">
+              <div
+                className="node-item"
+                onDragStart={(event) => onDragStart(event, "Input")}
+                draggable
+              >
                 <div className="node-icon" style={{ background: "#f97316" }}>
                   ⤴
                 </div>
@@ -314,18 +277,6 @@ const Sidebar = () => {
         onClose={() => setIsPopupVisible(false)}
         onSave={handleSaveCustomNode}
         initialCode={`# Edita el código del nodo a tus necesidades:\n\n# Función mínima para un nodo\ndef mi_nodo(state):\n    return state  # debe devolver el estado (o algo mergeable con él)`}
-      />
-      <ContextMenu
-        positionX={contextMenu.position.x}
-        positionY={contextMenu.position.y}
-        isToggled={contextMenu.toogle}
-        buttons={[
-          { text: "Editar", onClick: () => {} },
-          { text: "Otro", onClick: () => {} },
-          { isSeparator: true },
-          { text: "Eliminar", onClick: () => {} },
-        ]}
-        contextMenuRef={contextMenuRef}
       />
     </>
   );
