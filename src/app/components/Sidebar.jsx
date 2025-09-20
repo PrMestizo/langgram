@@ -10,7 +10,9 @@ const Sidebar = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState(0);
   const [isPopupVisible, setIsPopupVisible] = useState(false);
+  const [popupMode, setPopupMode] = useState("node"); // 'node' | 'edge'
   const [customNodes, setCustomNodes] = useState([]);
+  const [customEdges, setCustomEdges] = useState([]);
   const [menuOpenId, setMenuOpenId] = useState(null);
 
   useEffect(() => {
@@ -26,6 +28,20 @@ const Sidebar = () => {
     } catch {}
   }, [customNodes]);
 
+  // Load/persist custom edges
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("customEdgeTemplates");
+      if (saved) setCustomEdges(JSON.parse(saved));
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("customEdgeTemplates", JSON.stringify(customEdges));
+    } catch {}
+  }, [customEdges]);
+
   const onDragStart = (event, nodeType) => {
     setType(nodeType);
     event.dataTransfer.setData("text/plain", nodeType);
@@ -37,7 +53,8 @@ const Sidebar = () => {
     setActiveTab(index);
   };
 
-  const popupAction = async () => {
+  const popupAction = async (mode = "node") => {
+    setPopupMode(mode);
     setIsPopupVisible(true);
   };
 
@@ -45,6 +62,35 @@ const Sidebar = () => {
     const name = nodeName;
     const newNode = { name, code, language: "python" };
     setCustomNodes((prev) => [...prev, newNode]);
+  };
+
+  const handleSaveCustomEdge = (code, edgeName) => {
+    const name = edgeName;
+    const newEdge = { name, code, language: "python" };
+    setCustomEdges((prev) => [...prev, newEdge]);
+  };
+
+  // Unified save handler so we can also switch to the right tab after save
+  const handleSaveFromPopup = (code, name) => {
+    if (popupMode === "edge") {
+      handleSaveCustomEdge(code, name);
+      setActiveTab(2); // switch to Edges tab
+    } else {
+      handleSaveCustomNode(code, name);
+      setActiveTab(1); // switch to Nodes tab
+    }
+  };
+
+  const handleDeleteCustomNode = (nodeName) => {
+    setCustomNodes((prevNodes) =>
+      prevNodes.filter((node) => node.name !== nodeName)
+    );
+  };
+
+  const handleDeleteCustomEdge = (edgeName) => {
+    setCustomEdges((prevEdges) =>
+      prevEdges.filter((edge) => edge.name !== edgeName)
+    );
   };
 
   const renderTabContent = () => {
@@ -149,6 +195,7 @@ const Sidebar = () => {
                       onOpenChange={(open) =>
                         setMenuOpenId(open ? `custom-${n.name}` : null)
                       }
+                      onDelete={() => handleDeleteCustomNode(n.name)}
                     />
                   </div>
                 ))}
@@ -157,7 +204,7 @@ const Sidebar = () => {
             <div className="sidebar-action-buttons">
               <button
                 className="sidebar-action-btn primary"
-                onClick={popupAction}
+                onClick={() => popupAction("node")}
               >
                 <span className="btn-icon">➕</span>
                 Add Custom Node
@@ -205,10 +252,40 @@ const Sidebar = () => {
                 />
               </div>
             </div>
+            {customEdges.length > 0 && (
+              <div className="node-section">
+                <div className="section-title">Custom Edges</div>
+                {customEdges.map((n) => (
+                  <div
+                    key={n.name}
+                    className={`node-item ${
+                      menuOpenId === `custom-${n.name}` ? "active" : ""
+                    }`}
+                    onDragStart={(event) => onDragStart(event, n.name)}
+                    draggable
+                  >
+                    <div
+                      className="node-icon"
+                      style={{ background: "#64748b", color: "white" }}
+                    >
+                      A
+                    </div>
+                    {n.name}
+                    <LongMenu
+                      className="kebab-menu"
+                      onOpenChange={(open) =>
+                        setMenuOpenId(open ? `custom-${n.name}` : null)
+                      }
+                      onDelete={() => handleDeleteCustomEdge(n.name)}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
             <div className="sidebar-action-buttons">
               <button
                 className="sidebar-action-btn primary"
-                onClick={popupAction}
+                onClick={() => popupAction("edge")}
               >
                 <span className="btn-icon">➕</span>
                 Add Custom Edge
@@ -275,8 +352,12 @@ const Sidebar = () => {
       <Popup
         isVisible={isPopupVisible}
         onClose={() => setIsPopupVisible(false)}
-        onSave={handleSaveCustomNode}
-        initialCode={`# Edita el código del nodo a tus necesidades:\n\n# Función mínima para un nodo\ndef mi_nodo(state):\n    return state  # debe devolver el estado (o algo mergeable con él)`}
+        onSave={handleSaveFromPopup}
+        initialCode={
+          popupMode === "edge"
+            ? `# Define tu arista personalizada aquí\n# def mi_arista(source, target, state):\n#     return state\n`
+            : `# Edita el código del nodo a tus necesidades:\n\n# Función mínima para un nodo\ndef mi_nodo(state):\n    return state  # debe devolver el estado (o algo mergeable con él)`
+        }
       />
     </>
   );
