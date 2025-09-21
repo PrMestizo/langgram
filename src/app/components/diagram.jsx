@@ -41,7 +41,7 @@ const initialEdges = [{ id: "n1-n2", source: "n1", target: "n2" }];
 function Diagram() {
   const [nodes, setNodes] = useState(initialNodes);
   const [edges, setEdges] = useState(initialEdges);
-  const [type, setType] = useDnD();
+  const [type, setType, code, setCode] = useDnD();
   const { screenToFlowPosition } = useReactFlow();
   const [popupText, setPopupText] = useState("");
 
@@ -69,7 +69,7 @@ function Diagram() {
     (event) => {
       event.preventDefault();
 
-      if (!type) {
+      if (!type || !code) {
         return;
       }
 
@@ -81,26 +81,49 @@ function Diagram() {
         id: getId(),
         type,
         position,
-        data: { label: `${type} node` },
+        data: { label: `${type}` },
+        code,
       };
 
       setNodes((nds) => nds.concat(newNode));
     },
-    [screenToFlowPosition, type]
+    [screenToFlowPosition, type, code]
   );
 
-  const onDragStart = (event, nodeType) => {
+  const onDragStart = (event, nodeType, nodeCode) => {
     setType(nodeType);
-    event.dataTransfer.setData("text/plain", nodeType);
+    setCode(nodeCode);
+    event.dataTransfer.setData("application/node-type", nodeType);
+    event.dataTransfer.setData("application/node-code", nodeCode);
     event.dataTransfer.effectAllowed = "move";
   };
 
   const generateCodeWithAI = async () => {
+    const graphJSON = GraphJSON();
+    try {
+      const code = await generateCodeFromGraph(graphJSON);
+      setPopupText(code);
+    } catch {
+      setPopupText("Error al generar el código con IA");
+    }
+  };
+
+  const JSONtoFile = async () => {
+    const graphJSON = GraphJSON();
+    try {
+      const formattedJSON = JSON.stringify(graphJSON, null, 2);
+      setPopupText(formattedJSON);
+    } catch {
+      setPopupText("Error al generar el código con IA");
+    }
+  };
+
+  const GraphJSON = () => {
     const nodeData = nodes.map((n) => ({
       id: n.id,
       type: n.type,
       label: n.data.label,
-      code: nodeCodeTemplates[n.type] || "# código no definido",
+      code: n.code || "# código no definido",
     }));
 
     const edgeData = edges.map((e) => ({
@@ -110,13 +133,7 @@ function Diagram() {
     }));
 
     const graphJSON = { nodes: nodeData, edges: edgeData };
-
-    try {
-      const code = await generateCodeFromGraph(graphJSON);
-      setPopupText(code);
-    } catch {
-      setPopupText("Error al generar el código con IA");
-    }
+    return graphJSON;
   };
 
   return (
@@ -150,7 +167,7 @@ function Diagram() {
         <button className="button" onClick={generateCodeWithAI}>
           Generar Código
         </button>
-        <button className="button" onClick={generateCodeWithAI}>
+        <button className="button" onClick={JSONtoFile}>
           Guardar Diagrama
         </button>
       </div>

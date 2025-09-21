@@ -6,7 +6,7 @@ import Popup from "./pop-up";
 import LongMenu from "./KebabMenu";
 
 const Sidebar = () => {
-  const [, setType] = useDnD();
+  const [, setType, , setCode] = useDnD();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState(0);
   const [isPopupVisible, setIsPopupVisible] = useState(false);
@@ -42,9 +42,11 @@ const Sidebar = () => {
     } catch {}
   }, [customEdges]);
 
-  const onDragStart = (event, nodeType) => {
+  const onDragStart = (event, nodeType, nodeCode) => {
     setType(nodeType);
-    event.dataTransfer.setData("text/plain", nodeType);
+    setCode(nodeCode);
+    event.dataTransfer.setData("application/node-type", nodeType);
+    event.dataTransfer.setData("application/node-code", nodeCode);
     event.dataTransfer.effectAllowed = "move";
   };
 
@@ -180,7 +182,7 @@ const Sidebar = () => {
                     className={`node-item ${
                       menuOpenId === `custom-${n.name}` ? "active" : ""
                     }`}
-                    onDragStart={(event) => onDragStart(event, n.name)}
+                    onDragStart={(event) => onDragStart(event, n.name, n.code)}
                     draggable
                   >
                     <div

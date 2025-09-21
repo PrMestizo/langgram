@@ -5,9 +5,10 @@ const DnDContext = createContext([null, (_) => {}]);
 
 export const DnDProvider = ({ children }) => {
   const [type, setType] = useState(null);
+  const [code, setCode] = useState(null);
 
   return (
-    <DnDContext.Provider value={[type, setType]}>
+    <DnDContext.Provider value={[type, setType, code, setCode]}>
       {children}
     </DnDContext.Provider>
   );
