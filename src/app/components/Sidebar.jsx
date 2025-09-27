@@ -5,15 +5,35 @@ import { useDnD } from "./DnDContext";
 import Popup from "./pop-up";
 import LongMenu from "./KebabMenu";
 
-const Sidebar = () => {
+const Sidebar = ({ onLoadDiagram }) => {
   const [, setType, , setCode] = useDnD();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState(0);
   const [isPopupVisible, setIsPopupVisible] = useState(false);
-  const [popupMode, setPopupMode] = useState("node"); // 'node' | 'edge'
+  const [popupMode, setPopupMode] = useState("node");
+  const [customDiagrams, setCustomDiagrams] = useState([]);
   const [customNodes, setCustomNodes] = useState([]);
   const [customEdges, setCustomEdges] = useState([]);
   const [menuOpenId, setMenuOpenId] = useState(null);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("customDiagrams");
+      if (saved) setCustomDiagrams(JSON.parse(saved));
+    } catch {}
+  }, []);
+
+  // Refresh diagrams list when other components save
+  useEffect(() => {
+    const handler = () => {
+      try {
+        const saved = localStorage.getItem("customDiagrams");
+        setCustomDiagrams(saved ? JSON.parse(saved) : []);
+      } catch {}
+    };
+    window.addEventListener("diagrams-updated", handler);
+    return () => window.removeEventListener("diagrams-updated", handler);
+  }, []);
 
   useEffect(() => {
     try {
@@ -95,6 +115,19 @@ const Sidebar = () => {
     );
   };
 
+  const handleLoadDiagram = (diagram) => {
+    try {
+      if (onLoadDiagram) {
+        onLoadDiagram(diagram.graph);
+      } else {
+        window.dispatchEvent(
+          new CustomEvent("load-diagram", { detail: diagram.graph })
+        );
+      }
+      setActiveTab(0);
+    } catch {}
+  };
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 0: // Diagram
@@ -131,6 +164,54 @@ const Sidebar = () => {
                 />
               </div>
             </div>
+            {customDiagrams.length > 0 && (
+              <div className="node-section">
+                <div className="section-title">Saved Diagrams</div>
+                {customDiagrams.map((d) => (
+                  <div
+                    key={d.name}
+                    className="node-item"
+                    onClick={() => handleLoadDiagram(d)}
+                    style={{ cursor: "pointer" }}
+                  >
+                    <div className="node-icon" style={{ background: "#22c55e" }}>
+                      📁
+                    </div>
+                    {d.name}
+                  </div>
+                ))}
+              </div>
+            )}
+            {customNodes.length > 0 && (
+              <div className="node-section">
+                <div className="section-title">Custom Nodes</div>
+                {customNodes.map((n) => (
+                  <div
+                    key={n.name}
+                    className={`node-item ${
+                      menuOpenId === `custom-${n.name}` ? "active" : ""
+                    }`}
+                    onDragStart={(event) => onDragStart(event, n.name, n.code)}
+                    draggable
+                  >
+                    <div
+                      className="node-icon"
+                      style={{ background: "#64748b", color: "white" }}
+                    >
+                      A
+                    </div>
+                    {n.name}
+                    <LongMenu
+                      className="kebab-menu"
+                      onOpenChange={(open) =>
+                        setMenuOpenId(open ? `custom-${n.name}` : null)
+                      }
+                      onDelete={() => handleDeleteCustomNode(n.name)}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         );
       case 1: // Nodes

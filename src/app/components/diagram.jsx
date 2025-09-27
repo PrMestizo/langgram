@@ -1,5 +1,5 @@
 "use client";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -44,6 +44,8 @@ function Diagram() {
   const [type, setType, code, setCode] = useDnD();
   const { screenToFlowPosition } = useReactFlow();
   const [popupText, setPopupText] = useState("");
+  const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
+  const [diagramName, setDiagramName] = useState("");
 
   const onNodesChange = useCallback(
     (changes) =>
@@ -118,11 +120,49 @@ function Diagram() {
     }
   };
 
+  const openSaveDialog = () => {
+    setDiagramName("");
+    setIsSaveDialogOpen(true);
+  };
+
+  const saveDiagram = () => {
+    const graph = GraphJSON();
+    try {
+      const key = "customDiagrams";
+      const existingRaw = localStorage.getItem(key);
+      const existing = existingRaw ? JSON.parse(existingRaw) : [];
+      const newEntry = {
+        name: diagramName && diagramName.trim() ? diagramName.trim() : `Diagram ${existing.length + 1}`,
+        graph,
+        savedAt: new Date().toISOString(),
+      };
+      // If a diagram with same name exists, replace it; otherwise append
+      const idx = existing.findIndex((d) => d.name === newEntry.name);
+      let updated;
+      if (idx >= 0) {
+        updated = [...existing];
+        updated[idx] = newEntry;
+      } else {
+        updated = [...existing, newEntry];
+      }
+      localStorage.setItem(key, JSON.stringify(updated));
+      // Notify other components in the same tab to refresh
+      try {
+        window.dispatchEvent(new Event("diagrams-updated"));
+      } catch {}
+      setIsSaveDialogOpen(false);
+      setDiagramName("");
+    } catch (e) {
+      setPopupText("Error al guardar el diagrama");
+    }
+  };
+
   const GraphJSON = () => {
     const nodeData = nodes.map((n) => ({
       id: n.id,
       type: n.type,
       label: n.data.label,
+      position: n.position,
       code: n.code || "# código no definido",
     }));
 
@@ -135,6 +175,34 @@ function Diagram() {
     const graphJSON = { nodes: nodeData, edges: edgeData };
     return graphJSON;
   };
+
+  // Listen for external load requests from the Sidebar
+  // Expected payload: { nodes: [{id,type,label,position,code}], edges: [{id,source,target}] }
+  // Rebuilds React Flow state accordingly
+  useEffect(() => {
+    const handler = (ev) => {
+      const graph = ev?.detail;
+      if (!graph) return;
+      try {
+        const nextNodes = (graph.nodes || []).map((n) => ({
+          id: n.id,
+          type: n.type,
+          position: n.position || { x: 0, y: 0 },
+          data: { label: n.label },
+          code: n.code,
+        }));
+        const nextEdges = (graph.edges || []).map((e) => ({
+          id: e.id || `${e.source}-${e.target}`,
+          source: e.source,
+          target: e.target,
+        }));
+        setNodes(nextNodes);
+        setEdges(nextEdges);
+      } catch {}
+    };
+    window.addEventListener("load-diagram", handler);
+    return () => window.removeEventListener("load-diagram", handler);
+  }, [setNodes, setEdges]);
 
   return (
     <div className="dndflow">
@@ -162,14 +230,31 @@ function Diagram() {
         </ReactFlow>
       </div>
 
-      <Sidebar />
+      <Sidebar
+        onLoadDiagram={(graph) => {
+          try {
+            const nextNodes = (graph.nodes || []).map((n) => ({
+              id: n.id,
+              type: n.type,
+              position: n.position || { x: 0, y: 0 },
+              data: { label: n.label },
+              code: n.code,
+            }));
+            const nextEdges = (graph.edges || []).map((e) => ({
+              id: e.id || `${e.source}-${e.target}`,
+              source: e.source,
+              target: e.target,
+            }));
+            setNodes(nextNodes);
+            setEdges(nextEdges);
+          } catch {}
+        }}
+      />
       <div className="button-container">
         <button className="button" onClick={generateCodeWithAI}>
           Generar Código
         </button>
-        <button className="button" onClick={JSONtoFile}>
-          Guardar Diagrama
-        </button>
+        <button className="button" onClick={openSaveDialog}>Guardar Diagrama</button>
       </div>
 
       {/* Popup  */}
@@ -179,6 +264,28 @@ function Diagram() {
           <button className="poppup.close" onClick={() => setPopupText("")}>
             Cerrar
           </button>
+        </div>
+      )}
+
+      {/* Save Diagram Name Dialog */}
+      {isSaveDialogOpen && (
+        <div className="poppup-text" style={{ maxWidth: 480 }}>
+          <div style={{ marginBottom: 8, fontWeight: 600 }}>Guardar Diagrama</div>
+          <label htmlFor="diagram-name" style={{ display: "block", marginBottom: 4 }}>
+            Nombre del diagrama
+          </label>
+          <input
+            id="diagram-name"
+            type="text"
+            value={diagramName}
+            onChange={(e) => setDiagramName(e.target.value)}
+            placeholder="Mi diagrama"
+            style={{ width: "100%", padding: 8, marginBottom: 12 }}
+          />
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+            <button className="button" onClick={() => setIsSaveDialogOpen(false)}>Cancelar</button>
+            <button className="button" onClick={saveDiagram}>Guardar</button>
+          </div>
         </div>
       )}
     </div>
