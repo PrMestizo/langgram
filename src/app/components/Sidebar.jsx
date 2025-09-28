@@ -115,12 +115,40 @@ const Sidebar = ({ onLoadDiagram }) => {
     }
   };
 
-  const handleDeleteCustomNode = (nodeName) => {
-    setCustomNodes((prevNodes) => {
-      const updated = prevNodes.filter((node) => node.name !== nodeName);
-      localStorage.setItem("customNodeTemplates", JSON.stringify(updated));
-      return updated;
-    });
+  const handleDeleteCustomNode = async (nodeName) => {
+    try {
+      // Buscar el nodo completo para obtener su ID
+      const nodeToDelete = customNodes.find((node) => node.name === nodeName);
+
+      // Preparar el body con id si está disponible, si no usar name
+      const requestBody = nodeToDelete?.id
+        ? { id: nodeToDelete.id, name: nodeName } // Enviar ambos por si acaso
+        : { name: nodeName };
+
+      console.log("Deleting node with:", requestBody); // Para debug
+
+      const res = await fetch("/api/nodes", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        console.error("Server error:", error);
+        throw new Error(error.details || "Error al eliminar nodo");
+      }
+
+      const deleted = await res.json();
+      console.log("Node deleted successfully:", deleted);
+
+      // Actualizar el estado local solo si el servidor confirmó la eliminación
+      setCustomNodes((prev) => prev.filter((node) => node.name !== nodeName));
+    } catch (err) {
+      console.error("Error al eliminar nodo:", err);
+      // Opcionalmente, mostrar un mensaje de error al usuario
+      alert(`No se pudo eliminar el nodo: ${err.message}`);
+    }
   };
 
   const handleDeleteCustomDiagram = (diagramName) => {
