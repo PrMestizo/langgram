@@ -132,7 +132,10 @@ function Diagram() {
       const existingRaw = localStorage.getItem(key);
       const existing = existingRaw ? JSON.parse(existingRaw) : [];
       const newEntry = {
-        name: diagramName && diagramName.trim() ? diagramName.trim() : `Diagram ${existing.length + 1}`,
+        name:
+          diagramName && diagramName.trim()
+            ? diagramName.trim()
+            : `Diagram ${existing.length + 1}`,
         graph,
         savedAt: new Date().toISOString(),
       };
@@ -254,7 +257,9 @@ function Diagram() {
         <button className="button" onClick={generateCodeWithAI}>
           Generar Código
         </button>
-        <button className="button" onClick={openSaveDialog}>Guardar Diagrama</button>
+        <button className="button" onClick={openSaveDialog}>
+          Guardar Diagrama
+        </button>
       </div>
 
       {/* Popup  */}
@@ -270,8 +275,13 @@ function Diagram() {
       {/* Save Diagram Name Dialog */}
       {isSaveDialogOpen && (
         <div className="poppup-text" style={{ maxWidth: 480 }}>
-          <div style={{ marginBottom: 8, fontWeight: 600 }}>Guardar Diagrama</div>
-          <label htmlFor="diagram-name" style={{ display: "block", marginBottom: 4 }}>
+          <div style={{ marginBottom: 8, fontWeight: 600 }}>
+            Guardar Diagrama
+          </div>
+          <label
+            htmlFor="diagram-name"
+            style={{ display: "block", marginBottom: 4 }}
+          >
             Nombre del diagrama
           </label>
           <input
@@ -283,8 +293,15 @@ function Diagram() {
             style={{ width: "100%", padding: 8, marginBottom: 12 }}
           />
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-            <button className="button" onClick={() => setIsSaveDialogOpen(false)}>Cancelar</button>
-            <button className="button" onClick={saveDiagram}>Guardar</button>
+            <button
+              className="button"
+              onClick={() => setIsSaveDialogOpen(false)}
+            >
+              Cancelar
+            </button>
+            <button className="button" onClick={saveDiagram}>
+              Guardar
+            </button>
           </div>
         </div>
       )}

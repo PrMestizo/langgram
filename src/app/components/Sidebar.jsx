@@ -17,22 +17,19 @@ const Sidebar = ({ onLoadDiagram }) => {
   const [menuOpenId, setMenuOpenId] = useState(null);
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem("customDiagrams");
-      if (saved) setCustomDiagrams(JSON.parse(saved));
-    } catch {}
-  }, []);
-
-  // Refresh diagrams list when other components save
-  useEffect(() => {
-    const handler = () => {
+    const loadDiagrams = () => {
       try {
         const saved = localStorage.getItem("customDiagrams");
         setCustomDiagrams(saved ? JSON.parse(saved) : []);
       } catch {}
     };
-    window.addEventListener("diagrams-updated", handler);
-    return () => window.removeEventListener("diagrams-updated", handler);
+
+    // 🔹 Cargar al montar
+    loadDiagrams();
+
+    // 🔹 Escuchar actualizaciones
+    window.addEventListener("diagrams-updated", loadDiagrams);
+    return () => window.removeEventListener("diagrams-updated", loadDiagrams);
   }, []);
 
   useEffect(() => {
@@ -104,15 +101,29 @@ const Sidebar = ({ onLoadDiagram }) => {
   };
 
   const handleDeleteCustomNode = (nodeName) => {
-    setCustomNodes((prevNodes) =>
-      prevNodes.filter((node) => node.name !== nodeName)
-    );
+    setCustomNodes((prevNodes) => {
+      const updated = prevNodes.filter((node) => node.name !== nodeName);
+      localStorage.setItem("customNodeTemplates", JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const handleDeleteCustomDiagram = (diagramName) => {
+    setCustomDiagrams((prevDiagrams) => {
+      const updated = prevDiagrams.filter(
+        (diagram) => diagram.name !== diagramName
+      );
+      localStorage.setItem("customDiagrams", JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const handleDeleteCustomEdge = (edgeName) => {
-    setCustomEdges((prevEdges) =>
-      prevEdges.filter((edge) => edge.name !== edgeName)
-    );
+    setCustomEdges((prevEdges) => {
+      const updated = prevEdges.filter((edge) => edge.name !== edgeName);
+      localStorage.setItem("customEdgeTemplates", JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const handleLoadDiagram = (diagram) => {
@@ -174,39 +185,19 @@ const Sidebar = ({ onLoadDiagram }) => {
                     onClick={() => handleLoadDiagram(d)}
                     style={{ cursor: "pointer" }}
                   >
-                    <div className="node-icon" style={{ background: "#22c55e" }}>
+                    <div
+                      className="node-icon"
+                      style={{ background: "#22c55e" }}
+                    >
                       📁
                     </div>
                     {d.name}
-                  </div>
-                ))}
-              </div>
-            )}
-            {customNodes.length > 0 && (
-              <div className="node-section">
-                <div className="section-title">Custom Nodes</div>
-                {customNodes.map((n) => (
-                  <div
-                    key={n.name}
-                    className={`node-item ${
-                      menuOpenId === `custom-${n.name}` ? "active" : ""
-                    }`}
-                    onDragStart={(event) => onDragStart(event, n.name, n.code)}
-                    draggable
-                  >
-                    <div
-                      className="node-icon"
-                      style={{ background: "#64748b", color: "white" }}
-                    >
-                      A
-                    </div>
-                    {n.name}
                     <LongMenu
                       className="kebab-menu"
                       onOpenChange={(open) =>
-                        setMenuOpenId(open ? `custom-${n.name}` : null)
+                        setMenuOpenId(open ? "node-Base" : null)
                       }
-                      onDelete={() => handleDeleteCustomNode(n.name)}
+                      onDelete={() => handleDeleteCustomDiagram(d.name)}
                     />
                   </div>
                 ))}
