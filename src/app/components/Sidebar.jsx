@@ -33,10 +33,16 @@ const Sidebar = ({ onLoadDiagram }) => {
   }, []);
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem("customNodeTemplates");
-      if (saved) setCustomNodes(JSON.parse(saved));
-    } catch {}
+    const fetchNodes = async () => {
+      try {
+        const res = await fetch("/api/nodes");
+        const data = await res.json();
+        setCustomNodes(data); // aquí se guardan tus nodos de la DB
+      } catch (err) {
+        console.error("Error al cargar nodos:", err);
+      }
+    };
+    fetchNodes();
   }, []);
 
   useEffect(() => {
