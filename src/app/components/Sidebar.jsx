@@ -83,10 +83,19 @@ const Sidebar = ({ onLoadDiagram }) => {
     setIsPopupVisible(true);
   };
 
-  const handleSaveCustomNode = (code, nodeName) => {
-    const name = nodeName;
-    const newNode = { name, code, language: "python" };
-    setCustomNodes((prev) => [...prev, newNode]);
+  const handleSaveCustomNode = async (code, nodeName) => {
+    const newNode = { name: nodeName, code, language: "python" };
+    try {
+      const res = await fetch("/api/nodes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newNode),
+      });
+      const saved = await res.json();
+      setCustomNodes((prev) => [...prev, saved]);
+    } catch (err) {
+      console.error("Error al guardar nodo:", err);
+    }
   };
 
   const handleSaveCustomEdge = (code, edgeName) => {

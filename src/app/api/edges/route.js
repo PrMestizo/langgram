@@ -9,10 +9,10 @@ export async function GET() {
     );
     console.log("Available models:", models);
 
-    const nodes = await prisma.nodeTemplate.findMany();
-    return NextResponse.json(nodes);
+    const edges = await prisma.edgeTemplate.findMany();
+    return NextResponse.json(edges);
   } catch (error) {
-    console.error("Error in /api/nodes:", {
+    console.error("Error in /api/edges:", {
       message: error.message,
       name: error.name,
       stack: error.stack,
@@ -20,7 +20,7 @@ export async function GET() {
     });
     return NextResponse.json(
       {
-        error: "Failed to fetch nodes",
+        error: "Failed to fetch edges",
         details: error.message,
       },
       { status: 500 }
@@ -31,10 +31,10 @@ export async function GET() {
 export async function POST(request) {
   try {
     const body = await request.json();
-    const node = await prisma.nodeTemplate.create({ data: body });
-    return NextResponse.json(node);
+    const edge = await prisma.edgeTemplate.create({ data: body });
+    return NextResponse.json(edge);
   } catch (error) {
-    console.error("Error in /api/nodes:", {
+    console.error("Error in /api/edges:", {
       message: error.message,
       name: error.name,
       stack: error.stack,
@@ -42,7 +42,7 @@ export async function POST(request) {
     });
     return NextResponse.json(
       {
-        error: "Failed to create node",
+        error: "Failed to create edge",
         details: error.message,
       },
       { status: 500 }
@@ -53,10 +53,10 @@ export async function POST(request) {
 export async function DELETE(request) {
   try {
     const body = await request.json();
-    const node = await prisma.nodeTemplate.delete({ where: { id: body.id } });
-    return NextResponse.json(node);
+    const edge = await prisma.edgeTemplate.delete({ where: { id: body.id } });
+    return NextResponse.json(edge);
   } catch (error) {
-    console.error("Error in /api/nodes:", {
+    console.error("Error in /api/edges:", {
       message: error.message,
       name: error.name,
       stack: error.stack,
@@ -64,7 +64,7 @@ export async function DELETE(request) {
     });
     return NextResponse.json(
       {
-        error: "Failed to delete node",
+        error: "Failed to delete edge",
         details: error.message,
       },
       { status: 500 }
