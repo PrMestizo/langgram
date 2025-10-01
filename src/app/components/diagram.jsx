@@ -129,55 +129,37 @@ function Diagram() {
   const saveDiagram = async () => {
     const graph = GraphJSON();
     try {
+      const name = diagramName || `Diagrama ${new Date().toLocaleString()}`;
+      
       const res = await fetch("/api/diagrams", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: diagramName, content: graph }),
+        body: JSON.stringify({ 
+          name: name,
+          content: graph // Cambiado de 'graph' a 'content' para que coincida con el modelo
+        }),
       });
-      const saved = await res.json();
-      setDiagrams((prev) => [...prev, saved]);
-      try {
-        window.dispatchEvent(new Event("diagrams-updated"));
-      } catch {}
-      setIsSaveDialogOpen(false);
-      setDiagramName("");
-    } catch (err) {
-      setPopupText("Error al guardar el diagrama");
-    }
-  };
-
-  const saveDiagram1 = () => {
-    const graph = GraphJSON();
-    try {
-      const key = "customDiagrams";
-      const existingRaw = localStorage.getItem(key);
-      const existing = existingRaw ? JSON.parse(existingRaw) : [];
-      const newEntry = {
-        name:
-          diagramName && diagramName.trim()
-            ? diagramName.trim()
-            : `Diagram ${existing.length + 1}`,
-        graph,
-        savedAt: new Date().toISOString(),
-      };
-      // If a diagram with same name exists, replace it; otherwise append
-      const idx = existing.findIndex((d) => d.name === newEntry.name);
-      let updated;
-      if (idx >= 0) {
-        updated = [...existing];
-        updated[idx] = newEntry;
-      } else {
-        updated = [...existing, newEntry];
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Error al guardar el diagrama');
       }
-      localStorage.setItem(key, JSON.stringify(updated));
-      // Notify other components in the same tab to refresh
-      try {
-        window.dispatchEvent(new Event("diagrams-updated"));
-      } catch {}
+      
+      // Disparar evento para actualizar la lista de diagramas
+      window.dispatchEvent(new Event("diagrams-updated"));
+      
+      // Cerrar el diálogo y limpiar el nombre
       setIsSaveDialogOpen(false);
       setDiagramName("");
-    } catch (e) {
-      setPopupText("Error al guardar el diagrama");
+      
+      // Mostrar mensaje de éxito
+      setPopupText(`¡Diagrama "${name}" guardado exitosamente!`);
+      setTimeout(() => setPopupText(""), 5000);
+      
+    } catch (err) {
+      console.error("Error al guardar el diagrama:", err);
+      setPopupText(`Error al guardar el diagrama: ${err.message}`);
+      setTimeout(() => setPopupText(""), 5000);
     }
   };
 

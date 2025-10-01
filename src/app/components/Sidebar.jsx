@@ -16,33 +16,25 @@ const Sidebar = ({ onLoadDiagram }) => {
   const [customEdges, setCustomEdges] = useState([]);
   const [menuOpenId, setMenuOpenId] = useState(null);
 
-  /*useEffect(() => {
-    const loadDiagrams = () => {
-      try {
-        const saved = localStorage.getItem("customDiagrams");
-        setCustomDiagrams(saved ? JSON.parse(saved) : []);
-      } catch {}
-    };
-
-    // 🔹 Cargar al montar
-    loadDiagrams();
-
-    // 🔹 Escuchar actualizaciones
-    window.addEventListener("diagrams-updated", loadDiagrams);
-    return () => window.removeEventListener("diagrams-updated", loadDiagrams);
-  }, []);*/
+  const loadDiagrams = async () => {
+    try {
+      const res = await fetch("/api/diagrams");
+      const data = await res.json();
+      setCustomDiagrams(data);
+    } catch (err) {
+      console.error("Error al cargar diagramas:", err);
+    }
+  };
 
   useEffect(() => {
-    const fetchDiagrams = async () => {
-      try {
-        const res = await fetch("/api/diagrams");
-        const data = await res.json();
-        setCustomDiagrams(data);
-      } catch (err) {
-        console.error("Error al cargar diagramas:", err);
-      }
+    // Cargar diagramas al montar
+    loadDiagrams();
+
+    // Escuchar eventos de actualización
+    window.addEventListener("diagrams-updated", loadDiagrams);
+    return () => {
+      window.removeEventListener("diagrams-updated", loadDiagrams);
     };
-    fetchDiagrams();
   }, []);
 
   useEffect(() => {
@@ -235,15 +227,26 @@ const Sidebar = ({ onLoadDiagram }) => {
 
   const handleLoadDiagram = (diagram) => {
     try {
+      console.log("Loading diagram:", diagram); // Para depuración
+      const diagramContent = diagram.content || diagram.graph; // Soporta ambos nombres por compatibilidad
+
+      if (!diagramContent) {
+        throw new Error("El diagrama no tiene contenido válido");
+      }
+
       if (onLoadDiagram) {
-        onLoadDiagram(diagram.graph);
+        onLoadDiagram(diagramContent);
       } else {
         window.dispatchEvent(
-          new CustomEvent("load-diagram", { detail: diagram.graph })
+          new CustomEvent("load-diagram", { detail: diagramContent })
         );
       }
       setActiveTab(0);
-    } catch {}
+    } catch (err) {
+      console.error("Error al cargar el diagrama:", err);
+      setPopupText(`Error al cargar el diagrama: ${err.message}`);
+      setTimeout(() => setPopupText(""), 5000);
+    }
   };
 
   const renderTabContent = () => {
