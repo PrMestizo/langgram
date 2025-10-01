@@ -16,7 +16,7 @@ const Sidebar = ({ onLoadDiagram }) => {
   const [customEdges, setCustomEdges] = useState([]);
   const [menuOpenId, setMenuOpenId] = useState(null);
 
-  useEffect(() => {
+  /*useEffect(() => {
     const loadDiagrams = () => {
       try {
         const saved = localStorage.getItem("customDiagrams");
@@ -30,6 +30,19 @@ const Sidebar = ({ onLoadDiagram }) => {
     // 🔹 Escuchar actualizaciones
     window.addEventListener("diagrams-updated", loadDiagrams);
     return () => window.removeEventListener("diagrams-updated", loadDiagrams);
+  }, []);*/
+
+  useEffect(() => {
+    const fetchDiagrams = async () => {
+      try {
+        const res = await fetch("/api/diagrams");
+        const data = await res.json();
+        setCustomDiagrams(data);
+      } catch (err) {
+        console.error("Error al cargar diagramas:", err);
+      }
+    };
+    fetchDiagrams();
   }, []);
 
   useEffect(() => {
@@ -46,24 +59,17 @@ const Sidebar = ({ onLoadDiagram }) => {
   }, []);
 
   useEffect(() => {
-    try {
-      localStorage.setItem("customNodeTemplates", JSON.stringify(customNodes));
-    } catch {}
-  }, [customNodes]);
-
-  // Load/persist custom edges
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem("customEdgeTemplates");
-      if (saved) setCustomEdges(JSON.parse(saved));
-    } catch {}
+    const fetchEdges = async () => {
+      try {
+        const res = await fetch("/api/edges");
+        const data = await res.json();
+        setCustomEdges(data);
+      } catch (err) {
+        console.error("Error al cargar edges:", err);
+      }
+    };
+    fetchEdges();
   }, []);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem("customEdgeTemplates", JSON.stringify(customEdges));
-    } catch {}
-  }, [customEdges]);
 
   const onDragStart = (event, nodeType, nodeCode) => {
     setType(nodeType);
@@ -83,6 +89,16 @@ const Sidebar = ({ onLoadDiagram }) => {
     setIsPopupVisible(true);
   };
 
+  const handleDeleteCustomDiagram = (diagramName) => {
+    setCustomDiagrams((prevDiagrams) => {
+      const updated = prevDiagrams.filter(
+        (diagram) => diagram.name !== diagramName
+      );
+      localStorage.setItem("customDiagrams", JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   const handleSaveCustomNode = async (code, nodeName) => {
     const newNode = { name: nodeName, code, language: "python" };
     try {
@@ -98,10 +114,19 @@ const Sidebar = ({ onLoadDiagram }) => {
     }
   };
 
-  const handleSaveCustomEdge = (code, edgeName) => {
-    const name = edgeName;
-    const newEdge = { name, code, language: "python" };
-    setCustomEdges((prev) => [...prev, newEdge]);
+  const handleSaveCustomEdge = async (code, edgeName) => {
+    const newEdge = { name: edgeName, code, language: "python" };
+    try {
+      const res = await fetch("/api/edges", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newEdge),
+      });
+      const saved = await res.json();
+      setCustomEdges((prev) => [...prev, saved]);
+    } catch (err) {
+      console.error("Error al guardar edge:", err);
+    }
   };
 
   // Unified save handler so we can also switch to the right tab after save
@@ -117,7 +142,6 @@ const Sidebar = ({ onLoadDiagram }) => {
 
   const handleDeleteCustomNode = async (nodeName) => {
     try {
-      // Buscar el nodo completo para obtener su ID
       const nodeToDelete = customNodes.find((node) => node.name === nodeName);
 
       // Preparar el body con id si está disponible, si no usar name
@@ -151,22 +175,35 @@ const Sidebar = ({ onLoadDiagram }) => {
     }
   };
 
-  const handleDeleteCustomDiagram = (diagramName) => {
-    setCustomDiagrams((prevDiagrams) => {
-      const updated = prevDiagrams.filter(
-        (diagram) => diagram.name !== diagramName
-      );
-      localStorage.setItem("customDiagrams", JSON.stringify(updated));
-      return updated;
-    });
-  };
+  const handleDeleteCustomEdge = async (edgeName) => {
+    try {
+      const edgeToDelete = customEdges.find((edge) => edge.name === edgeName);
 
-  const handleDeleteCustomEdge = (edgeName) => {
-    setCustomEdges((prevEdges) => {
-      const updated = prevEdges.filter((edge) => edge.name !== edgeName);
-      localStorage.setItem("customEdgeTemplates", JSON.stringify(updated));
-      return updated;
-    });
+      // Preparar el body con id si está disponible, si no usar name
+      const requestBody = edgeToDelete?.id
+        ? { id: edgeToDelete.id, name: edgeName } // Enviar ambos por si acaso
+        : { name: edgeName };
+
+      const res = await fetch("/api/edges", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        console.error("Server error:", error);
+        throw new Error(error.details || "Error al eliminar edge");
+      }
+
+      const deleted = await res.json();
+      console.log("Edge deleted successfully:", deleted);
+
+      setCustomEdges((prev) => prev.filter((edge) => edge.name !== edgeName));
+    } catch (err) {
+      console.error("Error al eliminar edge:", err);
+      alert(`No se pudo eliminar el edge: ${err.message}`);
+    }
   };
 
   const handleLoadDiagram = (diagram) => {
@@ -304,7 +341,7 @@ const Sidebar = ({ onLoadDiagram }) => {
                       className="node-icon"
                       style={{ background: "#64748b", color: "white" }}
                     >
-                      A
+                      B
                     </div>
                     {n.name}
                     <LongMenu
@@ -372,13 +409,15 @@ const Sidebar = ({ onLoadDiagram }) => {
             {customEdges.length > 0 && (
               <div className="node-section">
                 <div className="section-title">Custom Edges</div>
-                {customEdges.map((n) => (
+                {customEdges.map((item) => (
                   <div
-                    key={n.name}
+                    key={item.name}
                     className={`node-item ${
-                      menuOpenId === `custom-${n.name}` ? "active" : ""
+                      menuOpenId === `custom-${item.name}` ? "active" : ""
                     }`}
-                    onDragStart={(event) => onDragStart(event, n.name)}
+                    onDragStart={(event) =>
+                      onDragStart(event, item.name, item.code)
+                    }
                     draggable
                   >
                     <div
@@ -387,13 +426,13 @@ const Sidebar = ({ onLoadDiagram }) => {
                     >
                       A
                     </div>
-                    {n.name}
+                    {item.name}
                     <LongMenu
                       className="kebab-menu"
                       onOpenChange={(open) =>
-                        setMenuOpenId(open ? `custom-${n.name}` : null)
+                        setMenuOpenId(open ? `custom-${item.name}` : null)
                       }
-                      onDelete={() => handleDeleteCustomEdge(n.name)}
+                      onDelete={() => handleDeleteCustomEdge(item.name)}
                     />
                   </div>
                 ))}

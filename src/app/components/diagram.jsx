@@ -46,6 +46,7 @@ function Diagram() {
   const [popupText, setPopupText] = useState("");
   const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
   const [diagramName, setDiagramName] = useState("");
+  const [diagrams, setDiagrams] = useState([]);
 
   const onNodesChange = useCallback(
     (changes) =>
@@ -125,7 +126,27 @@ function Diagram() {
     setIsSaveDialogOpen(true);
   };
 
-  const saveDiagram = () => {
+  const saveDiagram = async () => {
+    const graph = GraphJSON();
+    try {
+      const res = await fetch("/api/diagrams", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: diagramName, content: graph }),
+      });
+      const saved = await res.json();
+      setDiagrams((prev) => [...prev, saved]);
+      try {
+        window.dispatchEvent(new Event("diagrams-updated"));
+      } catch {}
+      setIsSaveDialogOpen(false);
+      setDiagramName("");
+    } catch (err) {
+      setPopupText("Error al guardar el diagrama");
+    }
+  };
+
+  const saveDiagram1 = () => {
     const graph = GraphJSON();
     try {
       const key = "customDiagrams";
