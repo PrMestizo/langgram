@@ -89,16 +89,6 @@ const Sidebar = ({ onLoadDiagram }) => {
     setIsPopupVisible(true);
   };
 
-  const handleDeleteCustomDiagram = (diagramName) => {
-    setCustomDiagrams((prevDiagrams) => {
-      const updated = prevDiagrams.filter(
-        (diagram) => diagram.name !== diagramName
-      );
-      localStorage.setItem("customDiagrams", JSON.stringify(updated));
-      return updated;
-    });
-  };
-
   const handleSaveCustomNode = async (code, nodeName) => {
     const newNode = { name: nodeName, code, language: "python" };
     try {
@@ -137,6 +127,43 @@ const Sidebar = ({ onLoadDiagram }) => {
     } else {
       handleSaveCustomNode(code, name);
       setActiveTab(1); // switch to Nodes tab
+    }
+  };
+
+  const handleDeleteCustomDiagram = async (diagramName) => {
+    try {
+      const diagramToDelete = customDiagrams.find(
+        (diagram) => diagram.name === diagramName
+      );
+      const requestBody = diagramToDelete?.id
+        ? { id: diagramToDelete.id, name: diagramName } // Enviar ambos por si acaso
+        : { name: diagramName };
+
+      console.log("Deleting diagram with:", requestBody); // Para debug
+
+      const res = await fetch("/api/diagrams", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        console.error("Server error:", error);
+        throw new Error(error.details || "Error al eliminar diagram");
+      }
+
+      const deleted = await res.json();
+      console.log("Diagram deleted successfully:", deleted);
+
+      // Actualizar el estado local solo si el servidor confirmó la eliminación
+      setCustomDiagrams((prev) =>
+        prev.filter((diagram) => diagram.name !== diagramName)
+      );
+    } catch (err) {
+      console.error("Error al eliminar diagram:", err);
+      // Opcionalmente, mostrar un mensaje de error al usuario
+      alert(`No se pudo eliminar el diagram: ${err.message}`);
     }
   };
 
