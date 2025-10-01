@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useDnD } from "./DnDContext";
 import Popup from "./pop-up";
 import LongMenu from "./KebabMenu";
+import CustomModal from "./Modal";
 
 const Sidebar = ({ onLoadDiagram }) => {
   const [, setType, , setCode] = useDnD();
@@ -535,7 +536,7 @@ const Sidebar = ({ onLoadDiagram }) => {
         </div>
       </button>
 
-      <Popup
+      <CustomModal
         isVisible={isPopupVisible}
         onClose={() => setIsPopupVisible(false)}
         onSave={handleSaveFromPopup}
