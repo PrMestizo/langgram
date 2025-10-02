@@ -6,13 +6,14 @@ import Fade from "@mui/material/Fade";
 import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
 import Editor from "@monaco-editor/react";
+import TextField from "@mui/material/TextField";
 
 const style = {
   position: "absolute",
   top: "50%",
   left: "50%",
   transform: "translate(-50%, -50%)",
-  width: 400,
+  width: 600,
   bgcolor: "background.paper",
   border: "2px solid #000",
   boxShadow: 24,
@@ -52,24 +53,20 @@ function CustomModal({ isVisible, onClose, onSave, initialCode = "" }) {
           <Typography id="transition-modal-title" variant="h6" component="h2">
             Editor de nodo personalizado
           </Typography>
-          <div style={{ marginBottom: '1rem' }}>
-            <input
+          <div style={{ marginBottom: "1rem" }}>
+            <TextField
+              label="Nombre"
+              variant="outlined"
               id="node-name"
-              className="input"
               type="text"
+              margin="normal"
+              sx={{ width: "300px" }}
               value={nodeName}
               onChange={(e) => setNodeName(e.target.value)}
               placeholder="Nombre del nodo"
-              style={{
-                width: '100%',
-                padding: '0.5rem',
-                marginBottom: '0.5rem',
-                borderRadius: '4px',
-                border: '1px solid #ccc'
-              }}
             />
           </div>
-          <div style={{ height: '300px', marginBottom: '1rem' }}>
+          <div style={{ height: "300px", marginBottom: "1rem" }}>
             <Editor
               height="100%"
               defaultLanguage="python"
@@ -83,12 +80,18 @@ function CustomModal({ isVisible, onClose, onSave, initialCode = "" }) {
               onChange={(val) => setCode(val ?? "")}
             />
           </div>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-            <Button variant="outlined" onClick={onClose}>
-              Cancelar
-            </Button>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              gap: "0.5rem",
+            }}
+          >
             <Button variant="contained" onClick={handleSave}>
               Guardar
+            </Button>
+            <Button variant="outlined" onClick={onClose}>
+              Cancelar
             </Button>
           </div>
         </Box>
