@@ -4,6 +4,11 @@ import { useEffect, useState } from "react";
 import { useDnD } from "./DnDContext";
 import LongMenu from "./KebabMenu";
 import CustomModal from "./Modal";
+import { BsDiagram3 } from "react-icons/bs";
+import { FaShareNodes } from "react-icons/fa6";
+import { MdCable } from "react-icons/md";
+import { FaApple } from "react-icons/fa";
+import { FaAnkh } from "react-icons/fa";
 
 const Sidebar = ({ onLoadDiagram }) => {
   const [, setType, , setCode] = useDnD();
@@ -14,9 +19,9 @@ const Sidebar = ({ onLoadDiagram }) => {
   const [customEdges, setCustomEdges] = useState([]);
   const [menuOpenId, setMenuOpenId] = useState(null);
   const tabItems = [
-    { id: 0, label: "Diagrams", icon: "⚡" },
-    { id: 1, label: "Nodes", icon: "🎯" },
-    { id: 2, label: "Edges", icon: "🔗" },
+    { id: 0, label: "Diagrams", icon: <BsDiagram3 /> },
+    { id: 1, label: "Nodes", icon: <FaShareNodes /> },
+    { id: 2, label: "Edges", icon: <MdCable /> },
   ];
   const [activeTab, setActiveTab] = useState(tabItems[0].id);
 
@@ -276,8 +281,8 @@ const Sidebar = ({ onLoadDiagram }) => {
                   menuOpenId === "create-flow" ? "active" : ""
                 }`}
               >
-                <div className="node-icon" style={{ background: "#4f46e5" }}>
-                  📊
+                <div className="node-icon">
+                  <FaAnkh />
                 </div>
                 Create Flow
                 <LongMenu
@@ -288,8 +293,8 @@ const Sidebar = ({ onLoadDiagram }) => {
                 />
               </div>
               <div className="node-item">
-                <div className="node-icon" style={{ background: "#ec4899" }}>
-                  💾
+                <div className="node-icon">
+                  <FaAnkh />
                 </div>
                 Save Diagram
                 <LongMenu
@@ -310,11 +315,8 @@ const Sidebar = ({ onLoadDiagram }) => {
                     onClick={() => handleLoadDiagram(d)}
                     style={{ cursor: "pointer" }}
                   >
-                    <div
-                      className="node-icon"
-                      style={{ background: "#22c55e" }}
-                    >
-                      📁
+                    <div className="node-icon">
+                      <FaAnkh />
                     </div>
                     {d.name}
                     <LongMenu
@@ -342,7 +344,9 @@ const Sidebar = ({ onLoadDiagram }) => {
                 onDragStart={(event) => onDragStart(event, "Base")}
                 draggable
               >
-                <div className="node-icon base">B</div>
+                <div className="node-icon">
+                  <FaApple />
+                </div>
                 Base Node
                 <LongMenu
                   className="kebab-menu"
@@ -358,8 +362,8 @@ const Sidebar = ({ onLoadDiagram }) => {
                 onDragStart={(event) => onDragStart(event, "Input")}
                 draggable
               >
-                <div className="node-icon" style={{ background: "#3b82f6" }}>
-                  I
+                <div className="node-icon">
+                  <FaApple />
                 </div>
                 Input Node
                 <LongMenu
@@ -382,11 +386,8 @@ const Sidebar = ({ onLoadDiagram }) => {
                     onDragStart={(event) => onDragStart(event, n.name, n.code)}
                     draggable
                   >
-                    <div
-                      className="node-icon"
-                      style={{ background: "#64748b", color: "white" }}
-                    >
-                      B
+                    <div className="node-icon">
+                      <FaApple />
                     </div>
                     {n.name}
                     <LongMenu
