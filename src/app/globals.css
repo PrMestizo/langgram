@@ -63,6 +63,38 @@ body {
   font-size: 14px;
 }
 
+.filter-edge-circle {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid #0d9488;
+  background: rgba(13, 148, 136, 0.1);
+  color: #0f172a;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 2px 6px rgba(13, 148, 136, 0.25);
+}
+
+.filter-edge-circle:hover,
+.filter-edge-circle:focus-visible {
+  transform: scale(1.05);
+  background: rgba(13, 148, 136, 0.2);
+  outline: none;
+}
+
+.filter-edge-circle.has-filter {
+  background: #0d9488;
+  color: #ecfeff;
+}
+
+.filter-edge-circle.selected {
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.4);
+}
+
 .chatgpt-sidebar {
   width: var(--sidebar-width);
   height: 100vh;

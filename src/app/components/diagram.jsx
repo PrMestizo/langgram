@@ -1,5 +1,5 @@
 "use client";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -15,8 +15,8 @@ import {
 import "reactflow/dist/style.css";
 import Sidebar from "./Sidebar";
 import { DnDProvider, useDnD } from "./DnDContext";
-import nodeCodeTemplates from "../lib/NodeTemplates";
 import { generateCodeFromGraph } from "../lib/codeGenerator";
+import FilterEdge from "./FilterEdge";
 
 let id = 0;
 const getId = () => `dndnode_${id++}`;
@@ -36,7 +36,26 @@ const initialNodes = [
   },
 ];
 
-const initialEdges = [{ id: "n1-n2", source: "n1", target: "n2" }];
+const initialEdges = [
+  {
+    id: "n1-n2",
+    source: "n1",
+    target: "n2",
+    type: "filterEdge",
+    data: { filterCode: "" },
+  },
+];
+
+const hydrateEdge = (edge) => ({
+  id: edge.id || `${edge.source}-${edge.target}`,
+  source: edge.source,
+  target: edge.target,
+  type: edge.type || "filterEdge",
+  data: {
+    ...(edge.data || {}),
+    filterCode: edge.filterCode ?? edge.data?.filterCode ?? "",
+  },
+});
 
 function Diagram() {
   const [nodes, setNodes] = useState(initialNodes);
@@ -46,7 +65,41 @@ function Diagram() {
   const [popupText, setPopupText] = useState("");
   const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
   const [diagramName, setDiagramName] = useState("");
-  const [diagrams, setDiagrams] = useState([]);
+
+  const handleFilterClick = useCallback(
+    (edgeId) => {
+      const targetEdge = edges.find((edge) => edge.id === edgeId);
+      const existingCode = targetEdge?.data?.filterCode ?? "";
+      const updatedCode = window.prompt(
+        "Introduce el código condicional para este filtro:",
+        existingCode
+      );
+      if (updatedCode === null || updatedCode === undefined) {
+        return;
+      }
+
+      setEdges((edgeSnapshot) =>
+        edgeSnapshot.map((edge) =>
+          edge.id === edgeId
+            ? {
+                ...edge,
+                data: { ...edge.data, filterCode: updatedCode },
+              }
+            : edge
+        )
+      );
+    },
+    [edges]
+  );
+
+  const edgeTypes = useMemo(
+    () => ({
+      filterEdge: (edgeProps) => (
+        <FilterEdge {...edgeProps} onEditFilter={handleFilterClick} />
+      ),
+    }),
+    [handleFilterClick]
+  );
 
   const onNodesChange = useCallback(
     (changes) =>
@@ -59,7 +112,17 @@ function Diagram() {
     []
   );
   const onConnect = useCallback(
-    (params) => setEdges((edgesSnapshot) => addEdge(params, edgesSnapshot)),
+    (params) =>
+      setEdges((edgesSnapshot) =>
+        addEdge(
+          {
+            ...params,
+            type: "filterEdge",
+            data: { filterCode: "" },
+          },
+          edgesSnapshot
+        )
+      ),
     []
   );
 
@@ -175,6 +238,8 @@ function Diagram() {
       source: e.source,
       target: e.target,
       id: e.id,
+      type: e.type,
+      filterCode: e.data?.filterCode || "",
     }));
 
     const graphJSON = { nodes: nodeData, edges: edgeData };
@@ -196,11 +261,7 @@ function Diagram() {
           data: { label: n.label },
           code: n.code,
         }));
-        const nextEdges = (graph.edges || []).map((e) => ({
-          id: e.id || `${e.source}-${e.target}`,
-          source: e.source,
-          target: e.target,
-        }));
+        const nextEdges = (graph.edges || []).map(hydrateEdge);
         setNodes(nextNodes);
         setEdges(nextEdges);
       } catch {}
@@ -221,6 +282,7 @@ function Diagram() {
           onDrop={onDrop}
           onDragStart={onDragStart}
           onDragOver={onDragOver}
+          edgeTypes={edgeTypes}
           fitView
         >
           <Background />
@@ -245,11 +307,7 @@ function Diagram() {
               data: { label: n.label },
               code: n.code,
             }));
-            const nextEdges = (graph.edges || []).map((e) => ({
-              id: e.id || `${e.source}-${e.target}`,
-              source: e.source,
-              target: e.target,
-            }));
+            const nextEdges = (graph.edges || []).map(hydrateEdge);
             setNodes(nextNodes);
             setEdges(nextEdges);
           } catch {}
