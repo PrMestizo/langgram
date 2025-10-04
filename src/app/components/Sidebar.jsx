@@ -2,7 +2,6 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useDnD } from "./DnDContext";
-import Popup from "./pop-up";
 import LongMenu from "./KebabMenu";
 import CustomModal from "./Modal";
 
@@ -16,6 +15,14 @@ const Sidebar = ({ onLoadDiagram }) => {
   const [customNodes, setCustomNodes] = useState([]);
   const [customEdges, setCustomEdges] = useState([]);
   const [menuOpenId, setMenuOpenId] = useState(null);
+
+  const tabItems = [
+    { id: 0, label: "Diagrams", icon: "⚡" },
+    { id: 1, label: "Nodes", icon: "🎯" },
+    { id: 2, label: "Edges", icon: "🔗" },
+  ];
+  const activeTabConfig =
+    tabItems.find((item) => item.id === activeTab) ?? tabItems[0];
 
   const loadDiagrams = async () => {
     try {
@@ -487,43 +494,37 @@ const Sidebar = ({ onLoadDiagram }) => {
 
   return (
     <>
-      {/* ChatGPT-style Sidebar */}
       <div className={`chatgpt-sidebar ${!sidebarOpen ? "closed" : ""}`}>
-        <div className="sidebar-header">
-          <div className="nav-tabs">
-            <div className={`nav-tab ${activeTab === 0 ? "active" : ""}`}>
+        <div className="vs-sidebar">
+          <nav className="vs-sidebar-nav" aria-label="Sidebar tabs">
+            {tabItems.map((item) => (
               <button
-                className="nav-tab-button"
-                onClick={(e) => handleNavClick(0, e)}
+                key={item.id}
+                type="button"
+                title={item.label}
+                className={`vs-nav-item ${
+                  activeTab === item.id ? "active" : ""
+                }`}
+                onClick={(event) => handleNavClick(item.id, event)}
               >
-                <span className="nav-tab-icon">⚡</span>
-                <span>Diagram</span>
+                <span className="vs-nav-icon" aria-hidden="true">
+                  {item.icon}
+                </span>
+                <span className="sr-only">{item.label}</span>
               </button>
+            ))}
+          </nav>
+          <div className="vs-sidebar-panel">
+            <div className="vs-panel-header">
+              <span className="vs-panel-icon" aria-hidden="true">
+                {activeTabConfig.icon}
+              </span>
+              <span className="vs-panel-title">{activeTabConfig.label}</span>
             </div>
-            <div className={`nav-tab ${activeTab === 1 ? "active" : ""}`}>
-              <button
-                className="nav-tab-button"
-                onClick={(e) => handleNavClick(1, e)}
-              >
-                <span className="nav-tab-icon">🎯</span>
-                <span>Nodes</span>
-              </button>
-            </div>
-            <div className={`nav-tab ${activeTab === 2 ? "active" : ""}`}>
-              <button
-                className="nav-tab-button"
-                onClick={(e) => handleNavClick(2, e)}
-              >
-                <span className="nav-tab-icon">🔗</span>
-                <span>Edges</span>
-              </button>
-            </div>
-            <div className={`nav-indicator tab-${activeTab}`}></div>
+            <div className="sidebar-content">{renderTabContent()}</div>
           </div>
         </div>
-        <div className="sidebar-content">{renderTabContent()}</div>
       </div>
-
       {/* Sidebar Toggle */}
       <button
         className="sidebar-toggle"

@@ -1,5 +1,6 @@
 :root {
   --clr: #aba6a6;
+  --sidebar-width: 320px;
 }
 
 html,
@@ -63,7 +64,7 @@ body {
 }
 
 .chatgpt-sidebar {
-  width: 260px;
+  width: var(--sidebar-width);
   height: 100vh;
   background-color: #151515;
   display: flex;
@@ -80,15 +81,11 @@ body {
   transform: translateX(-100%);
 }
 
-/* Elegant Navigation Bar */
-.sidebar-header {
-  padding: 16px 12px 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.02) 0%,
-    rgba(255, 255, 255, 0.01) 100%
-  );
+/* VS Code inspired vertical navigation */
+.vs-sidebar {
+  display: flex;
+  height: 100%;
+  flex: 1;
 }
 
 .nav-tabs {
@@ -101,103 +98,107 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.nav-tab {
-  flex: 1;
-  position: relative;
-  z-index: 2;
-}
-
-.nav-tab-button {
-  width: 100%;
-  background: none;
-  border: none;
-  padding: 12px 8px;
-  border-radius: 8px;
-  color: #fefeff;
-  font-size: 11px;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+.vs-sidebar-nav {
+  width: 64px;
+  background: #1b1b1b;
+  border-right: 1px solid #2d2d2d;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  position: relative;
-  overflow: hidden;
+  padding: 16px 0;
 }
 
-.nav-tab-button::before {
+.vs-nav-item {
+  position: relative;
+  width: 100%;
+  background: none;
+  border: none;
+  color: #a1a1aa;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 0;
+  transition: color 0.2s ease, background 0.2s ease;
+}
+
+.vs-nav-item::before {
   content: "";
   position: absolute;
-  top: 0;
   left: 0;
-  right: 0;
-  bottom: 0;
+  opacity: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: linear-gradient(135deg, #4f46e5, #8b5cf6);
+  transform: scaleY(0.6);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.vs-nav-item:hover {
+  color: #f3f4f6;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.vs-nav-item.active {
+  color: #ffffff;
+  background: rgba(79, 70, 229, 0.2);
+}
+
+.vs-nav-item.active::before {
+  opacity: 1;
+  transform: scaleY(1);
+}
+
+.vs-nav-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.vs-sidebar-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.vs-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   background: linear-gradient(
     135deg,
-    rgba(255, 255, 255, 0.1) 0%,
-    rgba(255, 255, 255, 0.05) 100%
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(255, 255, 255, 0.02) 100%
   );
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  border-radius: 8px;
 }
 
-.nav-tab-button:hover::before {
-  opacity: 1;
+.vs-panel-icon {
+  font-size: 18px;
+  color: #c4b5fd;
 }
 
-.nav-tab-button:hover {
-  color: #ececec;
-  transform: translateY(-1px);
-}
-
-.nav-tab-icon {
-  font-size: 16px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  filter: grayscale(0.3);
-}
-
-.nav-tab-button:hover .nav-tab-icon {
-  filter: grayscale(0);
-  transform: scale(1.1);
-}
-
-.nav-tab.active .nav-tab-button {
-  color: #ffffff;
+.vs-panel-title {
+  color: #f4f4f5;
+  font-size: 13px;
   font-weight: 600;
-}
-
-.nav-tab.active .nav-tab-icon {
-  filter: grayscale(0);
-  transform: scale(1.05);
-}
-
-.nav-indicator {
-  position: absolute;
-  top: 4px;
-  bottom: 4px;
-  width: calc(33.333% - 3px);
-  background: linear-gradient(135deg, #313132 0%, #686868 100%);
-  border-radius: 8px;
-  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 1;
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3),
-    0 2px 6px rgba(79, 70, 229, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-}
-
-.nav-indicator.tab-0 {
-  transform: translateX(0);
-}
-
-.nav-indicator.tab-1 {
-  transform: translateX(calc(100% + 4px));
-}
-
-.nav-indicator.tab-2 {
-  transform: translateX(calc(200% + 8px));
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
 }
 
 .new-chat-btn {
@@ -343,7 +344,7 @@ body {
 /* Sidebar Toggle Button */
 .sidebar-toggle {
   position: fixed;
-  left: 250px;
+  left: calc(var(--sidebar-width) - 20px);
   top: 20px;
   z-index: 1001;
   background: #404040;
