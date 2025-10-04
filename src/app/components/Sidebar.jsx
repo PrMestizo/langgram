@@ -7,22 +7,21 @@ import CustomModal from "./Modal";
 
 const Sidebar = ({ onLoadDiagram }) => {
   const [, setType, , setCode] = useDnD();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [activeTab, setActiveTab] = useState(0);
   const [isPopupVisible, setIsPopupVisible] = useState(false);
   const [popupMode, setPopupMode] = useState("node");
   const [customDiagrams, setCustomDiagrams] = useState([]);
   const [customNodes, setCustomNodes] = useState([]);
   const [customEdges, setCustomEdges] = useState([]);
   const [menuOpenId, setMenuOpenId] = useState(null);
-
   const tabItems = [
     { id: 0, label: "Diagrams", icon: "⚡" },
     { id: 1, label: "Nodes", icon: "🎯" },
     { id: 2, label: "Edges", icon: "🔗" },
   ];
-  const activeTabConfig =
-    tabItems.find((item) => item.id === activeTab) ?? tabItems[0];
+  const [activeTab, setActiveTab] = useState(tabItems[0].id);
+
+  const activeTabConfig = tabItems.find((item) => item.id === activeTab);
+  const isPanelVisible = activeTab !== null;
 
   const loadDiagrams = async () => {
     try {
@@ -81,7 +80,12 @@ const Sidebar = ({ onLoadDiagram }) => {
 
   const handleNavClick = (index, event) => {
     event.preventDefault();
-    setActiveTab(index);
+    if (activeTab === index) {
+      setActiveTab(null);
+      setMenuOpenId(null);
+    } else {
+      setActiveTab(index);
+    }
   };
 
   const popupAction = async (mode = "node") => {
@@ -258,6 +262,9 @@ const Sidebar = ({ onLoadDiagram }) => {
   };
 
   const renderTabContent = () => {
+    if (activeTab === null) {
+      return null;
+    }
     switch (activeTab) {
       case 0: // Diagram
         return (
@@ -494,7 +501,7 @@ const Sidebar = ({ onLoadDiagram }) => {
 
   return (
     <>
-      <div className={`chatgpt-sidebar ${!sidebarOpen ? "closed" : ""}`}>
+      <div className={`chatgpt-sidebar ${!isPanelVisible ? "collapsed" : ""}`}>
         <div className="vs-sidebar">
           <nav className="vs-sidebar-nav" aria-label="Sidebar tabs">
             {tabItems.map((item) => (
@@ -514,28 +521,19 @@ const Sidebar = ({ onLoadDiagram }) => {
               </button>
             ))}
           </nav>
-          <div className="vs-sidebar-panel">
-            <div className="vs-panel-header">
-              <span className="vs-panel-icon" aria-hidden="true">
-                {activeTabConfig.icon}
-              </span>
-              <span className="vs-panel-title">{activeTabConfig.label}</span>
+          {isPanelVisible && activeTabConfig && (
+            <div className="vs-sidebar-panel">
+              <div className="vs-panel-header">
+                <span className="vs-panel-icon" aria-hidden="true">
+                  {activeTabConfig.icon}
+                </span>
+                <span className="vs-panel-title">{activeTabConfig.label}</span>
+              </div>
+              <div className="sidebar-content">{renderTabContent()}</div>
             </div>
-            <div className="sidebar-content">{renderTabContent()}</div>
-          </div>
+          )}
         </div>
       </div>
-      {/* Sidebar Toggle */}
-      <button
-        className="sidebar-toggle"
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-      >
-        <div className={`hamburger ${sidebarOpen ? "open" : ""}`}>
-          <span></span>
-          <span></span>
-          <span></span>
-        </div>
-      </button>
 
       <CustomModal
         isVisible={isPopupVisible}
