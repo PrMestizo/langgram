@@ -77,8 +77,12 @@ body {
   border-right: 1px solid #2d2d2d;
 }
 
-.chatgpt-sidebar.closed {
+.chatgpt-sidebar.collapsed {
   width: 64px;
+}
+
+.chatgpt-sidebar.collapsed .vs-sidebar-panel {
+  display: none;
 }
 
 /* VS Code inspired vertical navigation */
