@@ -46,6 +46,7 @@ model EdgeTemplate {
   name        String
   description String?
   code        String  @db.Text  // si tu edge lleva código
+  language    String?  // p.ej. "javascript", "python", "langgraph"
   metadata    Json?
   owner       User?   @relation("UserEdgeTemplates", fields: [ownerId], references: [id])
   ownerId     String?

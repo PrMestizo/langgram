@@ -92,27 +92,23 @@ function Diagram() {
   }, []);
 
   const handleFilterSave = useCallback(
-    (updatedCode, updatedName) => {
-      if (!filterEditor.edgeId) {
-        closeFilterEditor();
-        return;
+    async (updatedCode, updatedName) => {
+      const newEdge = {
+        name: updatedName,
+        code: updatedCode,
+        language: "python",
+      };
+      try {
+        const res = await fetch("/api/edges", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(newEdge),
+        });
+        const saved = await res.json();
+        setEdges((prev) => [...prev, saved]);
+      } catch (err) {
+        console.error("Error al guardar edge:", err);
       }
-
-      const edgeId = filterEditor.edgeId;
-      setEdges((edgeSnapshot) =>
-        edgeSnapshot.map((edge) =>
-          edge.id === edgeId
-            ? {
-                ...edge,
-                data: {
-                  ...edge.data,
-                  filterCode: updatedCode,
-                  filterName: updatedName,
-                },
-              }
-            : edge
-        )
-      );
     },
     [closeFilterEditor, filterEditor.edgeId, setEdges]
   );
