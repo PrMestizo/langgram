@@ -20,14 +20,37 @@ const style = {
   p: 4,
 };
 
-function CustomModal({ isVisible, onClose, onSave, initialCode = "" }) {
+function CustomModal({
+  isVisible,
+  onClose,
+  onSave,
+  initialCode = "",
+  initialName = "",
+  title = "Editor de nodo personalizado",
+  nameLabel = "Nombre",
+  language = "python",
+  saveLabel = "Guardar",
+  cancelLabel = "Cancelar",
+}) {
   const [open, setOpen] = React.useState(!!isVisible);
   const [code, setCode] = React.useState(initialCode);
-  const [nodeName, setNodeName] = React.useState("");
+  const [nodeName, setNodeName] = React.useState(initialName);
 
   React.useEffect(() => {
     setOpen(!!isVisible);
   }, [isVisible]);
+
+  React.useEffect(() => {
+    if (isVisible) {
+      setCode(initialCode);
+    }
+  }, [initialCode, isVisible]);
+
+  React.useEffect(() => {
+    if (isVisible) {
+      setNodeName(initialName);
+    }
+  }, [initialName, isVisible]);
 
   const handleSave = () => {
     onSave?.(code, nodeName);
@@ -51,11 +74,11 @@ function CustomModal({ isVisible, onClose, onSave, initialCode = "" }) {
       <Fade in={open}>
         <Box sx={style}>
           <Typography id="transition-modal-title" variant="h6" component="h2">
-            Editor de nodo personalizado
+            {title}
           </Typography>
           <div style={{ marginBottom: "1rem" }}>
             <TextField
-              label="Nombre"
+              label={nameLabel}
               variant="outlined"
               id="node-name"
               type="text"
@@ -63,13 +86,13 @@ function CustomModal({ isVisible, onClose, onSave, initialCode = "" }) {
               sx={{ width: "300px" }}
               value={nodeName}
               onChange={(e) => setNodeName(e.target.value)}
-              placeholder="Nombre del nodo"
+              placeholder={nameLabel}
             />
           </div>
           <div style={{ height: "300px", marginBottom: "1rem" }}>
             <Editor
               height="100%"
-              defaultLanguage="python"
+              defaultLanguage={language}
               value={code}
               theme="vs-dark"
               options={{
@@ -88,10 +111,10 @@ function CustomModal({ isVisible, onClose, onSave, initialCode = "" }) {
             }}
           >
             <Button variant="contained" onClick={handleSave}>
-              Guardar
+              {saveLabel}
             </Button>
             <Button variant="outlined" onClick={onClose}>
-              Cancelar
+              {cancelLabel}
             </Button>
           </div>
         </Box>

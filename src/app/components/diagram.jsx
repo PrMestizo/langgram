@@ -17,6 +17,7 @@ import Sidebar from "./Sidebar";
 import { DnDProvider, useDnD } from "./DnDContext";
 import { generateCodeFromGraph } from "../lib/codeGenerator";
 import FilterEdge from "./FilterEdge";
+import CustomModal from "./Modal";
 
 let id = 0;
 const getId = () => `dndnode_${id++}`;
@@ -42,7 +43,7 @@ const initialEdges = [
     source: "n1",
     target: "n2",
     type: "filterEdge",
-    data: { filterCode: "" },
+    data: { filterCode: "", filterName: "" },
   },
 ];
 
@@ -54,6 +55,7 @@ const hydrateEdge = (edge) => ({
   data: {
     ...(edge.data || {}),
     filterCode: edge.filterCode ?? edge.data?.filterCode ?? "",
+    filterName: edge.filterName ?? edge.data?.filterName ?? "",
   },
 });
 
@@ -65,32 +67,68 @@ function Diagram() {
   const [popupText, setPopupText] = useState("");
   const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
   const [diagramName, setDiagramName] = useState("");
+  const [filterEditor, setFilterEditor] = useState({
+    open: false,
+    edgeId: null,
+    name: "",
+    code: "",
+  });
 
   const handleFilterClick = useCallback(
     (edgeId) => {
       const targetEdge = edges.find((edge) => edge.id === edgeId);
-      const existingCode = targetEdge?.data?.filterCode ?? "";
-      const updatedCode = window.prompt(
-        "Introduce el código condicional para este filtro:",
-        existingCode
-      );
-      if (updatedCode === null || updatedCode === undefined) {
+      setFilterEditor({
+        open: true,
+        edgeId,
+        name: targetEdge?.data?.filterName ?? "",
+        code: targetEdge?.data?.filterCode ?? "",
+      });
+    },
+    [edges]
+  );
+
+  const closeFilterEditor = useCallback(() => {
+    setFilterEditor({ open: false, edgeId: null, name: "", code: "" });
+  }, []);
+
+  const handleFilterSave = useCallback(
+    (updatedCode, updatedName) => {
+      if (!filterEditor.edgeId) {
+        closeFilterEditor();
         return;
       }
 
+      const edgeId = filterEditor.edgeId;
       setEdges((edgeSnapshot) =>
         edgeSnapshot.map((edge) =>
           edge.id === edgeId
             ? {
                 ...edge,
-                data: { ...edge.data, filterCode: updatedCode },
+                data: {
+                  ...edge.data,
+                  filterCode: updatedCode,
+                  filterName: updatedName,
+                },
               }
             : edge
         )
       );
     },
-    [edges]
+    [closeFilterEditor, filterEditor.edgeId, setEdges]
   );
+
+  useEffect(() => {
+    if (!filterEditor.open) {
+      return;
+    }
+
+    const edgeStillExists = edges.some(
+      (edge) => edge.id === filterEditor.edgeId
+    );
+    if (!edgeStillExists) {
+      closeFilterEditor();
+    }
+  }, [closeFilterEditor, edges, filterEditor.edgeId, filterEditor.open]);
 
   const edgeTypes = useMemo(
     () => ({
@@ -118,7 +156,7 @@ function Diagram() {
           {
             ...params,
             type: "filterEdge",
-            data: { filterCode: "" },
+            data: { filterCode: "", filterName: "" },
           },
           edgesSnapshot
         )
@@ -240,6 +278,7 @@ function Diagram() {
       id: e.id,
       type: e.type,
       filterCode: e.data?.filterCode || "",
+      filterName: e.data?.filterName || "",
     }));
 
     const graphJSON = { nodes: nodeData, edges: edgeData };
@@ -365,6 +404,17 @@ function Diagram() {
           </div>
         </div>
       )}
+      <CustomModal
+        isVisible={filterEditor.open}
+        onClose={closeFilterEditor}
+        onSave={handleFilterSave}
+        initialCode={filterEditor.code}
+        initialName={filterEditor.name}
+        title="Configurar filtro condicional"
+        nameLabel="Nombre del filtro"
+        saveLabel="Guardar filtro"
+        cancelLabel="Cancelar"
+      />
     </div>
   );
 }

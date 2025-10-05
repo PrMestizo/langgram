@@ -1,5 +1,5 @@
 "use client";
-import { memo, useMemo } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import { BaseEdge, EdgeLabelRenderer, getBezierPath } from "reactflow";
 
 const FilterEdge = ({
@@ -26,7 +26,25 @@ const FilterEdge = ({
   });
 
   const filterCode = data?.filterCode ?? "";
+  const filterName = data?.filterName ?? "";
   const hasFilter = filterCode.trim().length > 0;
+  const [isNear, setIsNear] = useState(false);
+
+  const handlePointerEnter = useCallback(() => {
+    setIsNear(true);
+  }, []);
+
+  const handlePointerLeave = useCallback(() => {
+    setIsNear(false);
+  }, []);
+
+  const handleFocus = useCallback(() => {
+    setIsNear(true);
+  }, []);
+
+  const handleBlur = useCallback(() => {
+    setIsNear(false);
+  }, []);
 
   const handleClick = (event) => {
     event.stopPropagation();
@@ -44,10 +62,11 @@ const FilterEdge = ({
       "filter-edge-circle",
       hasFilter ? "has-filter" : "",
       selected ? "selected" : "",
+      isNear ? "is-visible" : "",
     ]
       .filter(Boolean)
       .join(" ");
-  }, [hasFilter, selected]);
+  }, [hasFilter, isNear, selected]);
 
   return (
     <>
@@ -59,19 +78,38 @@ const FilterEdge = ({
       />
       <EdgeLabelRenderer>
         <div
+          className="filter-edge-hover-area"
           style={{
             position: "absolute",
             transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
             pointerEvents: "all",
+            width: 96,
+            height: 96,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
           }}
+          onMouseEnter={handlePointerEnter}
+          onMouseLeave={handlePointerLeave}
         >
           <button
             type="button"
             className={className}
             onClick={handleClick}
+            onFocus={handleFocus}
+            onBlur={handleBlur}
             title={
               hasFilter
-                ? "Editar filtro condicional"
+                ? filterName
+                  ? `Editar filtro condicional: ${filterName}`
+                  : "Editar filtro condicional"
+                : "Añadir filtro condicional"
+            }
+            aria-label={
+              hasFilter
+                ? filterName
+                  ? `Editar filtro condicional ${filterName}`
+                  : "Editar filtro condicional"
                 : "Añadir filtro condicional"
             }
           >
