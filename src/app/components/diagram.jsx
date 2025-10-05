@@ -311,7 +311,29 @@ function Diagram() {
 
   return (
     <div className="dndflow">
-      <div style={{ width: "100vw", height: "100vh" }}>
+      <header className="top-nav">
+        <div className="top-nav__content">
+          <span className="top-nav__brand">Langgram Studio</span>
+          <div className="top-nav__actions">
+            <button
+              type="button"
+              className="top-nav__button top-nav__button--primary"
+              onClick={generateCodeWithAI}
+            >
+              Generar código
+            </button>
+            <button
+              type="button"
+              className="top-nav__button top-nav__button--secondary"
+              onClick={openSaveDialog}
+            >
+              Guardar diagrama
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <div className="canvas-wrapper">
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -352,14 +374,6 @@ function Diagram() {
           } catch {}
         }}
       />
-      <div className="button-container">
-        <button className="button" onClick={generateCodeWithAI}>
-          Generar Código
-        </button>
-        <button className="button" onClick={openSaveDialog}>
-          Guardar Diagrama
-        </button>
-      </div>
 
       {/* Popup  */}
       {popupText && (
