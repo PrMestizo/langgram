@@ -93,24 +93,56 @@ function Diagram() {
 
   const handleFilterSave = useCallback(
     async (updatedCode, updatedName) => {
-      const newEdge = {
-        name: updatedName,
+      if (!filterEditor.edgeId) {
+        return;
+      }
+
+      const trimmedName = (updatedName || "").trim();
+      const finalName = trimmedName || "Filtro sin nombre";
+
+      const payload = {
+        name: finalName,
         code: updatedCode,
-        language: "python",
       };
+
       try {
         const res = await fetch("/api/edges", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(newEdge),
+          body: JSON.stringify(payload),
         });
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.error || "Error al guardar el filtro");
+        }
         const saved = await res.json();
-        setEdges((prev) => [...prev, saved]);
+        setEdges((prevEdges) =>
+          prevEdges.map((edge) =>
+            edge.id === filterEditor.edgeId
+              ? {
+                  ...edge,
+                  data: {
+                    ...edge.data,
+                    filterCode: updatedCode,
+                    filterName: finalName,
+                  },
+                }
+              : edge
+          )
+        );
+
+        window.dispatchEvent(
+          new CustomEvent("edges-updated", { detail: saved })
+        );
+        setPopupText(`Filtro "${finalName}" guardado correctamente.`);
+        setTimeout(() => setPopupText(""), 4000);
       } catch (err) {
         console.error("Error al guardar edge:", err);
+        setPopupText(`Error al guardar el filtro: ${err.message}`);
+        setTimeout(() => setPopupText(""), 5000);
       }
     },
-    [closeFilterEditor, filterEditor.edgeId, setEdges]
+    [filterEditor.edgeId, setEdges, setPopupText]
   );
 
   useEffect(() => {

@@ -75,6 +75,29 @@ const Sidebar = ({ onLoadDiagram }) => {
     fetchEdges();
   }, []);
 
+  useEffect(() => {
+    const handleEdgesUpdated = (event) => {
+      const savedEdge = event?.detail;
+      if (!savedEdge) {
+        return;
+      }
+
+      setCustomEdges((prev) => {
+        const existsIndex = prev.findIndex((edge) => edge.id === savedEdge.id);
+        if (existsIndex !== -1) {
+          const next = [...prev];
+          next[existsIndex] = savedEdge;
+          return next;
+        }
+        return [...prev, savedEdge];
+      });
+    };
+
+    window.addEventListener("edges-updated", handleEdgesUpdated);
+    return () =>
+      window.removeEventListener("edges-updated", handleEdgesUpdated);
+  }, []);
+
   const onDragStart = (event, nodeType, nodeCode) => {
     setType(nodeType);
     setCode(nodeCode);
