@@ -15,6 +15,7 @@ const FilterEdge = ({
   selected,
   data,
   onEditFilter,
+  onOpenContextMenu,
 }) => {
   const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,
@@ -49,6 +50,19 @@ const FilterEdge = ({
 
   const handleClick = (event) => {
     event.stopPropagation();
+    if (hasFilter) {
+      return;
+    }
+    onEditFilter?.(id);
+  };
+
+  const handleContextMenu = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (hasFilter) {
+      onOpenContextMenu?.(id, { x: event.clientX, y: event.clientY });
+      return;
+    }
     onEditFilter?.(id);
   };
 
@@ -98,6 +112,7 @@ const FilterEdge = ({
             type="button"
             className={className}
             onClick={handleClick}
+            onContextMenu={handleContextMenu}
             onFocus={handleFocus}
             onBlur={handleBlur}
             title={

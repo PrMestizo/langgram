@@ -74,6 +74,21 @@ function Diagram() {
     code: "",
   });
 
+  const [contextMenu, setContextMenu] = useState({
+    open: false,
+    edgeId: null,
+    x: 0,
+    y: 0,
+  });
+
+  const openFilterContextMenu = useCallback((edgeId, position) => {
+    setContextMenu({ open: true, edgeId, x: position.x, y: position.y });
+  }, []);
+
+  const closeFilterContextMenu = useCallback(() => {
+    setContextMenu({ open: false, edgeId: null, x: 0, y: 0 });
+  }, []);
+
   const handleFilterClick = useCallback(
     (edgeId) => {
       const targetEdge = edges.find((edge) => edge.id === edgeId);
@@ -158,13 +173,38 @@ function Diagram() {
     }
   }, [closeFilterEditor, edges, filterEditor.edgeId, filterEditor.open]);
 
+  useEffect(() => {
+    if (!contextMenu.open) {
+      return;
+    }
+
+    const handleGlobalClick = () => closeFilterContextMenu();
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        closeFilterContextMenu();
+      }
+    };
+
+    window.addEventListener("click", handleGlobalClick);
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("click", handleGlobalClick);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [contextMenu.open, closeFilterContextMenu]);
+
   const edgeTypes = useMemo(
     () => ({
       filterEdge: (edgeProps) => (
-        <FilterEdge {...edgeProps} onEditFilter={handleFilterClick} />
+        <FilterEdge
+          {...edgeProps}
+          onEditFilter={handleFilterClick}
+          onOpenContextMenu={openFilterContextMenu}
+        />
       ),
     }),
-    [handleFilterClick]
+    [handleFilterClick, openFilterContextMenu]
   );
 
   const onNodesChange = useCallback(
@@ -313,6 +353,50 @@ function Diagram() {
     return graphJSON;
   };
 
+  const handleClearFilterFromEdge = useCallback(
+    (edgeId) => {
+      setEdges((prevEdges) =>
+        prevEdges.map((edge) =>
+          edge.id === edgeId
+            ? {
+                ...edge,
+                data: {
+                  ...edge.data,
+                  filterCode: "",
+                  filterName: "",
+                },
+              }
+            : edge
+        )
+      );
+
+      if (filterEditor.edgeId === edgeId) {
+        closeFilterEditor();
+      }
+    },
+    [closeFilterEditor, filterEditor.edgeId]
+  );
+
+  const handleContextMenuEdit = useCallback(() => {
+    if (!contextMenu.edgeId) {
+      return;
+    }
+
+    const targetEdgeId = contextMenu.edgeId;
+    closeFilterContextMenu();
+    handleFilterClick(targetEdgeId);
+  }, [closeFilterContextMenu, contextMenu.edgeId, handleFilterClick]);
+
+  const handleContextMenuDelete = useCallback(() => {
+    if (!contextMenu.edgeId) {
+      return;
+    }
+
+    const targetEdgeId = contextMenu.edgeId;
+    handleClearFilterFromEdge(targetEdgeId);
+    closeFilterContextMenu();
+  }, [closeFilterContextMenu, contextMenu.edgeId, handleClearFilterFromEdge]);
+
   // Listen for external load requests from the Sidebar
   // Expected payload: { nodes: [{id,type,label,position,code}], edges: [{id,source,target}] }
   // Rebuilds React Flow state accordingly
@@ -402,6 +486,31 @@ function Diagram() {
           } catch {}
         }}
       />
+
+      {contextMenu.open && (
+        <div
+          className="filter-context-menu"
+          style={{ top: contextMenu.y, left: contextMenu.x }}
+          role="menu"
+          onClick={(event) => event.stopPropagation()}
+          onContextMenu={(event) => event.preventDefault()}
+        >
+          <button
+            type="button"
+            className="filter-context-menu__item"
+            onClick={handleContextMenuEdit}
+          >
+            Editar filtro
+          </button>
+          <button
+            type="button"
+            className="filter-context-menu__item filter-context-menu__item--danger"
+            onClick={handleContextMenuDelete}
+          >
+            Borrar del diagrama
+          </button>
+        </div>
+      )}
 
       {/* Popup  */}
       {popupText && (
