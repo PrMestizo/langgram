@@ -9,6 +9,9 @@ import { FaShareNodes } from "react-icons/fa6";
 import { MdCable } from "react-icons/md";
 import { FaApple } from "react-icons/fa";
 import { FaAnkh } from "react-icons/fa";
+import { TbPrompt } from "react-icons/tb";
+import { GiCrossedChains } from "react-icons/gi";
+import { AiOutlineSetting } from "react-icons/ai";
 
 const Sidebar = ({ onLoadDiagram }) => {
   const { setType, setCode, setDragPayload } = useDnD();
@@ -22,6 +25,9 @@ const Sidebar = ({ onLoadDiagram }) => {
     { id: 0, label: "Diagrams", icon: <BsDiagram3 /> },
     { id: 1, label: "Nodes", icon: <FaShareNodes /> },
     { id: 2, label: "Edges", icon: <MdCable /> },
+    { id: 3, label: "Prompts", icon: <TbPrompt /> },
+    { id: 4, label: "Chains", icon: <GiCrossedChains /> },
+    { id: 5, label: "Settings", icon: <AiOutlineSetting /> },
   ];
   const [activeTab, setActiveTab] = useState(tabItems[0].id);
 
