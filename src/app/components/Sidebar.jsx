@@ -20,6 +20,8 @@ const Sidebar = ({ onLoadDiagram }) => {
   const [customDiagrams, setCustomDiagrams] = useState([]);
   const [customNodes, setCustomNodes] = useState([]);
   const [customEdges, setCustomEdges] = useState([]);
+  const [customPrompts, setCustomPrompts] = useState([]);
+  const [customChains, setCustomChains] = useState([]);
   const [menuOpenId, setMenuOpenId] = useState(null);
   const tabItems = [
     { id: 0, label: "Diagrams", icon: <BsDiagram3 /> },
@@ -79,6 +81,32 @@ const Sidebar = ({ onLoadDiagram }) => {
       }
     };
     fetchEdges();
+  }, []);
+
+  useEffect(() => {
+    const fetchPrompts = async () => {
+      try {
+        const res = await fetch("/api/prompts");
+        const data = await res.json();
+        setCustomPrompts(data);
+      } catch (err) {
+        console.error("Error al cargar prompts:", err);
+      }
+    };
+    fetchPrompts();
+  }, []);
+
+  useEffect(() => {
+    const fetchChains = async () => {
+      try {
+        const res = await fetch("/api/chains");
+        const data = await res.json();
+        setCustomChains(data);
+      } catch (err) {
+        console.error("Error al cargar chains:", err);
+      }
+    };
+    fetchChains();
   }, []);
 
   useEffect(() => {
@@ -197,11 +225,49 @@ const Sidebar = ({ onLoadDiagram }) => {
     }
   };
 
+  const handleSaveCustomPrompt = async (content, promptName) => {
+    const newPrompt = { name: promptName, content };
+    try {
+      const res = await fetch("/api/prompts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newPrompt),
+      });
+      const saved = await res.json();
+      setCustomPrompts((prev) =>
+        Array.isArray(prev) ? [...prev, saved] : [saved]
+      );
+    } catch (err) {
+      console.error("Error al guardar prompt:", err);
+    }
+  };
+
+  const handleSaveCustomChain = async (code, chainName) => {
+    const newChain = { name: chainName, code, language: "python" };
+    try {
+      const res = await fetch("/api/chains", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newChain),
+      });
+      const saved = await res.json();
+      setCustomChains((prev) => [...prev, saved]);
+    } catch (err) {
+      console.error("Error al guardar chain:", err);
+    }
+  };
+
   // Unified save handler so we can also switch to the right tab after save
   const handleSaveFromPopup = (code, name) => {
     if (popupMode === "edge") {
       handleSaveCustomEdge(code, name);
       setActiveTab(2); // switch to Edges tab
+    } else if (popupMode === "prompt") {
+      handleSaveCustomPrompt(code, name);
+      setActiveTab(3); // switch to Prompts tab
+    } else if (popupMode === "chain") {
+      handleSaveCustomChain(code, name);
+      setActiveTab(4); // switch to Chains tab
     } else {
       handleSaveCustomNode(code, name);
       setActiveTab(1); // switch to Nodes tab
@@ -310,6 +376,109 @@ const Sidebar = ({ onLoadDiagram }) => {
       alert(`No se pudo eliminar el edge: ${err.message}`);
     }
   };
+
+  const handleDeleteCustomPrompt = async (promptName) => {
+    try {
+      const promptToDelete = customPrompts.find(
+        (prompt) => prompt.name === promptName
+      );
+
+      const requestBody = promptToDelete?.id
+        ? { id: promptToDelete.id, name: promptName }
+        : { name: promptName };
+
+      const res = await fetch("/api/prompts", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.details || "Error al eliminar prompt");
+      }
+
+      await res.json();
+      setCustomPrompts((prev) =>
+        prev.filter((prompt) => prompt.name !== promptName)
+      );
+    } catch (err) {
+      console.error("Error al eliminar prompt:", err);
+      alert(`No se pudo eliminar el prompt: ${err.message}`);
+    }
+  };
+
+  const handleDeleteCustomChain = async (chainName) => {
+    try {
+      const chainToDelete = customChains.find(
+        (chain) => chain.name === chainName
+      );
+
+      const requestBody = chainToDelete?.id
+        ? { id: chainToDelete.id, name: chainName }
+        : { name: chainName };
+
+      const res = await fetch("/api/chains", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.details || "Error al eliminar chain");
+      }
+
+      await res.json();
+      setCustomChains((prev) =>
+        prev.filter((chain) => chain.name !== chainName)
+      );
+    } catch (err) {
+      console.error("Error al eliminar chain:", err);
+      alert(`No se pudo eliminar la chain: ${err.message}`);
+    }
+  };
+
+  const modalConfigs = {
+    node: {
+      title: "Editor de nodo personalizado",
+      nameLabel: "Nombre",
+      namePlaceholder: "Nombre del nodo",
+      initialCode:
+        "# Edita el código del nodo a tus necesidades:\n\n# Función mínima para un nodo\ndef mi_nodo(state):\n    return state  # debe devolver el estado (o algo mergeable con él)",
+      language: "python",
+      editorType: "code",
+    },
+    edge: {
+      title: "Editor de arista personalizada",
+      nameLabel: "Nombre",
+      namePlaceholder: "Nombre de la arista",
+      initialCode:
+        "# Define tu arista personalizada aquí\n# def mi_arista(source, target, state):\n#     return state\n",
+      language: "python",
+      editorType: "code",
+    },
+    prompt: {
+      title: "Nuevo prompt personalizado",
+      nameLabel: "Nombre",
+      namePlaceholder: "Nombre del prompt",
+      initialCode: "",
+      editorType: "text",
+      contentLabel: "Contenido del prompt",
+      textPlaceholder: "Escribe aquí el prompt...",
+    },
+    chain: {
+      title: "Nueva chain personalizada",
+      nameLabel: "Nombre",
+      namePlaceholder: "Nombre de la chain",
+      initialCode:
+        "# Define aquí la lógica de tu chain personalizada\n# def mi_chain(state):\n#     return state\n",
+      language: "python",
+      editorType: "code",
+    },
+  };
+
+  const activeModalConfig = modalConfigs[popupMode] ?? modalConfigs.node;
 
   const handleLoadDiagram = (diagram) => {
     try {
@@ -568,29 +737,27 @@ const Sidebar = ({ onLoadDiagram }) => {
       case 3: // Prompts
         return (
           <div className="tab-content">
-            {customEdges.length > 0 && (
+            {customPrompts.length > 0 && (
               <div className="node-section">
                 <div className="section-title">Custom Prompts</div>
-                {customEdges.map((item) => (
+                {customPrompts.map((prompt) => (
                   <div
-                    key={item.name}
-                    className={`node-item edge-item edge-item--custom ${
-                      menuOpenId === `custom-${item.name}` ? "active" : ""
+                    key={prompt.name ?? prompt.id}
+                    className={`node-item ${
+                      menuOpenId === `prompt-${prompt.name}` ? "active" : ""
                     }`}
-                    onDragStart={(event) =>
-                      onEdgeDragStart(event, item.name, item.code)
-                    }
-                    onDragEnd={handleDragEnd}
-                    draggable
+                    title={prompt.content ?? ""}
                   >
-                    <div className="edge-item__circle">ƒ</div>
-                    {item.name}
+                    <div className="node-icon">
+                      <TbPrompt />
+                    </div>
+                    {prompt.name}
                     <LongMenu
                       className="kebab-menu"
                       onOpenChange={(open) =>
-                        setMenuOpenId(open ? `custom-${item.name}` : null)
+                        setMenuOpenId(open ? `prompt-${prompt.name}` : null)
                       }
-                      onDelete={() => handleDeleteCustomEdge(item.name)}
+                      onDelete={() => handleDeleteCustomPrompt(prompt.name)}
                     />
                   </div>
                 ))}
@@ -599,10 +766,50 @@ const Sidebar = ({ onLoadDiagram }) => {
             <div className="sidebar-action-buttons">
               <button
                 className="sidebar-action-btn primary"
-                onClick={() => popupAction("edge")}
+                onClick={() => popupAction("prompt")}
               >
                 <span className="btn-icon">➕</span>
                 Add Custom Prompt
+              </button>
+            </div>
+          </div>
+        );
+      case 4: // Chains
+        return (
+          <div className="tab-content">
+            {customChains.length > 0 && (
+              <div className="node-section">
+                <div className="section-title">Custom Chains</div>
+                {customChains.map((chain) => (
+                  <div
+                    key={chain.id ?? chain.name}
+                    className={`node-item ${
+                      menuOpenId === `chain-${chain.name}` ? "active" : ""
+                    }`}
+                    title={chain.code ?? ""}
+                  >
+                    <div className="node-icon">
+                      <GiCrossedChains />
+                    </div>
+                    {chain.name}
+                    <LongMenu
+                      className="kebab-menu"
+                      onOpenChange={(open) =>
+                        setMenuOpenId(open ? `chain-${chain.name}` : null)
+                      }
+                      onDelete={() => handleDeleteCustomChain(chain.name)}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="sidebar-action-buttons">
+              <button
+                className="sidebar-action-btn primary"
+                onClick={() => popupAction("chain")}
+              >
+                <span className="btn-icon">➕</span>
+                Add Custom Chain
               </button>
             </div>
           </div>
@@ -649,14 +856,19 @@ const Sidebar = ({ onLoadDiagram }) => {
       </div>
 
       <CustomModal
+        key={popupMode}
         isVisible={isPopupVisible}
         onClose={() => setIsPopupVisible(false)}
         onSave={handleSaveFromPopup}
-        initialCode={
-          popupMode === "edge"
-            ? `# Define tu arista personalizada aquí\n# def mi_arista(source, target, state):\n#     return state\n`
-            : `# Edita el código del nodo a tus necesidades:\n\n# Función mínima para un nodo\ndef mi_nodo(state):\n    return state  # debe devolver el estado (o algo mergeable con él)`
-        }
+        initialCode={activeModalConfig.initialCode}
+        initialName=""
+        title={activeModalConfig.title}
+        nameLabel={activeModalConfig.nameLabel}
+        namePlaceholder={activeModalConfig.namePlaceholder}
+        language={activeModalConfig.language}
+        editorType={activeModalConfig.editorType}
+        contentLabel={activeModalConfig.contentLabel}
+        textPlaceholder={activeModalConfig.textPlaceholder}
       />
     </>
   );

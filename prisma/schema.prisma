@@ -21,9 +21,11 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  nodeTemplates NodeTemplate[] @relation("UserNodeTemplates")
-  edgeTemplates EdgeTemplate[] @relation("UserEdgeTemplates")
-  diagrams      Diagram[]      @relation("UserDiagrams")
+  nodeTemplates   NodeTemplate[]   @relation("UserNodeTemplates")
+  edgeTemplates   EdgeTemplate[]   @relation("UserEdgeTemplates")
+  promptTemplates PromptTemplate[] @relation("UserPromptTemplates")
+  chainTemplates  ChainTemplate[]  @relation("UserChainTemplates")
+  diagrams        Diagram[]        @relation("UserDiagrams")
 }
 
 model NodeTemplate {
@@ -66,4 +68,29 @@ model Diagram {
   tags       String[] @default([]) // etiquetas simples
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+}
+
+model PromptTemplate {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  content     String   @db.Text
+  metadata    Json?
+  owner       User?    @relation("UserPromptTemplates", fields: [ownerId], references: [id])
+  ownerId     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ChainTemplate {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  code        String   @db.Text
+  language    String?
+  metadata    Json?
+  owner       User?    @relation("UserChainTemplates", fields: [ownerId], references: [id])
+  ownerId     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

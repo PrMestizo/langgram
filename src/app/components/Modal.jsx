@@ -31,6 +31,10 @@ function CustomModal({
   language = "python",
   saveLabel = "Guardar",
   cancelLabel = "Cancelar",
+  namePlaceholder,
+  editorType = "code",
+  contentLabel = "Contenido",
+  textPlaceholder = "",
 }) {
   const [open, setOpen] = React.useState(!!isVisible);
   const [code, setCode] = React.useState(initialCode);
@@ -51,6 +55,9 @@ function CustomModal({
       setNodeName(initialName);
     }
   }, [initialName, isVisible]);
+
+  const isTextEditor = editorType === "text";
+  const editorLanguage = language ?? "python";
 
   const handleSave = () => {
     onSave?.(code, nodeName);
@@ -86,23 +93,38 @@ function CustomModal({
               sx={{ width: "300px" }}
               value={nodeName}
               onChange={(e) => setNodeName(e.target.value)}
-              placeholder={nameLabel}
+              placeholder={namePlaceholder ?? nameLabel}
             />
           </div>
-          <div style={{ height: "300px", marginBottom: "1rem" }}>
-            <Editor
-              height="100%"
-              defaultLanguage={language}
+          {isTextEditor ? (
+            <TextField
+              label={contentLabel}
+              variant="outlined"
+              margin="normal"
+              fullWidth
+              multiline
+              minRows={8}
               value={code}
-              theme="vs-dark"
-              options={{
-                minimap: { enabled: false },
-                scrollBeyondLastLine: false,
-                fontSize: 14,
-              }}
-              onChange={(val) => setCode(val ?? "")}
+              onChange={(e) => setCode(e.target.value)}
+              placeholder={textPlaceholder}
+              sx={{ marginBottom: "1rem" }}
             />
-          </div>
+          ) : (
+            <div style={{ height: "300px", marginBottom: "1rem" }}>
+              <Editor
+                height="100%"
+                defaultLanguage={editorLanguage}
+                value={code}
+                theme="vs-dark"
+                options={{
+                  minimap: { enabled: false },
+                  scrollBeyondLastLine: false,
+                  fontSize: 14,
+                }}
+                onChange={(val) => setCode(val ?? "")}
+              />
+            </div>
+          )}
           <div
             style={{
               display: "flex",
