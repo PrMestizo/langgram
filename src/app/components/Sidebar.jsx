@@ -565,6 +565,48 @@ const Sidebar = ({ onLoadDiagram }) => {
             </div>
           </div>
         );
+      case 3: // Prompts
+        return (
+          <div className="tab-content">
+            {customEdges.length > 0 && (
+              <div className="node-section">
+                <div className="section-title">Custom Prompts</div>
+                {customEdges.map((item) => (
+                  <div
+                    key={item.name}
+                    className={`node-item edge-item edge-item--custom ${
+                      menuOpenId === `custom-${item.name}` ? "active" : ""
+                    }`}
+                    onDragStart={(event) =>
+                      onEdgeDragStart(event, item.name, item.code)
+                    }
+                    onDragEnd={handleDragEnd}
+                    draggable
+                  >
+                    <div className="edge-item__circle">ƒ</div>
+                    {item.name}
+                    <LongMenu
+                      className="kebab-menu"
+                      onOpenChange={(open) =>
+                        setMenuOpenId(open ? `custom-${item.name}` : null)
+                      }
+                      onDelete={() => handleDeleteCustomEdge(item.name)}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="sidebar-action-buttons">
+              <button
+                className="sidebar-action-btn primary"
+                onClick={() => popupAction("edge")}
+              >
+                <span className="btn-icon">➕</span>
+                Add Custom Prompt
+              </button>
+            </div>
+          </div>
+        );
       default:
         return null;
     }
