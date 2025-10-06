@@ -52,17 +52,18 @@ const FilterEdge = ({
   };
 
   const edgeStyle = {
+    ...style,
     stroke: hasFilter ? "#0d9488" : style.stroke || "#94a3b8",
     strokeWidth: selected ? 3 : style.strokeWidth || 2,
-    ...style,
   };
 
   const className = useMemo(() => {
+    const isVisible = hasFilter || selected || isNear;
     return [
       "filter-edge-circle",
       hasFilter ? "has-filter" : "",
       selected ? "selected" : "",
-      isNear ? "is-visible" : "",
+      isVisible ? "is-visible" : "",
     ]
       .filter(Boolean)
       .join(" ");
