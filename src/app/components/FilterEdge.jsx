@@ -150,33 +150,40 @@ const FilterEdge = ({
           onMouseEnter={handlePointerEnter}
           onMouseLeave={handlePointerLeave}
         >
-          <button
-            type="button"
-            className={className}
-            onClick={handleClick}
-            onContextMenu={handleContextMenu}
-            onFocus={handleFocus}
-            onBlur={handleBlur}
-            onDragOver={handleDragOver}
-            onDrop={handleDrop}
-            onDragLeave={handleDragLeave}
-            title={
-              hasFilter
-                ? filterName
-                  ? `Editar filtro condicional: ${filterName}`
-                  : "Editar filtro condicional"
-                : "Añadir filtro condicional"
-            }
-            aria-label={
-              hasFilter
-                ? filterName
-                  ? `Editar filtro condicional ${filterName}`
-                  : "Editar filtro condicional"
-                : "Añadir filtro condicional"
-            }
-          >
-            {hasFilter ? "ƒ" : "+"}
-          </button>
+          <div className="filter-edge-content">
+            <button
+              type="button"
+              className={className}
+              onClick={handleClick}
+              onContextMenu={handleContextMenu}
+              onFocus={handleFocus}
+              onBlur={handleBlur}
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+              onDragLeave={handleDragLeave}
+              title={
+                hasFilter
+                  ? filterName
+                    ? `Editar filtro condicional: ${filterName}`
+                    : "Editar filtro condicional"
+                  : "Añadir filtro condicional"
+              }
+              aria-label={
+                hasFilter
+                  ? filterName
+                    ? `Editar filtro condicional ${filterName}`
+                    : "Editar filtro condicional"
+                  : "Añadir filtro condicional"
+              }
+            >
+              {hasFilter ? "ƒ" : "+"}
+            </button>
+            {hasFilter && filterName ? (
+              <span className="filter-edge-label" aria-hidden="true">
+                {filterName}
+              </span>
+            ) : null}
+          </div>
         </div>
       </EdgeLabelRenderer>
     </>
