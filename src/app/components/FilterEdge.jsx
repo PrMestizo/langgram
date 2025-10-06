@@ -27,7 +27,8 @@ const FilterEdge = ({
 
   const filterCode = data?.filterCode ?? "";
   const filterName = data?.filterName ?? "";
-  const hasFilter = filterCode.trim().length > 0;
+  const hasFilter =
+    filterCode.trim().length > 0 || filterName.trim().length > 0;
   const [isNear, setIsNear] = useState(false);
 
   const handlePointerEnter = useCallback(() => {
