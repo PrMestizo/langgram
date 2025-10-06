@@ -62,7 +62,7 @@ const hydrateEdge = (edge) => ({
 function Diagram() {
   const [nodes, setNodes] = useState(initialNodes);
   const [edges, setEdges] = useState(initialEdges);
-  const [type, setType, code, setCode] = useDnD();
+  const { setType, setCode, dragPayload, setDragPayload, resetDrag } = useDnD();
   const { screenToFlowPosition } = useReactFlow();
   const [popupText, setPopupText] = useState("");
   const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
@@ -194,6 +194,39 @@ function Diagram() {
     };
   }, [contextMenu.open, closeFilterContextMenu]);
 
+  const handleApplyFilterFromDrag = useCallback(
+    (edgeId, filter) => {
+      if (!edgeId || !filter) {
+        return;
+      }
+
+      setEdges((prevEdges) =>
+        prevEdges.map((edge) =>
+          edge.id === edgeId
+            ? {
+                ...edge,
+                data: {
+                  ...edge.data,
+                  filterCode: filter.code ?? edge.data?.filterCode ?? "",
+                  filterName: filter.name ?? edge.data?.filterName ?? "",
+                },
+              }
+            : edge
+        )
+      );
+      setFilterEditor((prev) =>
+        prev.edgeId === edgeId
+          ? {
+              ...prev,
+              name: filter.name ?? "",
+              code: filter.code ?? "",
+            }
+          : prev
+      );
+    },
+    [setEdges, setFilterEditor]
+  );
+
   const edgeTypes = useMemo(
     () => ({
       filterEdge: (edgeProps) => (
@@ -201,10 +234,11 @@ function Diagram() {
           {...edgeProps}
           onEditFilter={handleFilterClick}
           onOpenContextMenu={openFilterContextMenu}
+          onApplyFilter={handleApplyFilterFromDrag}
         />
       ),
     }),
-    [handleFilterClick, openFilterContextMenu]
+    [handleApplyFilterFromDrag, handleFilterClick, openFilterContextMenu]
   );
 
   const onNodesChange = useCallback(
@@ -232,16 +266,20 @@ function Diagram() {
     []
   );
 
-  const onDragOver = useCallback((event) => {
-    event.preventDefault();
-    event.dataTransfer.dropEffect = "move";
-  }, []);
+  const onDragOver = useCallback(
+    (event) => {
+      event.preventDefault();
+      event.dataTransfer.dropEffect =
+        dragPayload?.kind === "edge" ? "copy" : "move";
+    },
+    [dragPayload?.kind]
+  );
 
   const onDrop = useCallback(
     (event) => {
       event.preventDefault();
 
-      if (!type || !code) {
+      if (!dragPayload?.type || !dragPayload?.code) {
         return;
       }
 
@@ -251,22 +289,29 @@ function Diagram() {
       });
       const newNode = {
         id: getId(),
-        type,
+        type: dragPayload?.type,
         position,
-        data: { label: `${type}` },
-        code,
+        data: { label: `${dragPayload?.type}` },
+        code: dragPayload?.code,
       };
 
       setNodes((nds) => nds.concat(newNode));
+      resetDrag();
     },
-    [screenToFlowPosition, type, code]
+    [dragPayload, resetDrag, screenToFlowPosition, setNodes]
   );
 
   const onDragStart = (event, nodeType, nodeCode) => {
     setType(nodeType);
     setCode(nodeCode);
+    setDragPayload({
+      kind: "node",
+      type: nodeType,
+      code: nodeCode || "",
+      name: nodeType,
+    });
     event.dataTransfer.setData("application/node-type", nodeType);
-    event.dataTransfer.setData("application/node-code", nodeCode);
+    event.dataTransfer.setData("application/node-code", nodeCode ?? "");
     event.dataTransfer.effectAllowed = "move";
   };
 

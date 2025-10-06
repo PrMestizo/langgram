@@ -1,6 +1,7 @@
 "use client";
 import { memo, useCallback, useMemo, useState } from "react";
 import { BaseEdge, EdgeLabelRenderer, getBezierPath } from "reactflow";
+import { useDnD } from "./DnDContext";
 
 const FilterEdge = ({
   id,
@@ -16,7 +17,9 @@ const FilterEdge = ({
   data,
   onEditFilter,
   onOpenContextMenu,
+  onApplyFilter,
 }) => {
+  const { dragPayload, resetDrag } = useDnD();
   const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,
     sourceY,
@@ -72,17 +75,56 @@ const FilterEdge = ({
     strokeWidth: selected ? 3 : style.strokeWidth || 2,
   };
 
+  const isDraggingFilter = dragPayload?.kind === "edge";
+
   const className = useMemo(() => {
-    const isVisible = hasFilter || selected || isNear;
+    const isVisible = hasFilter || selected || isNear || isDraggingFilter;
     return [
       "filter-edge-circle",
       hasFilter ? "has-filter" : "",
       selected ? "selected" : "",
       isVisible ? "is-visible" : "",
+      isDraggingFilter ? "is-dragging" : "",
     ]
       .filter(Boolean)
       .join(" ");
-  }, [hasFilter, isNear, selected]);
+  }, [hasFilter, isDraggingFilter, isNear, selected]);
+
+  const handleDragOver = useCallback(
+    (event) => {
+      if (!isDraggingFilter) {
+        return;
+      }
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "copy";
+      setIsNear(true);
+    },
+    [isDraggingFilter]
+  );
+
+  const handleDrop = useCallback(
+    (event) => {
+      if (!isDraggingFilter || !dragPayload) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      onApplyFilter?.(id, {
+        code: dragPayload.code ?? "",
+        name: dragPayload.name ?? "",
+      });
+      resetDrag?.();
+      setIsNear(false);
+    },
+    [dragPayload, id, isDraggingFilter, onApplyFilter, resetDrag]
+  );
+
+  const handleDragLeave = useCallback(() => {
+    if (!isDraggingFilter) {
+      return;
+    }
+    setIsNear(false);
+  }, [isDraggingFilter]);
 
   return (
     <>
@@ -115,6 +157,9 @@ const FilterEdge = ({
             onContextMenu={handleContextMenu}
             onFocus={handleFocus}
             onBlur={handleBlur}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+            onDragLeave={handleDragLeave}
             title={
               hasFilter
                 ? filterName

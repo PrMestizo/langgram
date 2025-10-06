@@ -1,14 +1,41 @@
 "use client";
-import { createContext, useContext, useState } from "react";
+import { createContext, useCallback, useContext, useState } from "react";
 
-const DnDContext = createContext([null, (_) => {}]);
+const defaultContextValue = {
+  type: null,
+  setType: () => {},
+  code: null,
+  setCode: () => {},
+  dragPayload: null,
+  setDragPayload: () => {},
+  resetDrag: () => {},
+};
+
+const DnDContext = createContext(defaultContextValue);
 
 export const DnDProvider = ({ children }) => {
   const [type, setType] = useState(null);
   const [code, setCode] = useState(null);
+  const [dragPayload, setDragPayload] = useState(null);
+
+  const resetDrag = useCallback(() => {
+    setType(null);
+    setCode(null);
+    setDragPayload(null);
+  }, [setCode, setDragPayload, setType]);
 
   return (
-    <DnDContext.Provider value={[type, setType, code, setCode]}>
+    <DnDContext.Provider
+      value={{
+        type,
+        setType,
+        code,
+        setCode,
+        dragPayload,
+        setDragPayload,
+        resetDrag,
+      }}
+    >
       {children}
     </DnDContext.Provider>
   );

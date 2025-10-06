@@ -11,7 +11,7 @@ import { FaApple } from "react-icons/fa";
 import { FaAnkh } from "react-icons/fa";
 
 const Sidebar = ({ onLoadDiagram }) => {
-  const [, setType, , setCode] = useDnD();
+  const { setType, setCode, setDragPayload } = useDnD();
   const [isPopupVisible, setIsPopupVisible] = useState(false);
   const [popupMode, setPopupMode] = useState("node");
   const [customDiagrams, setCustomDiagrams] = useState([]);
@@ -99,11 +99,51 @@ const Sidebar = ({ onLoadDiagram }) => {
   }, []);
 
   const onDragStart = (event, nodeType, nodeCode) => {
+    const payload = {
+      kind: "node",
+      type: nodeType,
+      code: nodeCode || "",
+      name: nodeType,
+    };
     setType(nodeType);
     setCode(nodeCode);
+    setDragPayload(payload);
     event.dataTransfer.setData("application/node-type", nodeType);
-    event.dataTransfer.setData("application/node-code", nodeCode);
+    event.dataTransfer.setData("application/node-code", nodeCode ?? "");
     event.dataTransfer.effectAllowed = "move";
+  };
+
+  const onEdgeDragStart = (event, edgeName, edgeCode) => {
+    setType(null);
+    setCode(null);
+    const payload = {
+      kind: "edge",
+      type: "filterEdge",
+      code: edgeCode || "",
+      name: edgeName,
+    };
+    setDragPayload(payload);
+    event.dataTransfer.setData("application/edge-name", edgeName ?? "");
+    event.dataTransfer.setData("application/edge-code", edgeCode ?? "");
+    event.dataTransfer.effectAllowed = "copy";
+
+    const preview = document.createElement("div");
+    preview.className = "filter-drag-preview";
+    preview.textContent = "ƒ";
+    document.body.appendChild(preview);
+    const { width, height } = preview.getBoundingClientRect();
+    event.dataTransfer.setDragImage(preview, width / 2, height / 2);
+    setTimeout(() => {
+      if (preview.parentNode) {
+        preview.parentNode.removeChild(preview);
+      }
+    }, 0);
+  };
+
+  const handleDragEnd = () => {
+    setType(null);
+    setCode(null);
+    setDragPayload(null);
   };
 
   const handleNavClick = (index, event) => {
@@ -365,6 +405,7 @@ const Sidebar = ({ onLoadDiagram }) => {
                   menuOpenId === "node-Base" ? "active" : ""
                 }`}
                 onDragStart={(event) => onDragStart(event, "Base")}
+                onDragEnd={handleDragEnd}
                 draggable
               >
                 <div className="node-icon">
@@ -383,6 +424,7 @@ const Sidebar = ({ onLoadDiagram }) => {
                   menuOpenId === "node-Input" ? "active" : ""
                 }`}
                 onDragStart={(event) => onDragStart(event, "Input")}
+                onDragEnd={handleDragEnd}
                 draggable
               >
                 <div className="node-icon">
@@ -407,6 +449,7 @@ const Sidebar = ({ onLoadDiagram }) => {
                       menuOpenId === `custom-${n.name}` ? "active" : ""
                     }`}
                     onDragStart={(event) => onDragStart(event, n.name, n.code)}
+                    onDragEnd={handleDragEnd}
                     draggable
                   >
                     <div className="node-icon">
@@ -441,15 +484,16 @@ const Sidebar = ({ onLoadDiagram }) => {
             <div className="node-section">
               <div className="section-title">Connection Types</div>
               <div
-                className={`node-item ${
+                className={`node-item edge-item ${
                   menuOpenId === "node-Input" ? "active" : ""
                 }`}
-                onDragStart={(event) => onDragStart(event, "Input")}
+                onDragStart={(event) =>
+                  onEdgeDragStart(event, "Direct Connection")
+                }
+                onDragEnd={handleDragEnd}
                 draggable
               >
-                <div className="node-icon" style={{ background: "#ef4444" }}>
-                  →
-                </div>
+                <div className="edge-item__circle">→</div>
                 Direct Connection
                 <LongMenu
                   className="kebab-menu"
@@ -459,13 +503,14 @@ const Sidebar = ({ onLoadDiagram }) => {
                 />
               </div>
               <div
-                className="node-item"
-                onDragStart={(event) => onDragStart(event, "Input")}
+                className="node-item edge-item"
+                onDragStart={(event) =>
+                  onEdgeDragStart(event, "Conditional Flow")
+                }
+                onDragEnd={handleDragEnd}
                 draggable
               >
-                <div className="node-icon" style={{ background: "#f97316" }}>
-                  ⤴
-                </div>
+                <div className="edge-item__circle">⤴</div>
                 Conditional Flow
                 <LongMenu
                   className="kebab-menu"
@@ -481,20 +526,16 @@ const Sidebar = ({ onLoadDiagram }) => {
                 {customEdges.map((item) => (
                   <div
                     key={item.name}
-                    className={`node-item ${
+                    className={`node-item edge-item edge-item--custom ${
                       menuOpenId === `custom-${item.name}` ? "active" : ""
                     }`}
                     onDragStart={(event) =>
-                      onDragStart(event, item.name, item.code)
+                      onEdgeDragStart(event, item.name, item.code)
                     }
+                    onDragEnd={handleDragEnd}
                     draggable
                   >
-                    <div
-                      className="node-icon"
-                      style={{ background: "#64748b", color: "white" }}
-                    >
-                      A
-                    </div>
+                    <div className="edge-item__circle">ƒ</div>
                     {item.name}
                     <LongMenu
                       className="kebab-menu"

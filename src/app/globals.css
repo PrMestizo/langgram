@@ -200,6 +200,58 @@ body {
   box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.4);
 }
 
+.filter-edge-circle.is-droppable {
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.35);
+  border-color: #0ea5e9;
+}
+
+.filter-edge-circle.is-droppable.selected {
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.45);
+}
+
+.edge-item {
+  gap: 12px;
+}
+
+.edge-item__circle {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 118, 110, 0.15);
+  border: 2px solid rgba(15, 118, 110, 0.5);
+  color: #fcfcfc;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.edge-item.edge-item--custom .edge-item__circle {
+  background: rgba(15, 118, 110, 0.25);
+  border-color: rgba(13, 148, 136, 0.8);
+  color: #0d9488;
+}
+
+.filter-drag-preview {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 3px solid rgba(14, 165, 233, 0.85);
+  background: rgba(14, 165, 233, 0.25);
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 700;
+  pointer-events: none;
+  position: fixed;
+  top: -1000px;
+  left: -1000px;
+  z-index: -1;
+}
+
 .filter-context-menu {
   position: fixed;
   z-index: 1200;
