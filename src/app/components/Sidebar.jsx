@@ -251,7 +251,9 @@ const Sidebar = ({ onLoadDiagram }) => {
         body: JSON.stringify(newChain),
       });
       const saved = await res.json();
-      setCustomChains((prev) => [...prev, saved]);
+      setCustomChains((prev) =>
+        Array.isArray(prev) ? [...prev, saved] : [saved]
+      );
     } catch (err) {
       console.error("Error al guardar chain:", err);
     }
@@ -740,24 +742,23 @@ const Sidebar = ({ onLoadDiagram }) => {
             {customPrompts.length > 0 && (
               <div className="node-section">
                 <div className="section-title">Custom Prompts</div>
-                {customPrompts.map((prompt) => (
+                {customPrompts.map((p) => (
                   <div
-                    key={prompt.name ?? prompt.id}
+                    key={p.name}
                     className={`node-item ${
-                      menuOpenId === `prompt-${prompt.name}` ? "active" : ""
+                      menuOpenId === `prompt-${p.name}` ? "active" : ""
                     }`}
-                    title={prompt.content ?? ""}
                   >
                     <div className="node-icon">
                       <TbPrompt />
                     </div>
-                    {prompt.name}
+                    {p.name}
                     <LongMenu
                       className="kebab-menu"
                       onOpenChange={(open) =>
-                        setMenuOpenId(open ? `prompt-${prompt.name}` : null)
+                        setMenuOpenId(open ? `prompt-${p.name}` : null)
                       }
-                      onDelete={() => handleDeleteCustomPrompt(prompt.name)}
+                      onDelete={() => handleDeleteCustomPrompt(p.name)}
                     />
                   </div>
                 ))}
@@ -780,24 +781,23 @@ const Sidebar = ({ onLoadDiagram }) => {
             {customChains.length > 0 && (
               <div className="node-section">
                 <div className="section-title">Custom Chains</div>
-                {customChains.map((chain) => (
+                {customChains.map((c) => (
                   <div
-                    key={chain.id ?? chain.name}
+                    key={c.name}
                     className={`node-item ${
-                      menuOpenId === `chain-${chain.name}` ? "active" : ""
+                      menuOpenId === `chain-${c.name}` ? "active" : ""
                     }`}
-                    title={chain.code ?? ""}
                   >
                     <div className="node-icon">
                       <GiCrossedChains />
                     </div>
-                    {chain.name}
+                    {c.name}
                     <LongMenu
                       className="kebab-menu"
                       onOpenChange={(open) =>
-                        setMenuOpenId(open ? `chain-${chain.name}` : null)
+                        setMenuOpenId(open ? `chain-${c.name}` : null)
                       }
-                      onDelete={() => handleDeleteCustomChain(chain.name)}
+                      onDelete={() => handleDeleteCustomChain(c.name)}
                     />
                   </div>
                 ))}
