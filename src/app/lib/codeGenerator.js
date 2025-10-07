@@ -15,13 +15,41 @@ export async function generateCodeFromGraph(graphJSON) {
 
     if (!res.ok) {
       const text = await res.text();
-      throw new Error(`Error del servidor: ${res.status} ${text}`);
+      let errorMessage = `Error del servidor: ${res.status}`;
+      try {
+        const parsed = JSON.parse(text);
+        if (parsed?.error) {
+          if (typeof parsed.error === "string") {
+            errorMessage = parsed.error;
+          } else if (typeof parsed.error?.message === "string") {
+            errorMessage = parsed.error.message;
+          } else if (Array.isArray(parsed.error)) {
+            errorMessage = parsed.error.join(" \u2022 ");
+          } else {
+            errorMessage = JSON.stringify(parsed.error);
+          }
+        }
+      } catch (parseErr) {
+        console.error(
+          "No se pudo parsear el error de /api/generate:",
+          parseErr
+        );
+        if (text) {
+          errorMessage = `${errorMessage} ${text}`;
+        }
+      }
+      throw new Error(
+        String(errorMessage || "Error desconocido al generar el código")
+      );
     }
 
     const data = await res.json();
     return data.code || "";
   } catch (err) {
     console.error("Error generando código:", err);
+    if (err instanceof Error) {
+      throw err;
+    }
     throw new Error("No se pudo generar el código");
   }
 }

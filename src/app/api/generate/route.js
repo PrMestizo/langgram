@@ -16,7 +16,20 @@ Devuelve un script válido que:
 4. Compile el grafo listo para ejecutarse.
 `;
 
-    const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    const apiKey = process.env.OPENAI_API_KEY;
+
+    if (!apiKey) {
+      console.error("/api/generate error: OPENAI_API_KEY is not set");
+      return new Response(
+        JSON.stringify({
+          error:
+            "No se puede generar código porque falta configurar la variable de entorno OPENAI_API_KEY.",
+        }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    const client = new OpenAI({ apiKey });
 
     const completion = await client.chat.completions.create({
       model: "gpt-4.1-mini",
@@ -31,9 +44,9 @@ Devuelve un script válido que:
     });
   } catch (err) {
     console.error("/api/generate error:", err);
-    return new Response(
-      JSON.stringify({ error: "Failed to generate code" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ error: "Failed to generate code" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 }

@@ -18,6 +18,8 @@ import { DnDProvider, useDnD } from "./DnDContext";
 import { generateCodeFromGraph } from "../lib/codeGenerator";
 import FilterEdge from "./FilterEdge";
 import CustomModal from "./Modal";
+import Alert from "@mui/material/Alert";
+import Stack from "@mui/material/Stack";
 
 let id = 0;
 const getId = () => `dndnode_${id++}`;
@@ -64,7 +66,11 @@ function Diagram() {
   const [edges, setEdges] = useState(initialEdges);
   const { setType, setCode, dragPayload, setDragPayload, resetDrag } = useDnD();
   const { screenToFlowPosition } = useReactFlow();
-  const [popupText, setPopupText] = useState("");
+  const [alert, setAlert] = useState({
+    message: "",
+    severity: "success",
+    open: false,
+  });
   const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
   const [diagramName, setDiagramName] = useState("");
   const [filterEditor, setFilterEditor] = useState({
@@ -149,15 +155,21 @@ function Diagram() {
         window.dispatchEvent(
           new CustomEvent("edges-updated", { detail: saved })
         );
-        setPopupText(`Filtro "${finalName}" guardado correctamente.`);
-        setTimeout(() => setPopupText(""), 4000);
+        setAlert({
+          message: `Filtro "${finalName}" guardado correctamente.`,
+          severity: "success",
+          open: true,
+        });
       } catch (err) {
         console.error("Error al guardar edge:", err);
-        setPopupText(`Error al guardar el filtro: ${err.message}`);
-        setTimeout(() => setPopupText(""), 5000);
+        setAlert({
+          message: `Error al guardar el filtro: ${err.message}`,
+          severity: "error",
+          open: true,
+        });
       }
     },
-    [filterEditor.edgeId, setEdges, setPopupText]
+    [filterEditor.edgeId, setEdges, setAlert]
   );
 
   useEffect(() => {
@@ -177,6 +189,15 @@ function Diagram() {
     if (!contextMenu.open) {
       return;
     }
+
+    useEffect(() => {
+      if (alert.open) {
+        const timer = setTimeout(() => {
+          setAlert({ ...alert, open: false });
+        }, 3000);
+        return () => clearTimeout(timer);
+      }
+    }, [alert.open]);
 
     const handleGlobalClick = () => closeFilterContextMenu();
     const handleKeyDown = (event) => {
@@ -319,9 +340,13 @@ function Diagram() {
     const graphJSON = GraphJSON();
     try {
       const code = await generateCodeFromGraph(graphJSON);
-      setPopupText(code);
+      setAlert({ message: code, severity: "success", open: true });
     } catch {
-      setPopupText("Error al generar el código con IA");
+      setAlert({
+        message: "Error al generar el código con IA",
+        severity: "error",
+        open: true,
+      });
     }
   };
 
@@ -329,9 +354,13 @@ function Diagram() {
     const graphJSON = GraphJSON();
     try {
       const formattedJSON = JSON.stringify(graphJSON, null, 2);
-      setPopupText(formattedJSON);
+      setAlert({ message: formattedJSON, severity: "success", open: true });
     } catch {
-      setPopupText("Error al generar el código con IA");
+      setAlert({
+        message: "Error al generar el código con IA",
+        severity: "error",
+        open: true,
+      });
     }
   };
 
@@ -367,12 +396,18 @@ function Diagram() {
       setDiagramName("");
 
       // Mostrar mensaje de éxito
-      setPopupText(`¡Diagrama "${name}" guardado exitosamente!`);
-      setTimeout(() => setPopupText(""), 5000);
+      setAlert({
+        message: `¡Diagrama "${name}" guardado exitosamente!`,
+        severity: "success",
+        open: true,
+      });
     } catch (err) {
       console.error("Error al guardar el diagrama:", err);
-      setPopupText(`Error al guardar el diagrama: ${err.message}`);
-      setTimeout(() => setPopupText(""), 5000);
+      setAlert({
+        message: `Error al guardar el diagrama: ${err.message}`,
+        severity: "error",
+        open: true,
+      });
     }
   };
 
@@ -557,14 +592,16 @@ function Diagram() {
         </div>
       )}
 
-      {/* Popup  */}
-      {popupText && (
-        <div className="poppup-text">
-          <pre>{popupText}</pre>
-          <button className="poppup.close" onClick={() => setPopupText("")}>
-            Cerrar
-          </button>
-        </div>
+      {/* Alert de Material-UI */}
+      {alert.open && (
+        <Stack sx={{ position: "fixed", top: 16, right: 16, zIndex: 1000 }}>
+          <Alert
+            severity={alert.severity}
+            onClose={() => setAlert({ ...alert, open: false })}
+          >
+            {alert.message}
+          </Alert>
+        </Stack>
       )}
 
       {/* Save Diagram Name Dialog */}
