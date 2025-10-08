@@ -20,6 +20,7 @@ import FilterEdge from "./FilterEdge";
 import CustomModal from "./Modal";
 import Alert from "@mui/material/Alert";
 import Stack from "@mui/material/Stack";
+import { FiMenu } from "react-icons/fi";
 
 let id = 0;
 const getId = () => `dndnode_${id++}`;
@@ -61,9 +62,17 @@ const hydrateEdge = (edge) => ({
   },
 });
 
+const topNavActionsId = "top-nav-actions";
+
 function Diagram() {
   const [nodes, setNodes] = useState(initialNodes);
   const [edges, setEdges] = useState(initialEdges);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const closeTopNavMenu = useCallback(() => setIsMenuOpen(false), []);
+  const toggleTopNavMenu = useCallback(
+    () => setIsMenuOpen((prev) => !prev),
+    []
+  );
   const { setType, setCode, dragPayload, setDragPayload, resetDrag } = useDnD();
   const { screenToFlowPosition } = useReactFlow();
   const [alert, setAlert] = useState({
@@ -248,6 +257,25 @@ function Diagram() {
     [setEdges, setFilterEditor]
   );
 
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth > 900) {
+        closeTopNavMenu();
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [closeTopNavMenu]);
+
+  const topNavActionsClassName = useMemo(
+    () =>
+      isMenuOpen
+        ? "top-nav__actions top-nav__actions--open"
+        : "top-nav__actions",
+    [isMenuOpen]
+  );
+
   const edgeTypes = useMemo(
     () => ({
       filterEdge: (edgeProps) => (
@@ -368,6 +396,16 @@ function Diagram() {
     setDiagramName("");
     setIsSaveDialogOpen(true);
   };
+
+  const handleGenerateButtonClick = useCallback(() => {
+    closeTopNavMenu();
+    generateCodeWithAI();
+  }, [closeTopNavMenu, generateCodeWithAI]);
+
+  const handleSaveButtonClick = useCallback(() => {
+    closeTopNavMenu();
+    openSaveDialog();
+  }, [closeTopNavMenu, openSaveDialog]);
 
   const saveDiagram = async () => {
     const graph = GraphJSON();
@@ -506,18 +544,29 @@ function Diagram() {
       <header className="top-nav">
         <div className="top-nav__content">
           <span className="top-nav__brand">Langgram Studio</span>
-          <div className="top-nav__actions">
+          <button
+            type="button"
+            className="top-nav__menu-toggle"
+            aria-label="Abrir menú de acciones"
+            aria-haspopup="true"
+            aria-expanded={isMenuOpen}
+            aria-controls={topNavActionsId}
+            onClick={toggleTopNavMenu}
+          >
+            <FiMenu className="hamburger-nav-bar" />
+          </button>
+          <div id={topNavActionsId} className={topNavActionsClassName}>
             <button
               type="button"
-              className="top-nav__button top-nav__button--primary"
-              onClick={generateCodeWithAI}
+              className="top-nav__button top-nav__button--secondary"
+              onClick={handleGenerateButtonClick}
             >
               Generar código
             </button>
             <button
               type="button"
               className="top-nav__button top-nav__button--secondary"
-              onClick={openSaveDialog}
+              onClick={handleSaveButtonClick}
             >
               Guardar diagrama
             </button>
