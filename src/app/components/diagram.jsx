@@ -21,6 +21,10 @@ import CustomModal from "./Modal";
 import Alert from "@mui/material/Alert";
 import Stack from "@mui/material/Stack";
 import { FiMenu } from "react-icons/fi";
+import {
+  loadPersistedDiagram,
+  savePersistedDiagram,
+} from "../lib/diagramStorage";
 
 let id = 0;
 const getId = () => `dndnode_${id++}`;
@@ -68,6 +72,7 @@ function Diagram() {
   const [nodes, setNodes] = useState(initialNodes);
   const [edges, setEdges] = useState(initialEdges);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
   const closeTopNavMenu = useCallback(() => setIsMenuOpen(false), []);
   const toggleTopNavMenu = useCallback(
     () => setIsMenuOpen((prev) => !prev),
@@ -449,7 +454,7 @@ function Diagram() {
     }
   };
 
-  const GraphJSON = () => {
+  const GraphJSON = useCallback(() => {
     const nodeData = nodes.map((n) => ({
       id: n.id,
       type: n.type,
@@ -469,7 +474,61 @@ function Diagram() {
 
     const graphJSON = { nodes: nodeData, edges: edgeData };
     return graphJSON;
-  };
+  }, [nodes, edges]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const hydrateFromStorage = async () => {
+      const storedGraph = await loadPersistedDiagram();
+      if (cancelled) {
+        return;
+      }
+
+      if (storedGraph) {
+        try {
+          const nextNodes = (storedGraph.nodes || []).map((n) => ({
+            id: n.id,
+            type: n.type,
+            position: n.position || { x: 0, y: 0 },
+            data: { label: n.label },
+            code: n.code,
+          }));
+          const nextEdges = (storedGraph.edges || []).map(hydrateEdge);
+          setNodes(nextNodes);
+          setEdges(nextEdges);
+        } catch (error) {
+          console.error(
+            "Error al hidratar el diagrama desde el almacenamiento local:",
+            error
+          );
+        }
+      }
+
+      if (!cancelled) {
+        setIsHydrated(true);
+      }
+    };
+
+    hydrateFromStorage();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isHydrated) {
+      return;
+    }
+
+    const persistDiagram = async () => {
+      const graph = GraphJSON();
+      await savePersistedDiagram(graph);
+    };
+
+    persistDiagram();
+  }, [GraphJSON, isHydrated]);
 
   const handleClearFilterFromEdge = useCallback(
     (edgeId) => {
