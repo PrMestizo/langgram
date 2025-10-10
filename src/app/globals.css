@@ -20,21 +20,25 @@ body {
 .dndflow {
   height: 100vh;
   background-color: #f0f2f5;
-  position: relative;
-  padding-top: var(--top-nav-height);
+  display: flex;
+}
+
+.workspace {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .top-nav {
-  position: fixed;
+  position: sticky;
   top: 0;
-  left: 0;
-  right: 0;
   height: var(--top-nav-height);
   background: #1b1b1b;
   display: flex;
   align-items: center;
-  padding: 0 clamp(16px, 4vw, 48px) 0
-    calc(var(--sidebar-width) + clamp(12px, 2vw, 32px));
+  padding: 0 clamp(16px, 4vw, 48px);
   z-index: 900;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
 }
@@ -132,13 +136,14 @@ body {
 }
 
 .canvas-wrapper {
-  width: 100vw;
+  flex: 1;
+  width: 100%;
   height: calc(100vh - var(--top-nav-height));
 }
 
 @media (max-width: 900px) {
   .top-nav {
-    padding-left: clamp(16px, 6vw, 32px);
+    padding: 0 clamp(16px, 6vw, 32px);
   }
 
   .top-nav__content {
@@ -375,10 +380,8 @@ body {
   background-color: #151515;
   display: flex;
   flex-direction: column;
-  position: fixed;
+  position: sticky;
   top: 0;
-  left: 0;
-  z-index: 1000;
   transition: width 0.3s ease;
   border-right: 1px solid #2d2d2d;
 }

@@ -1105,7 +1105,9 @@ const Sidebar = ({ onLoadDiagram }) => {
 
   return (
     <>
-      <div className={`chatgpt-sidebar ${!isPanelVisible ? "collapsed" : ""}`}>
+      <aside
+        className={`chatgpt-sidebar ${!isPanelVisible ? "collapsed" : ""}`}
+      >
         <div className="vs-sidebar">
           <nav className="vs-sidebar-nav" aria-label="Sidebar tabs">
             {tabItems.map((item) => (
@@ -1137,7 +1139,7 @@ const Sidebar = ({ onLoadDiagram }) => {
             </div>
           )}
         </div>
-      </div>
+      </aside>
 
       <CustomModal
         key={`${popupMode}-${editingContext?.item?.id ?? "new"}`}

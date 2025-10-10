@@ -600,64 +600,6 @@ function Diagram() {
 
   return (
     <div className="dndflow">
-      <header className="top-nav">
-        <div className="top-nav__content">
-          <span className="top-nav__brand">Langgram Studio</span>
-          <button
-            type="button"
-            className="top-nav__menu-toggle"
-            aria-label="Abrir menú de acciones"
-            aria-haspopup="true"
-            aria-expanded={isMenuOpen}
-            aria-controls={topNavActionsId}
-            onClick={toggleTopNavMenu}
-          >
-            <FiMenu className="hamburger-nav-bar" />
-          </button>
-          <div id={topNavActionsId} className={topNavActionsClassName}>
-            <button
-              type="button"
-              className="top-nav__button top-nav__button--secondary"
-              onClick={handleGenerateButtonClick}
-            >
-              Generar código
-            </button>
-            <button
-              type="button"
-              className="top-nav__button top-nav__button--secondary"
-              onClick={handleSaveButtonClick}
-            >
-              Guardar diagrama
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <div className="canvas-wrapper">
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onConnect={onConnect}
-          onDrop={onDrop}
-          onDragStart={onDragStart}
-          onDragOver={onDragOver}
-          edgeTypes={edgeTypes}
-          fitView
-        >
-          <Background />
-          <Controls />
-          <MiniMap
-            nodeStrokeColor={(n) => {
-              if (n.type === "Base") return "#0041d0";
-              if (n.type === "Conv") return "#4ea34eff";
-              if (n.type === "Compile") return "#ff0072";
-            }}
-          />
-        </ReactFlow>
-      </div>
-
       <Sidebar
         onLoadDiagram={(graph) => {
           try {
@@ -674,6 +616,65 @@ function Diagram() {
           } catch {}
         }}
       />
+      <div className="workspace">
+        <header className="top-nav">
+          <div className="top-nav__content">
+            <span className="top-nav__brand">Langgram Studio</span>
+            <button
+              type="button"
+              className="top-nav__menu-toggle"
+              aria-label="Abrir menú de acciones"
+              aria-haspopup="true"
+              aria-expanded={isMenuOpen}
+              aria-controls={topNavActionsId}
+              onClick={toggleTopNavMenu}
+            >
+              <FiMenu className="hamburger-nav-bar" />
+            </button>
+            <div id={topNavActionsId} className={topNavActionsClassName}>
+              <button
+                type="button"
+                className="top-nav__button top-nav__button--secondary"
+                onClick={handleGenerateButtonClick}
+              >
+                Generar código
+              </button>
+              <button
+                type="button"
+                className="top-nav__button top-nav__button--secondary"
+                onClick={handleSaveButtonClick}
+              >
+                Guardar diagrama
+              </button>
+            </div>
+          </div>
+        </header>
+
+        <div className="canvas-wrapper">
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onConnect={onConnect}
+            onDrop={onDrop}
+            onDragStart={onDragStart}
+            onDragOver={onDragOver}
+            edgeTypes={edgeTypes}
+            fitView
+          >
+            <Background />
+            <Controls />
+            <MiniMap
+              nodeStrokeColor={(n) => {
+                if (n.type === "Base") return "#0041d0";
+                if (n.type === "Conv") return "#4ea34eff";
+                if (n.type === "Compile") return "#ff0072";
+              }}
+            />
+          </ReactFlow>
+        </div>
+      </div>
 
       {contextMenu.open && (
         <div
