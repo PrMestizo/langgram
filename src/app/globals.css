@@ -9,6 +9,7 @@ body {
   margin: 0;
   font-family: sans-serif;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 #app {
@@ -575,8 +576,8 @@ body {
 }
 
 .node-icon {
-  width: 16px;
-  height: 16px;
+  width: 24px;
+  height: 24px;
   margin-right: 8px;
   border-radius: 3px;
   display: flex;

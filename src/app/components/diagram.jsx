@@ -34,13 +34,13 @@ const initialNodes = [
     id: "n1",
     type: "Base",
     position: { x: 0, y: 0 },
-    data: { label: "Base" },
+    data: { label: "START" },
   },
   {
     id: "n2",
     type: "Compile",
     position: { x: 0, y: 100 },
-    data: { label: "Compile" },
+    data: { label: "END" },
   },
 ];
 
