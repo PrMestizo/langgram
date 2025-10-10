@@ -1,6 +1,6 @@
 // Sidebar.jsx
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useDnD } from "./DnDContext";
 import LongMenu from "./KebabMenu";
 import CustomModal from "./Modal";
@@ -13,6 +13,7 @@ import { TbPrompt } from "react-icons/tb";
 import { GiCrossedChains } from "react-icons/gi";
 import { AiOutlineSetting } from "react-icons/ai";
 import { FaStore } from "react-icons/fa";
+import { usePathname, useRouter } from "next/navigation";
 
 const Sidebar = ({ onLoadDiagram }) => {
   const { setType, setCode, setDragPayload } = useDnD();
@@ -27,21 +28,39 @@ const Sidebar = ({ onLoadDiagram }) => {
   const [modalInitialName, setModalInitialName] = useState("");
   const [modalInitialCode, setModalInitialCode] = useState("");
   const [editingContext, setEditingContext] = useState(null);
-  const tabItems = [
-    { id: 0, label: "Diagrams", icon: <BsDiagram3 /> },
-    { id: 1, label: "Nodes", icon: <FaShareNodes /> },
-    { id: 2, label: "Edges", icon: <MdCable /> },
-    { id: 3, label: "Prompts", icon: <TbPrompt /> },
-    { id: 4, label: "Chains", icon: <GiCrossedChains /> },
-    { id: 5, label: "Store", icon: <FaStore /> },
-    { id: 6, label: "Settings", icon: <AiOutlineSetting /> },
-  ];
-  const [activeTab, setActiveTab] = useState(tabItems[0].id);
+  const tabItems = useMemo(
+    () => [
+      { id: "diagrams", label: "Diagrams", icon: <BsDiagram3 />, type: "panel" },
+      { id: "nodes", label: "Nodes", icon: <FaShareNodes />, type: "panel" },
+      { id: "edges", label: "Edges", icon: <MdCable />, type: "panel" },
+      { id: "prompts", label: "Prompts", icon: <TbPrompt />, type: "panel" },
+      { id: "chains", label: "Chains", icon: <GiCrossedChains />, type: "panel" },
+      { id: "store", label: "Store", icon: <FaStore />, type: "route", path: "/store" },
+      { id: "settings", label: "Settings", icon: <AiOutlineSetting />, type: "panel" },
+    ],
+    []
+  );
+  const defaultPanelId = tabItems[0].id;
+  const [activeTab, setActiveTab] = useState(defaultPanelId);
+  const router = useRouter();
+  const pathname = usePathname();
 
   const activeTabConfig = tabItems.find((item) => item.id === activeTab);
-  const isPanelVisible = activeTab !== null;
+  const isPanelVisible = activeTabConfig?.type === "panel";
 
   const isEditing = Boolean(editingContext);
+
+  useEffect(() => {
+    if (pathname === "/store") {
+      setActiveTab("store");
+      setMenuOpenId(null);
+      return;
+    }
+
+    if (activeTab === "store" && pathname !== "/store") {
+      setActiveTab(defaultPanelId);
+    }
+  }, [activeTab, defaultPanelId, pathname]);
 
   const modalConfigs = {
     node: {
@@ -239,13 +258,27 @@ const Sidebar = ({ onLoadDiagram }) => {
     setDragPayload(null);
   };
 
-  const handleNavClick = (index, event) => {
+  const handleNavClick = (item, event) => {
     event.preventDefault();
-    if (activeTab === index) {
+
+    if (item.type === "route" && item.path) {
+      if (pathname !== item.path) {
+        router.push(item.path);
+      }
+      setActiveTab(item.id);
+      setMenuOpenId(null);
+      return;
+    }
+
+    if (pathname === "/store" && item.id !== "store") {
+      router.push("/");
+    }
+
+    if (activeTab === item.id) {
       setActiveTab(null);
       setMenuOpenId(null);
     } else {
-      setActiveTab(index);
+      setActiveTab(item.id);
     }
   };
 
@@ -547,16 +580,16 @@ const Sidebar = ({ onLoadDiagram }) => {
 
     if (popupMode === "edge") {
       handleSaveCustomEdge(code, name);
-      setActiveTab(2); // switch to Edges tab
+      setActiveTab("edges"); // switch to Edges tab
     } else if (popupMode === "prompt") {
       handleSaveCustomPrompt(code, name);
-      setActiveTab(3); // switch to Prompts tab
+      setActiveTab("prompts"); // switch to Prompts tab
     } else if (popupMode === "chain") {
       handleSaveCustomChain(code, name);
-      setActiveTab(4); // switch to Chains tab
+      setActiveTab("chains"); // switch to Chains tab
     } else {
       handleSaveCustomNode(code, name);
-      setActiveTab(1); // switch to Nodes tab
+      setActiveTab("nodes"); // switch to Nodes tab
     }
     return true;
   };
@@ -775,7 +808,7 @@ const Sidebar = ({ onLoadDiagram }) => {
           new CustomEvent("load-diagram", { detail: diagramContent })
         );
       }
-      setActiveTab(0);
+      setActiveTab("diagrams");
     } catch (err) {
       console.error("Error al cargar el diagrama:", err);
     }
@@ -786,7 +819,7 @@ const Sidebar = ({ onLoadDiagram }) => {
       return null;
     }
     switch (activeTab) {
-      case 0: // Diagram
+      case "diagrams":
         return (
           <div className="tab-content">
             <div className="node-section">
@@ -848,7 +881,7 @@ const Sidebar = ({ onLoadDiagram }) => {
             )}
           </div>
         );
-      case 1: // Nodes
+      case "nodes":
         return (
           <div className="tab-content">
             <div className="node-section">
@@ -936,7 +969,7 @@ const Sidebar = ({ onLoadDiagram }) => {
             </div>
           </div>
         );
-      case 2: // Edges
+      case "edges":
         return (
           <div className="tab-content">
             <div className="node-section">
@@ -1018,7 +1051,7 @@ const Sidebar = ({ onLoadDiagram }) => {
             </div>
           </div>
         );
-      case 3: // Prompts
+      case "prompts":
         return (
           <div className="tab-content">
             {customPrompts.length > 0 && (
@@ -1058,7 +1091,7 @@ const Sidebar = ({ onLoadDiagram }) => {
             </div>
           </div>
         );
-      case 4: // Chains
+      case "chains":
         return (
           <div className="tab-content">
             {customChains.length > 0 && (
@@ -1118,7 +1151,7 @@ const Sidebar = ({ onLoadDiagram }) => {
                 className={`vs-nav-item ${
                   activeTab === item.id ? "active" : ""
                 }`}
-                onClick={(event) => handleNavClick(item.id, event)}
+                onClick={(event) => handleNavClick(item, event)}
               >
                 <span className="vs-nav-icon" aria-hidden="true">
                   {item.icon}
