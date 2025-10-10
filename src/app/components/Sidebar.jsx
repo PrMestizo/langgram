@@ -23,6 +23,9 @@ const Sidebar = ({ onLoadDiagram }) => {
   const [customPrompts, setCustomPrompts] = useState([]);
   const [customChains, setCustomChains] = useState([]);
   const [menuOpenId, setMenuOpenId] = useState(null);
+  const [modalInitialName, setModalInitialName] = useState("");
+  const [modalInitialCode, setModalInitialCode] = useState("");
+  const [editingContext, setEditingContext] = useState(null);
   const tabItems = [
     { id: 0, label: "Diagrams", icon: <BsDiagram3 /> },
     { id: 1, label: "Nodes", icon: <FaShareNodes /> },
@@ -35,6 +38,60 @@ const Sidebar = ({ onLoadDiagram }) => {
 
   const activeTabConfig = tabItems.find((item) => item.id === activeTab);
   const isPanelVisible = activeTab !== null;
+
+  const isEditing = Boolean(editingContext);
+
+  const modalConfigs = {
+    node: {
+      title: "Editor de nodo personalizado",
+      editTitle: "Editar nodo personalizado",
+      nameLabel: "Nombre",
+      namePlaceholder: "Nombre del nodo",
+      initialCode:
+        "# Edita el código del nodo a tus necesidades:\n\n# Función mínima para un nodo\ndef mi_nodo(state):\n    return state\n# debe devolver el estado (o algo mergeable con él)",
+      language: "python",
+      editorType: "code",
+    },
+    edge: {
+      title: "Editor de arista personalizada",
+      editTitle: "Editar arista personalizada",
+      nameLabel: "Nombre",
+      namePlaceholder: "Nombre de la arista",
+      initialCode:
+        "# Define tu arista personalizada aquí\n# def mi_arista(source, target, state):\n#     return state\n",
+      language: "python",
+      editorType: "code",
+    },
+    prompt: {
+      title: "Nuevo prompt personalizado",
+      editTitle: "Editar prompt personalizado",
+      nameLabel: "Nombre",
+      namePlaceholder: "Nombre del prompt",
+      initialCode: "",
+      editorType: "text",
+      contentLabel: "Contenido del prompt",
+      textPlaceholder: "Escribe aquí el prompt...",
+    },
+    chain: {
+      title: "Nueva chain personalizada",
+      editTitle: "Editar chain personalizada",
+      nameLabel: "Nombre",
+      namePlaceholder: "Nombre de la chain",
+      initialCode:
+        "# Define aquí la lógica de tu chain personalizada\n# def mi_chain(state):\n#     return state\n",
+      language: "python",
+      editorType: "code",
+    },
+    diagram: {
+      title: "Editar diagrama guardado",
+      editTitle: "Editar diagrama guardado",
+      nameLabel: "Nombre",
+      namePlaceholder: "Nombre del diagrama",
+      initialCode: "{\n  \n}",
+      language: "json",
+      editorType: "code",
+    },
+  };
 
   const loadDiagrams = async () => {
     try {
@@ -190,9 +247,41 @@ const Sidebar = ({ onLoadDiagram }) => {
     }
   };
 
-  const popupAction = async (mode = "node") => {
+  const popupAction = (mode = "node") => {
+    setMenuOpenId(null);
+    setEditingContext(null);
     setPopupMode(mode);
+    setModalInitialName("");
+    setModalInitialCode(modalConfigs[mode]?.initialCode ?? "");
     setIsPopupVisible(true);
+  };
+
+  const openModalForEdit = (mode, item) => {
+    setMenuOpenId(null);
+    setPopupMode(mode);
+    setEditingContext({ type: mode, item });
+    setModalInitialName(item?.name ?? "");
+
+    if (mode === "prompt") {
+      setModalInitialCode(item?.content ?? "");
+    } else if (mode === "diagram") {
+      const diagramContent = item?.content ?? item?.graph ?? {};
+      const formattedContent =
+        typeof diagramContent === "string"
+          ? diagramContent
+          : JSON.stringify(diagramContent, null, 2);
+      setModalInitialCode(formattedContent);
+    } else {
+      setModalInitialCode(item?.code ?? "");
+    }
+    setIsPopupVisible(true);
+  };
+
+  const handleModalClose = () => {
+    setIsPopupVisible(false);
+    setEditingContext(null);
+    setModalInitialName("");
+    setModalInitialCode("");
   };
 
   const handleSaveCustomNode = async (code, nodeName) => {
@@ -259,8 +348,201 @@ const Sidebar = ({ onLoadDiagram }) => {
     }
   };
 
+  const handleUpdateCustomDiagram = async (diagram, code, diagramName) => {
+    try {
+      let parsedContent = {};
+      if (code) {
+        try {
+          parsedContent = JSON.parse(code);
+        } catch (parseError) {
+          console.error("Error al parsear el diagrama:", parseError);
+          alert("El contenido del diagrama debe ser un JSON válido.");
+          return false;
+        }
+      }
+
+      const payload = {
+        id: diagram.id,
+        name: diagramName,
+        content: parsedContent,
+      };
+
+      const res = await fetch("/api/diagrams", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error?.details || "Error al actualizar diagrama");
+      }
+
+      const saved = await res.json();
+      setCustomDiagrams((prev) =>
+        prev.map((item) => (item.id === saved.id ? saved : item))
+      );
+      return true;
+    } catch (err) {
+      console.error("Error al actualizar diagrama:", err);
+      alert(`No se pudo actualizar el diagrama: ${err.message}`);
+      return false;
+    }
+  };
+
+  const handleUpdateCustomNode = async (node, code, nodeName) => {
+    try {
+      const payload = {
+        id: node.id,
+        name: nodeName,
+        code,
+      };
+
+      if (node.language) {
+        payload.language = node.language;
+      }
+
+      const res = await fetch("/api/nodes", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error?.details || "Error al actualizar nodo");
+      }
+
+      const saved = await res.json();
+      setCustomNodes((prev) =>
+        prev.map((item) => (item.id === saved.id ? saved : item))
+      );
+      return true;
+    } catch (err) {
+      console.error("Error al actualizar nodo:", err);
+      alert(`No se pudo actualizar el nodo: ${err.message}`);
+      return false;
+    }
+  };
+
+  const handleUpdateCustomEdge = async (edge, code, edgeName) => {
+    try {
+      const payload = {
+        id: edge.id,
+        name: edgeName,
+        code,
+      };
+
+      if (edge.language) {
+        payload.language = edge.language;
+      }
+
+      const res = await fetch("/api/edges", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error?.details || "Error al actualizar edge");
+      }
+
+      const saved = await res.json();
+      setCustomEdges((prev) =>
+        prev.map((item) => (item.id === saved.id ? saved : item))
+      );
+      return true;
+    } catch (err) {
+      console.error("Error al actualizar edge:", err);
+      alert(`No se pudo actualizar el edge: ${err.message}`);
+      return false;
+    }
+  };
+
+  const handleUpdateCustomPrompt = async (prompt, content, promptName) => {
+    try {
+      const payload = {
+        id: prompt.id,
+        name: promptName,
+        content,
+      };
+
+      const res = await fetch("/api/prompts", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error?.details || "Error al actualizar prompt");
+      }
+
+      const saved = await res.json();
+      setCustomPrompts((prev) =>
+        prev.map((item) => (item.id === saved.id ? saved : item))
+      );
+      return true;
+    } catch (err) {
+      console.error("Error al actualizar prompt:", err);
+      alert(`No se pudo actualizar el prompt: ${err.message}`);
+      return false;
+    }
+  };
+
+  const handleUpdateCustomChain = async (chain, code, chainName) => {
+    try {
+      const payload = {
+        id: chain.id,
+        name: chainName,
+        code,
+      };
+
+      if (chain.language) {
+        payload.language = chain.language;
+      }
+
+      const res = await fetch("/api/chains", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error?.details || "Error al actualizar chain");
+      }
+
+      const saved = await res.json();
+      setCustomChains((prev) =>
+        prev.map((item) => (item.id === saved.id ? saved : item))
+      );
+      return true;
+    } catch (err) {
+      console.error("Error al actualizar chain:", err);
+      alert(`No se pudo actualizar la chain: ${err.message}`);
+      return false;
+    }
+  };
+
   // Unified save handler so we can also switch to the right tab after save
   const handleSaveFromPopup = (code, name) => {
+    if (editingContext) {
+      const { type, item } = editingContext;
+      if (type === "diagram") {
+        return handleUpdateCustomDiagram(item, code, name);
+      } else if (type === "edge") {
+        return handleUpdateCustomEdge(item, code, name);
+      } else if (type === "prompt") {
+        return handleUpdateCustomPrompt(item, code, name);
+      } else if (type === "chain") {
+        return handleUpdateCustomChain(item, code, name);
+      } else {
+        return handleUpdateCustomNode(item, code, name);
+      }
+    }
+
     if (popupMode === "edge") {
       handleSaveCustomEdge(code, name);
       setActiveTab(2); // switch to Edges tab
@@ -274,6 +556,27 @@ const Sidebar = ({ onLoadDiagram }) => {
       handleSaveCustomNode(code, name);
       setActiveTab(1); // switch to Nodes tab
     }
+    return true;
+  };
+
+  const handleEditCustomDiagram = (diagram) => {
+    openModalForEdit("diagram", diagram);
+  };
+
+  const handleEditCustomNode = (node) => {
+    openModalForEdit("node", node);
+  };
+
+  const handleEditCustomEdge = (edge) => {
+    openModalForEdit("edge", edge);
+  };
+
+  const handleEditCustomPrompt = (prompt) => {
+    openModalForEdit("prompt", prompt);
+  };
+
+  const handleEditCustomChain = (chain) => {
+    openModalForEdit("chain", chain);
   };
 
   const handleDeleteCustomDiagram = async (diagramName) => {
@@ -441,46 +744,18 @@ const Sidebar = ({ onLoadDiagram }) => {
     }
   };
 
-  const modalConfigs = {
-    node: {
-      title: "Editor de nodo personalizado",
-      nameLabel: "Nombre",
-      namePlaceholder: "Nombre del nodo",
-      initialCode:
-        "# Edita el código del nodo a tus necesidades:\n\n# Función mínima para un nodo\ndef mi_nodo(state):\n    return state  # debe devolver el estado (o algo mergeable con él)",
-      language: "python",
-      editorType: "code",
-    },
-    edge: {
-      title: "Editor de arista personalizada",
-      nameLabel: "Nombre",
-      namePlaceholder: "Nombre de la arista",
-      initialCode:
-        "# Define tu arista personalizada aquí\n# def mi_arista(source, target, state):\n#     return state\n",
-      language: "python",
-      editorType: "code",
-    },
-    prompt: {
-      title: "Nuevo prompt personalizado",
-      nameLabel: "Nombre",
-      namePlaceholder: "Nombre del prompt",
-      initialCode: "",
-      editorType: "text",
-      contentLabel: "Contenido del prompt",
-      textPlaceholder: "Escribe aquí el prompt...",
-    },
-    chain: {
-      title: "Nueva chain personalizada",
-      nameLabel: "Nombre",
-      namePlaceholder: "Nombre de la chain",
-      initialCode:
-        "# Define aquí la lógica de tu chain personalizada\n# def mi_chain(state):\n#     return state\n",
-      language: "python",
-      editorType: "code",
-    },
-  };
-
   const activeModalConfig = modalConfigs[popupMode] ?? modalConfigs.node;
+  const modalTitle = isEditing
+    ? activeModalConfig.editTitle ?? activeModalConfig.title
+    : activeModalConfig.title;
+  const modalSaveLabel = isEditing ? "Guardar cambios" : "Guardar";
+  const modalLanguage =
+    isEditing && editingContext?.item?.language
+      ? editingContext.item.language
+      : activeModalConfig.language;
+  const modalEditorType = activeModalConfig.editorType;
+  const modalContentLabel = activeModalConfig.contentLabel;
+  const modalTextPlaceholder = activeModalConfig.textPlaceholder;
 
   const handleLoadDiagram = (diagram) => {
     try {
@@ -501,8 +776,6 @@ const Sidebar = ({ onLoadDiagram }) => {
       setActiveTab(0);
     } catch (err) {
       console.error("Error al cargar el diagrama:", err);
-      setPopupText(`Error al cargar el diagrama: ${err.message}`);
-      setTimeout(() => setPopupText(""), 5000);
     }
   };
 
@@ -564,6 +837,7 @@ const Sidebar = ({ onLoadDiagram }) => {
                       onOpenChange={(open) =>
                         setMenuOpenId(open ? "node-Base" : null)
                       }
+                      onEdit={() => handleEditCustomDiagram(d)}
                       onDelete={() => handleDeleteCustomDiagram(d.name)}
                     />
                   </div>
@@ -642,6 +916,7 @@ const Sidebar = ({ onLoadDiagram }) => {
                       onOpenChange={(open) =>
                         setMenuOpenId(open ? `custom-${n.name}` : null)
                       }
+                      onEdit={() => handleEditCustomNode(n)}
                       onDelete={() => handleDeleteCustomNode(n.name)}
                     />
                   </div>
@@ -723,6 +998,7 @@ const Sidebar = ({ onLoadDiagram }) => {
                       onOpenChange={(open) =>
                         setMenuOpenId(open ? `custom-${item.name}` : null)
                       }
+                      onEdit={() => handleEditCustomEdge(item)}
                       onDelete={() => handleDeleteCustomEdge(item.name)}
                     />
                   </div>
@@ -762,6 +1038,7 @@ const Sidebar = ({ onLoadDiagram }) => {
                       onOpenChange={(open) =>
                         setMenuOpenId(open ? `prompt-${p.name}` : null)
                       }
+                      onEdit={() => handleEditCustomPrompt(p)}
                       onDelete={() => handleDeleteCustomPrompt(p.name)}
                     />
                   </div>
@@ -801,6 +1078,7 @@ const Sidebar = ({ onLoadDiagram }) => {
                       onOpenChange={(open) =>
                         setMenuOpenId(open ? `chain-${c.name}` : null)
                       }
+                      onEdit={() => handleEditCustomChain(c)}
                       onDelete={() => handleDeleteCustomChain(c.name)}
                     />
                   </div>
@@ -860,19 +1138,20 @@ const Sidebar = ({ onLoadDiagram }) => {
       </div>
 
       <CustomModal
-        key={popupMode}
+        key={`${popupMode}-${editingContext?.item?.id ?? "new"}`}
         isVisible={isPopupVisible}
-        onClose={() => setIsPopupVisible(false)}
+        onClose={handleModalClose}
         onSave={handleSaveFromPopup}
-        initialCode={activeModalConfig.initialCode}
-        initialName=""
-        title={activeModalConfig.title}
+        initialCode={modalInitialCode}
+        initialName={modalInitialName}
+        title={modalTitle}
         nameLabel={activeModalConfig.nameLabel}
         namePlaceholder={activeModalConfig.namePlaceholder}
-        language={activeModalConfig.language}
-        editorType={activeModalConfig.editorType}
-        contentLabel={activeModalConfig.contentLabel}
-        textPlaceholder={activeModalConfig.textPlaceholder}
+        language={modalLanguage}
+        editorType={modalEditorType}
+        contentLabel={modalContentLabel}
+        textPlaceholder={modalTextPlaceholder}
+        saveLabel={modalSaveLabel}
       />
     </>
   );

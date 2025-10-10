@@ -4,11 +4,14 @@ import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 
-const options = ["Delete"];
-
 const ITEM_HEIGHT = 48;
 
-export default function LongMenu({ className, onOpenChange, onDelete }) {
+export default function LongMenu({
+  className,
+  onOpenChange,
+  onDelete,
+  onEdit,
+}) {
   const [anchorEl, setAnchorEl] = React.useState(null);
   const open = Boolean(anchorEl);
   const handleClick = (event) => {
@@ -20,8 +23,23 @@ export default function LongMenu({ className, onOpenChange, onDelete }) {
     onOpenChange?.(false);
   };
 
-  const handleDelete = () => {
-    onDelete();
+  const options = React.useMemo(() => {
+    const list = [];
+    if (onEdit) {
+      list.push({ label: "Edit", action: onEdit });
+    }
+    if (onDelete) {
+      list.push({ label: "Delete", action: onDelete });
+    }
+    return list;
+  }, [onDelete, onEdit]);
+
+  if (!options.length) {
+    return null;
+  }
+
+  const handleSelect = (action) => {
+    action?.();
     handleClose();
   };
 
@@ -65,11 +83,10 @@ export default function LongMenu({ className, onOpenChange, onDelete }) {
       >
         {options.map((option) => (
           <MenuItem
-            key={option}
-            selected={option === "Delete"}
-            onClick={handleDelete}
+            key={option.label}
+            onClick={() => handleSelect(option.action)}
           >
-            {option}
+            {option.label}
           </MenuItem>
         ))}
       </Menu>

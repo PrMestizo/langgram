@@ -96,3 +96,39 @@ export async function DELETE(request) {
     );
   }
 }
+
+export async function PUT(request) {
+  try {
+    const body = await request.json();
+    const { id, ...data } = body;
+
+    if (!id) {
+      return NextResponse.json(
+        { error: "Missing prompt identifier" },
+        { status: 400 }
+      );
+    }
+
+    const prompt = await prisma.promptTemplate.update({
+      where: { id },
+      data,
+    });
+    return NextResponse.json(prompt);
+  } catch (error) {
+    console.error("Error in PUT /api/prompts:", {
+      message: error.message,
+      name: error.name,
+      stack: error.stack,
+      prismaError: error.code,
+      prismaMetadata: error.meta,
+    });
+    return NextResponse.json(
+      {
+        error: "Failed to update prompt",
+        details: error.message,
+        code: error.code,
+      },
+      { status: 500 }
+    );
+  }
+}

@@ -59,8 +59,11 @@ function CustomModal({
   const isTextEditor = editorType === "text";
   const editorLanguage = language ?? "python";
 
-  const handleSave = () => {
-    onSave?.(code, nodeName);
+  const handleSave = async () => {
+    const result = await onSave?.(code, nodeName);
+    if (result === false) {
+      return;
+    }
     onClose?.();
   };
 

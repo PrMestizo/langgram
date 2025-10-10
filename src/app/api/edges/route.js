@@ -107,3 +107,39 @@ export async function DELETE(request) {
     );
   }
 }
+
+export async function PUT(request) {
+  try {
+    const body = await request.json();
+    const { id, ...data } = body;
+
+    if (!id) {
+      return NextResponse.json(
+        { error: "Missing edge identifier" },
+        { status: 400 }
+      );
+    }
+
+    const edge = await prisma.edgeTemplate.update({
+      where: { id },
+      data,
+    });
+    return NextResponse.json(edge);
+  } catch (error) {
+    console.error("Error in PUT /api/edges:", {
+      message: error.message,
+      name: error.name,
+      stack: error.stack,
+      prismaError: error.code,
+      prismaMetadata: error.meta,
+    });
+    return NextResponse.json(
+      {
+        error: "Failed to update edge",
+        details: error.message,
+        code: error.code,
+      },
+      { status: 500 }
+    );
+  }
+}

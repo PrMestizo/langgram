@@ -110,3 +110,39 @@ export async function DELETE(request) {
     );
   }
 }
+
+export async function PUT(request) {
+  try {
+    const body = await request.json();
+    const { id, ...data } = body;
+
+    if (!id) {
+      return NextResponse.json(
+        { error: "Missing diagram identifier" },
+        { status: 400 }
+      );
+    }
+
+    const diagram = await prisma.diagram.update({
+      where: { id },
+      data,
+    });
+    return NextResponse.json(diagram);
+  } catch (error) {
+    console.error("Error in PUT /api/diagrams:", {
+      message: error.message,
+      name: error.name,
+      stack: error.stack,
+      prismaError: error.code,
+      prismaMetadata: error.meta,
+    });
+    return NextResponse.json(
+      {
+        error: "Failed to update diagram",
+        details: error.message,
+        code: error.code,
+      },
+      { status: 500 }
+    );
+  }
+}
