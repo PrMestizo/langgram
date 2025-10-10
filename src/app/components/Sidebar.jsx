@@ -12,6 +12,7 @@ import { FaAnkh } from "react-icons/fa";
 import { TbPrompt } from "react-icons/tb";
 import { GiCrossedChains } from "react-icons/gi";
 import { AiOutlineSetting } from "react-icons/ai";
+import { FaStore } from "react-icons/fa";
 
 const Sidebar = ({ onLoadDiagram }) => {
   const { setType, setCode, setDragPayload } = useDnD();
@@ -32,7 +33,8 @@ const Sidebar = ({ onLoadDiagram }) => {
     { id: 2, label: "Edges", icon: <MdCable /> },
     { id: 3, label: "Prompts", icon: <TbPrompt /> },
     { id: 4, label: "Chains", icon: <GiCrossedChains /> },
-    { id: 5, label: "Settings", icon: <AiOutlineSetting /> },
+    { id: 5, label: "Store", icon: <FaStore /> },
+    { id: 6, label: "Settings", icon: <AiOutlineSetting /> },
   ];
   const [activeTab, setActiveTab] = useState(tabItems[0].id);
 
