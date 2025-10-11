@@ -291,7 +291,7 @@ export default function StorePage() {
                 fontWeight={700}
                 gutterBottom
               >
-                Store
+                LANGGRAM STORE
               </Typography>
               <Typography variant="body1" color="text.secondary">
                 Explora recursos creados por la comunidad para acelerar tus
@@ -414,10 +414,7 @@ export default function StorePage() {
                       <Box key={resource.id} className="store-grid__item">
                         <Card className="store-card" elevation={0}>
                           <CardContent>
-                            <Box
-                              className="store-card__preview"
-                              sx={{ backgroundColor: resource.accent }}
-                            />
+                            <Box />
                             <Stack
                               direction="row"
                               spacing={1.5}
@@ -428,12 +425,6 @@ export default function StorePage() {
                                 {resource.author.slice(0, 1)}
                               </Avatar>
                               <Box>
-                                <Typography
-                                  variant="overline"
-                                  color="text.secondary"
-                                >
-                                  {resource.author}
-                                </Typography>
                                 <Typography
                                   variant="h6"
                                   component="h3"
@@ -468,13 +459,6 @@ export default function StorePage() {
                                 />
                               ))}
                             </Stack>
-                            <Button
-                              variant="contained"
-                              size="small"
-                              color="primary"
-                            >
-                              Usar
-                            </Button>
                           </CardActions>
                         </Card>
                       </Box>
