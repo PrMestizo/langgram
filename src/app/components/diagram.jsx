@@ -25,6 +25,7 @@ import {
   loadPersistedDiagram,
   savePersistedDiagram,
 } from "../lib/diagramStorage";
+import { CgProfile } from "react-icons/cg";
 
 let id = 0;
 const getId = () => `dndnode_${id++}`;
@@ -646,6 +647,9 @@ function Diagram() {
               >
                 Guardar diagrama
               </button>
+              <button className="perfil-button">
+                <CgProfile className="perfil-icon" />
+              </button>
             </div>
           </div>
         </header>
@@ -665,13 +669,6 @@ function Diagram() {
           >
             <Background />
             <Controls />
-            <MiniMap
-              nodeStrokeColor={(n) => {
-                if (n.type === "Base") return "#0041d0";
-                if (n.type === "Conv") return "#4ea34eff";
-                if (n.type === "Compile") return "#ff0072";
-              }}
-            />
           </ReactFlow>
         </div>
       </div>
