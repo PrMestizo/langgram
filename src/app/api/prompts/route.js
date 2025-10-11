@@ -3,7 +3,17 @@ import prisma from "@/app/lib/db";
 
 export async function GET() {
   try {
-    const prompts = await prisma.promptTemplate.findMany();
+    const prompts = await prisma.promptTemplate.findMany({
+      include: {
+        owner: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
     return NextResponse.json(prompts);
   } catch (error) {
     console.error("Error in /api/prompts:", {

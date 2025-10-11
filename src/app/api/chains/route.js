@@ -3,7 +3,17 @@ import prisma from "@/app/lib/db";
 
 export async function GET() {
   try {
-    const chains = await prisma.chainTemplate.findMany();
+    const chains = await prisma.chainTemplate.findMany({
+      include: {
+        owner: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
     return NextResponse.json(chains);
   } catch (error) {
     console.error("Error in /api/chains:", {

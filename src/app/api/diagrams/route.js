@@ -9,8 +9,18 @@ export async function GET() {
     );
     console.log("Available models:", models);
 
-    const diagram = await prisma.diagram.findMany();
-    return NextResponse.json(diagram);
+    const diagrams = await prisma.diagram.findMany({
+      include: {
+        owner: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+    return NextResponse.json(diagrams);
   } catch (error) {
     console.error("Error in /api/diagrams:", {
       message: error.message,

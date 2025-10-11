@@ -898,7 +898,11 @@ body {
   height: 140px;
   border-radius: 16px;
   margin-bottom: 16px;
-  background: linear-gradient(135deg, rgba(148, 163, 184, 0.2), rgba(148, 163, 184, 0.35));
+  background: linear-gradient(
+    135deg,
+    rgba(148, 163, 184, 0.2),
+    rgba(148, 163, 184, 0.35)
+  );
 }
 
 .store-card__meta {
@@ -954,4 +958,14 @@ body {
   .store-card__tags {
     max-width: 100%;
   }
+}
+
+.store-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 48px 0;
+  color: #475569;
 }

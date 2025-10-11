@@ -9,7 +9,17 @@ export async function GET() {
     );
     console.log("Available models:", models);
 
-    const nodes = await prisma.nodeTemplate.findMany();
+    const nodes = await prisma.nodeTemplate.findMany({
+      include: {
+        owner: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
     return NextResponse.json(nodes);
   } catch (error) {
     console.error("Error in /api/nodes:", {
