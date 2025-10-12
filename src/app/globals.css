@@ -974,6 +974,12 @@ body {
   transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
+.perfil-button--avatar {
+  font-weight: 600;
+  background: linear-gradient(135deg, rgba(96, 165, 250, 0.35), rgba(37, 99, 235, 0.65));
+  color: #0f172a;
+}
+
 .perfil-button:hover {
   transform: translateY(-1px);
   box-shadow: 0 12px 28px rgba(15, 23, 42, 0.35);
@@ -988,4 +994,245 @@ body {
 .perfil-icon {
   width: 24px;
   height: 24px;
+}
+
+.perfil-avatar-letter {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.profile-menu {
+  position: relative;
+}
+
+.profile-dropdown {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  min-width: 220px;
+  background: rgba(15, 23, 42, 0.98);
+  border-radius: 16px;
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.55);
+  padding: 12px 0;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  z-index: 40;
+  backdrop-filter: blur(12px);
+  animation: dropdownFade 0.18s ease-out;
+}
+
+.profile-dropdown__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 16px 12px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+  margin-bottom: 8px;
+}
+
+.profile-dropdown__avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.9), rgba(129, 140, 248, 0.9));
+  color: #0f172a;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.profile-dropdown__details {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.profile-dropdown__name {
+  font-weight: 600;
+  color: #e2e8f0;
+  font-size: 0.95rem;
+}
+
+.profile-dropdown__email {
+  color: rgba(226, 232, 240, 0.7);
+  font-size: 0.8rem;
+  word-break: break-all;
+}
+
+.profile-dropdown__item {
+  width: 100%;
+  padding: 10px 18px;
+  background: none;
+  border: none;
+  text-align: left;
+  color: #e2e8f0;
+  font-size: 0.92rem;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.profile-dropdown__item:hover,
+.profile-dropdown__item:focus-visible {
+  background: rgba(59, 130, 246, 0.1);
+  color: #bfdbfe;
+  outline: none;
+}
+
+.profile-dropdown__item--danger:hover,
+.profile-dropdown__item--danger:focus-visible {
+  background: rgba(239, 68, 68, 0.1);
+  color: #fecaca;
+}
+
+.profile-dropdown__separator {
+  height: 1px;
+  background: rgba(148, 163, 184, 0.18);
+  margin: 6px 0;
+}
+
+.profile-auth-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 1200;
+  backdrop-filter: blur(6px);
+}
+
+.profile-auth-modal {
+  position: relative;
+  width: min(420px, 100%);
+  background: linear-gradient(160deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.92));
+  border-radius: 20px;
+  padding: 28px 32px;
+  color: #e2e8f0;
+  box-shadow: 0 30px 60px rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+}
+
+.profile-auth-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(148, 163, 184, 0.15);
+  color: #e2e8f0;
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.profile-auth-close:hover,
+.profile-auth-close:focus-visible {
+  background: rgba(148, 163, 184, 0.28);
+  outline: none;
+}
+
+.profile-auth-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.profile-auth-subtitle {
+  font-size: 0.95rem;
+  color: rgba(226, 232, 240, 0.75);
+  margin-bottom: 20px;
+}
+
+.profile-auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.profile-auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.9rem;
+}
+
+.profile-auth-field input {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 12px;
+  padding: 10px 12px;
+  color: #e2e8f0;
+  transition: border 0.2s ease, box-shadow 0.2s ease;
+}
+
+.profile-auth-field input:focus-visible {
+  border-color: rgba(96, 165, 250, 0.8);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+  outline: none;
+}
+
+.profile-auth-error {
+  background: rgba(248, 113, 113, 0.2);
+  color: #fecaca;
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+}
+
+.profile-auth-submit {
+  margin-top: 4px;
+  padding: 12px;
+  border: none;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.85), rgba(129, 140, 248, 0.95));
+  color: #0f172a;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.profile-auth-submit:hover,
+.profile-auth-submit:focus-visible {
+  transform: translateY(-1px);
+  box-shadow: 0 15px 30px rgba(37, 99, 235, 0.35);
+  outline: none;
+}
+
+.profile-auth-toggle {
+  margin-top: 18px;
+  font-size: 0.9rem;
+  color: rgba(226, 232, 240, 0.75);
+  text-align: center;
+}
+
+.profile-auth-toggle button {
+  background: none;
+  border: none;
+  color: #93c5fd;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.profile-auth-toggle button:hover,
+.profile-auth-toggle button:focus-visible {
+  color: #bfdbfe;
+  text-decoration: underline;
+  outline: none;
+}
+
+@keyframes dropdownFade {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

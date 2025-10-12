@@ -25,7 +25,7 @@ import {
   loadPersistedDiagram,
   savePersistedDiagram,
 } from "../lib/diagramStorage";
-import { CgProfile } from "react-icons/cg";
+import ProfileMenu from "./ProfileMenu";
 
 let id = 0;
 const getId = () => `dndnode_${id++}`;
@@ -647,9 +647,7 @@ function Diagram() {
               >
                 Guardar diagrama
               </button>
-              <button className="perfil-button">
-                <CgProfile className="perfil-icon" />
-              </button>
+              <ProfileMenu />
             </div>
           </div>
         </header>
