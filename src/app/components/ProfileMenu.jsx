@@ -2,17 +2,15 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CgProfile } from "react-icons/cg";
-import { signIn } from "next-auth/react";
-import { signOut } from "next-auth/react";
-
-const USER_STORAGE_KEY = "langgramUser";
-const CREDENTIALS_STORAGE_KEY = "langgramCredentials";
+import { signIn, signOut, useSession } from "next-auth/react";
 
 const sanitizeName = (name) => name?.trim() ?? "";
 const sanitizeEmail = (email) => email?.trim().toLowerCase() ?? "";
 
 function ProfileMenu() {
-  const [user, setUser] = useState(null);
+  const { data: session, status } = useSession();
+  const user = session?.user ?? null;
+  const isSessionLoading = status === "loading";
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState("login");
@@ -22,6 +20,7 @@ function ProfileMenu() {
     password: "",
   });
   const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const profileButtonRef = useRef(null);
   const dropdownRef = useRef(null);
@@ -34,34 +33,8 @@ function ProfileMenu() {
   }, [user]);
 
   useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-    try {
-      const storedUser = window.localStorage.getItem(USER_STORAGE_KEY);
-      if (storedUser) {
-        const parsed = JSON.parse(storedUser);
-        if (parsed && parsed.name && parsed.email) {
-          setUser(parsed);
-        }
-      }
-    } catch (err) {
-      console.warn("No se pudo cargar el usuario guardado", err);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-    try {
-      if (user) {
-        window.localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
-      } else {
-        window.localStorage.removeItem(USER_STORAGE_KEY);
-      }
-    } catch (err) {
-      console.warn("No se pudo sincronizar el usuario", err);
+    if (!user) {
+      setIsDropdownOpen(false);
     }
   }, [user]);
 
@@ -107,16 +80,23 @@ function ProfileMenu() {
   const closeAuthModal = useCallback(() => {
     setIsAuthOpen(false);
     resetForm();
+    setIsSubmitting(false);
   }, [resetForm]);
+
+  useEffect(() => {
+    if (user && isAuthOpen) {
+      closeAuthModal();
+    }
+  }, [user, isAuthOpen, closeAuthModal]);
 
   const handleProfileClick = useCallback(() => {
     if (user) {
       setIsDropdownOpen((prev) => !prev);
-    } else {
+    } else if (!isSessionLoading) {
       setAuthMode("login");
       setIsAuthOpen(true);
     }
-  }, [user]);
+  }, [user, isSessionLoading]);
 
   const toggleAuthMode = useCallback(() => {
     setAuthMode((prev) => (prev === "login" ? "register" : "login"));
@@ -129,9 +109,9 @@ function ProfileMenu() {
   }, []);
 
   const handleLogout = useCallback(() => {
-    setUser(null);
     closeDropdown();
-  }, [closeDropdown]);
+    signOut({ callbackUrl: "/" });
+  }, [closeDropdown, signOut]);
 
   const handleNavigate = useCallback(
     (destination) => {
@@ -143,25 +123,8 @@ function ProfileMenu() {
     [closeDropdown]
   );
 
-  async function handleLogin(event) {
-    event.preventDefault();
-    const email = event.target.email.value;
-    const password = event.target.password.value;
-    // Llamar a NextAuth signIn con el provider "credentials"
-    const result = await signIn("credentials", {
-      redirect: false,
-      email,
-      password,
-    });
-    if (result.error) {
-      console.error("Error de autenticación:", result.error);
-    } else {
-      // Login exitoso: redirigir o actualizar UI
-    }
-  }
-
   const handleAuthSubmit = useCallback(
-    (event) => {
+    async (event) => {
       event.preventDefault();
       setError("");
 
@@ -180,52 +143,65 @@ function ProfileMenu() {
           return;
         }
 
-        const newUser = { name: trimmedName, email: trimmedEmail };
         try {
-          if (typeof window !== "undefined") {
-            window.localStorage.setItem(
-              CREDENTIALS_STORAGE_KEY,
-              JSON.stringify({ ...newUser, password: trimmedPassword })
-            );
+          setIsSubmitting(true);
+          const response = await fetch("/api/auth/register", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              name: trimmedName,
+              email: trimmedEmail,
+              password: trimmedPassword,
+            }),
+          });
+
+          const data = await response.json();
+          if (!response.ok) {
+            throw new Error(data?.error ?? "No se pudo completar el registro.");
           }
+          const signInResult = await signIn("credentials", {
+            redirect: false,
+            email: trimmedEmail,
+            password: trimmedPassword,
+          });
+
+          if (signInResult?.error) {
+            throw new Error(signInResult.error);
+          }
+
+          closeAuthModal();
         } catch (err) {
-          console.warn("No se pudieron guardar las credenciales", err);
+          setError(err.message ?? "Ocurrió un error al registrarse.");
+        } finally {
+          setIsSubmitting(false);
         }
-        setUser(newUser);
-        closeAuthModal();
         return;
       }
 
       try {
-        if (typeof window === "undefined") {
-          setError("No se pudo validar la sesión.");
-          return;
+        setIsSubmitting(true);
+        const result = await signIn("credentials", {
+          redirect: false,
+          email: trimmedEmail,
+          password: trimmedPassword,
+        });
+
+        if (result?.error) {
+          throw new Error("Correo o contraseña incorrectos.");
         }
-        const storedCredentials = window.localStorage.getItem(
-          CREDENTIALS_STORAGE_KEY
-        );
-        if (!storedCredentials) {
-          setError("No encontramos una cuenta registrada. Regístrate primero.");
-          return;
-        }
-        const parsedCredentials = JSON.parse(storedCredentials);
-        if (
-          !parsedCredentials ||
-          sanitizeEmail(parsedCredentials.email) !== trimmedEmail ||
-          parsedCredentials.password !== trimmedPassword
-        ) {
-          setError("Correo o contraseña incorrectos.");
-          return;
-        }
-        setUser({ name: parsedCredentials.name, email: trimmedEmail });
         closeAuthModal();
       } catch (err) {
-        console.warn("No se pudieron leer las credenciales", err);
-        setError("Ocurrió un error al iniciar sesión.");
+        setError(err.message ?? "Ocurrió un error al iniciar sesión.");
+      } finally {
+        setIsSubmitting(false);
       }
     },
-    [authMode, formData, closeAuthModal]
+    [authMode, formData, closeAuthModal, signIn]
   );
+
+  const handleGoogleSignIn = useCallback(() => {
+    signIn("google");
+  }, [signIn]);
 
   return (
     <div className="profile-menu">
@@ -239,6 +215,7 @@ function ProfileMenu() {
         aria-haspopup={user ? "menu" : "dialog"}
         aria-expanded={user ? isDropdownOpen : isAuthOpen}
         aria-controls={user ? "profile-dropdown" : undefined}
+        disabled={isSessionLoading}
       >
         {avatarLetter ? (
           <span className="perfil-avatar-letter" aria-hidden="true">
@@ -355,10 +332,26 @@ function ProfileMenu() {
                 />
               </label>
               {error && <p className="profile-auth-error">{error}</p>}
-              <button type="submit" className="profile-auth-submit">
-                {authMode === "login" ? "Iniciar sesión" : "Registrarme"}
+              <button
+                type="submit"
+                className="profile-auth-submit"
+                disabled={isSubmitting}
+              >
+                {isSubmitting
+                  ? "Procesando..."
+                  : authMode === "login"
+                  ? "Iniciar sesión"
+                  : "Registrarme"}
               </button>
             </form>
+            <div className="profile-auth-separator">o</div>
+            <button
+              type="button"
+              className="profile-auth-provider"
+              onClick={handleGoogleSignIn}
+            >
+              Continuar con Google
+            </button>
             <div className="profile-auth-toggle">
               {authMode === "login"
                 ? "¿Aún no tienes cuenta?"
