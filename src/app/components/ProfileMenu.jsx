@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CgProfile } from "react-icons/cg";
+import { signIn } from "next-auth/react";
+import { signOut } from "next-auth/react";
 
 const USER_STORAGE_KEY = "langgramUser";
 const CREDENTIALS_STORAGE_KEY = "langgramCredentials";
@@ -14,7 +16,11 @@ function ProfileMenu() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState("login");
-  const [formData, setFormData] = useState({ name: "", email: "", password: "" });
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+  });
   const [error, setError] = useState("");
 
   const profileButtonRef = useRef(null);
@@ -137,6 +143,23 @@ function ProfileMenu() {
     [closeDropdown]
   );
 
+  async function handleLogin(event) {
+    event.preventDefault();
+    const email = event.target.email.value;
+    const password = event.target.password.value;
+    // Llamar a NextAuth signIn con el provider "credentials"
+    const result = await signIn("credentials", {
+      redirect: false,
+      email,
+      password,
+    });
+    if (result.error) {
+      console.error("Error de autenticación:", result.error);
+    } else {
+      // Login exitoso: redirigir o actualizar UI
+    }
+  }
+
   const handleAuthSubmit = useCallback(
     (event) => {
       event.preventDefault();
@@ -209,7 +232,9 @@ function ProfileMenu() {
       <button
         ref={profileButtonRef}
         type="button"
-        className={`perfil-button${avatarLetter ? " perfil-button--avatar" : ""}`}
+        className={`perfil-button${
+          avatarLetter ? " perfil-button--avatar" : ""
+        }`}
         onClick={handleProfileClick}
         aria-haspopup={user ? "menu" : "dialog"}
         aria-expanded={user ? isDropdownOpen : isAuthOpen}
@@ -335,7 +360,9 @@ function ProfileMenu() {
               </button>
             </form>
             <div className="profile-auth-toggle">
-              {authMode === "login" ? "¿Aún no tienes cuenta?" : "¿Ya tienes cuenta?"}{" "}
+              {authMode === "login"
+                ? "¿Aún no tienes cuenta?"
+                : "¿Ya tienes cuenta?"}{" "}
               <button type="button" onClick={toggleAuthMode}>
                 {authMode === "login" ? "Regístrate" : "Inicia sesión"}
               </button>
