@@ -42,6 +42,13 @@ function ProfileMenu() {
     setIsDropdownOpen(false);
   }, []);
 
+  const showAlert = useCallback((message) => {
+    if (typeof window === "undefined" || !message) {
+      return;
+    }
+    window.alert(message);
+  }, []);
+
   useEffect(() => {
     if (!isDropdownOpen) {
       return undefined;
@@ -169,6 +176,7 @@ function ProfileMenu() {
             throw new Error(signInResult.error);
           }
 
+          showAlert("Registro exitoso.");
           closeAuthModal();
         } catch (err) {
           setError(err.message ?? "Ocurrió un error al registrarse.");
@@ -187,16 +195,21 @@ function ProfileMenu() {
         });
 
         if (result?.error) {
-          throw new Error("Correo o contraseña incorrectos.");
+          const message =
+            result.error === "CredentialsSignin"
+              ? "Correo o contraseña incorrectos."
+              : result.error;
+          throw new Error(message);
         }
         closeAuthModal();
+        showAlert("Inicio de sesión exitoso.");
       } catch (err) {
         setError(err.message ?? "Ocurrió un error al iniciar sesión.");
       } finally {
         setIsSubmitting(false);
       }
     },
-    [authMode, formData, closeAuthModal, signIn]
+    [authMode, formData, closeAuthModal, showAlert, signIn]
   );
 
   const handleGoogleSignIn = useCallback(() => {

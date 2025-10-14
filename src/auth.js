@@ -36,18 +36,26 @@ const authOptions = {
         password: { label: "Password", type: "password" },
       },
       authorize: async (credentials) => {
-        if (!credentials?.email || !credentials?.password) return null;
+        if (!credentials?.email || !credentials?.password) {
+          throw new Error("Debes proporcionar un correo y una contraseña.");
+        }
         // 1. Buscar usuario por email en la base de datos
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
         });
-        if (!user || !user.password) return null; // Usuario no existe o no tiene contraseña
+        if (!user || !user.password) {
+          throw new Error(
+            "No se encontró una cuenta con ese correo electrónico."
+          );
+        }
         // 2. Verificar la contraseña hashed almacenada usando bcrypt
         const passwordValid = await bcrypt.compare(
           credentials.password,
           user.password
         );
-        if (!passwordValid) return null; // Contraseña incorrecta
+        if (!passwordValid) {
+          throw new Error("La contraseña es incorrecta.");
+        }
         // 3. Retornar objeto de usuario si credenciales válidas (NextAuth genera la sesión JWT)
         return {
           id: user.id,
