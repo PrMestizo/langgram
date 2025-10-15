@@ -1,9 +1,18 @@
 import { NextResponse } from "next/server";
 import prisma from "@/app/lib/db";
+import { auth } from "@/auth";
 
 export async function GET() {
   try {
+    const session = await auth();
+    const userId = session?.user?.id;
+
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const chains = await prisma.chainTemplate.findMany({
+      where: { ownerId: userId },
       include: {
         owner: {
           select: {
@@ -34,8 +43,21 @@ export async function GET() {
 
 export async function POST(request) {
   try {
+    const session = await auth();
+    const userId = session?.user?.id;
+
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await request.json();
-    const chain = await prisma.chainTemplate.create({ data: body });
+    const { ownerId, ...data } = body;
+    const chain = await prisma.chainTemplate.create({
+      data: {
+        ...data,
+        ownerId: userId,
+      },
+    });
     return NextResponse.json(chain);
   } catch (error) {
     console.error("Error in POST /api/chains:", {
@@ -56,29 +78,44 @@ export async function POST(request) {
 
 export async function DELETE(request) {
   try {
+    const session = await auth();
+    const userId = session?.user?.id;
+
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await request.json();
 
     if (body.id) {
-      const chain = await prisma.chainTemplate.delete({
-        where: { id: body.id },
-      });
-      return NextResponse.json(chain);
-    }
-
-    if (body.name) {
       const existingChain = await prisma.chainTemplate.findFirst({
-        where: { name: body.name },
+        where: { id: body.id, ownerId: userId },
       });
 
       if (!existingChain) {
         return NextResponse.json({ error: "Chain not found" }, { status: 404 });
       }
 
-      const deletedChain = await prisma.chainTemplate.delete({
-        where: { id: existingChain.id },
+      await prisma.chainTemplate.deleteMany({
+        where: { id: existingChain.id, ownerId: userId },
+      });
+      return NextResponse.json(existingChain);
+    }
+
+    if (body.name) {
+      const existingChain = await prisma.chainTemplate.findFirst({
+        where: { name: body.name, ownerId: userId },
       });
 
-      return NextResponse.json(deletedChain);
+      if (!existingChain) {
+        return NextResponse.json({ error: "Chain not found" }, { status: 404 });
+      }
+
+      await prisma.chainTemplate.deleteMany({
+        where: { id: existingChain.id, ownerId: userId },
+      });
+
+      return NextResponse.json(existingChain);
     }
 
     return NextResponse.json(
@@ -106,6 +143,13 @@ export async function DELETE(request) {
 
 export async function PUT(request) {
   try {
+    const session = await auth();
+    const userId = session?.user?.id;
+
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await request.json();
     const { id, ...data } = body;
 
@@ -116,10 +160,16 @@ export async function PUT(request) {
       );
     }
 
-    const chain = await prisma.chainTemplate.update({
-      where: { id },
+    const updateResult = await prisma.chainTemplate.updateMany({
+      where: { id, ownerId: userId },
       data,
     });
+
+    if (!updateResult.count) {
+      return NextResponse.json({ error: "Chain not found" }, { status: 404 });
+    }
+
+    const chain = await prisma.chainTemplate.findUnique({ where: { id } });
     return NextResponse.json(chain);
   } catch (error) {
     console.error("Error in PUT /api/chains:", {

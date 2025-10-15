@@ -1,15 +1,20 @@
 import { NextResponse } from "next/server";
 import prisma from "@/app/lib/db";
+import { auth } from "@/auth";
 
 export async function GET() {
   try {
-    console.log("Prisma client initialized:", !!prisma);
-    const models = Object.keys(prisma).filter(
-      (key) => typeof prisma[key]?.findMany === "function"
-    );
-    console.log("Available models:", models);
+    const session = await auth();
+    const userId = session?.user?.id;
+
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     const diagrams = await prisma.diagram.findMany({
+      where: {
+        OR: [{ ownerId: userId }, { isPublic: true }],
+      },
       include: {
         owner: {
           select: {
@@ -40,8 +45,21 @@ export async function GET() {
 
 export async function POST(request) {
   try {
+    const session = await auth();
+    const userId = session?.user?.id;
+
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await request.json();
-    const diagram = await prisma.diagram.create({ data: body });
+    const { ownerId, ...data } = body;
+    const diagram = await prisma.diagram.create({
+      data: {
+        ...data,
+        ownerId: userId,
+      },
+    });
     return NextResponse.json(diagram);
   } catch (error) {
     console.error("Error in /api/diagrams:", {
@@ -62,22 +80,40 @@ export async function POST(request) {
 
 export async function DELETE(request) {
   try {
+    const session = await auth();
+    const userId = session?.user?.id;
+
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await request.json();
     console.log("DELETE request body:", body); // Debug log
 
     // Opción 1: Si tu modelo tiene un campo 'id', usa esto:
     if (body.id) {
-      const diagram = await prisma.diagram.delete({
-        where: { id: body.id },
+      const existingDiagram = await prisma.diagram.findFirst({
+        where: { id: body.id, ownerId: userId },
       });
-      return NextResponse.json(diagram);
+
+      if (!existingDiagram) {
+        return NextResponse.json(
+          { error: "Diagram not found" },
+          { status: 404 }
+        );
+      }
+
+      await prisma.diagram.deleteMany({
+        where: { id: existingDiagram.id, ownerId: userId },
+      });
+      return NextResponse.json(existingDiagram);
     }
 
     // Opción 2: Si 'name' es único, primero busca el nodo y luego elimínalo
     if (body.name) {
       // Primero verificar si el nodo existe
       const existingDiagram = await prisma.diagram.findFirst({
-        where: { name: body.name },
+        where: { name: body.name, ownerId: userId },
       });
 
       if (!existingDiagram) {
@@ -89,12 +125,12 @@ export async function DELETE(request) {
       }
 
       // Eliminar usando el id del diagram encontrado
-      const deletedDiagram = await prisma.diagram.delete({
-        where: { id: existingDiagram.id },
+      await prisma.diagram.deleteMany({
+        where: { id: existingDiagram.id, ownerId: userId },
       });
 
-      console.log("Diagram deleted successfully:", deletedDiagram);
-      return NextResponse.json(deletedDiagram);
+      console.log("Diagram deleted successfully:", existingDiagram);
+      return NextResponse.json(existingDiagram);
     }
 
     // Si no hay ni id ni name en el body
@@ -123,6 +159,13 @@ export async function DELETE(request) {
 
 export async function PUT(request) {
   try {
+    const session = await auth();
+    const userId = session?.user?.id;
+
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await request.json();
     const { id, ...data } = body;
 
@@ -133,10 +176,19 @@ export async function PUT(request) {
       );
     }
 
-    const diagram = await prisma.diagram.update({
-      where: { id },
+    const updateResult = await prisma.diagram.updateMany({
+      where: { id, ownerId: userId },
       data,
     });
+
+    if (!updateResult.count) {
+      return NextResponse.json(
+        { error: "Diagram not found" },
+        { status: 404 }
+      );
+    }
+
+    const diagram = await prisma.diagram.findUnique({ where: { id } });
     return NextResponse.json(diagram);
   } catch (error) {
     console.error("Error in PUT /api/diagrams:", {
