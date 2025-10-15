@@ -1,15 +1,20 @@
 import { NextResponse } from "next/server";
 import prisma from "@/app/lib/db";
+import { auth } from "@/auth";
 
 export async function GET() {
   try {
-    console.log("Prisma client initialized:", !!prisma);
-    const models = Object.keys(prisma).filter(
-      (key) => typeof prisma[key]?.findMany === "function"
-    );
-    console.log("Available models:", models);
+    const session = await auth();
+    const userId = session?.user?.id;
+
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     const nodes = await prisma.nodeTemplate.findMany({
+      where: {
+        OR: [{ ownerId: userId }, { isPublic: true }],
+      },
       include: {
         owner: {
           select: {
@@ -40,8 +45,21 @@ export async function GET() {
 
 export async function POST(request) {
   try {
+    const session = await auth();
+    const userId = session?.user?.id;
+
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await request.json();
-    const node = await prisma.nodeTemplate.create({ data: body });
+    const { ownerId, ...data } = body;
+    const node = await prisma.nodeTemplate.create({
+      data: {
+        ...data,
+        ownerId: userId,
+      },
+    });
     return NextResponse.json(node);
   } catch (error) {
     console.error("Error in /api/nodes:", {
@@ -62,22 +80,40 @@ export async function POST(request) {
 
 export async function DELETE(request) {
   try {
+    const session = await auth();
+    const userId = session?.user?.id;
+
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await request.json();
     console.log("DELETE request body:", body); // Debug log
 
     // Opción 1: Si tu modelo tiene un campo 'id', usa esto:
     if (body.id) {
-      const node = await prisma.nodeTemplate.delete({
-        where: { id: body.id },
+      const existingNode = await prisma.nodeTemplate.findFirst({
+        where: { id: body.id, ownerId: userId },
       });
-      return NextResponse.json(node);
+
+      if (!existingNode) {
+        return NextResponse.json(
+          { error: "Node not found" },
+          { status: 404 }
+        );
+      }
+
+      await prisma.nodeTemplate.deleteMany({
+        where: { id: existingNode.id, ownerId: userId },
+      });
+      return NextResponse.json(existingNode);
     }
 
     // Opción 2: Si 'name' es único, primero busca el nodo y luego elimínalo
     if (body.name) {
       // Primero verificar si el nodo existe
       const existingNode = await prisma.nodeTemplate.findFirst({
-        where: { name: body.name },
+        where: { name: body.name, ownerId: userId },
       });
 
       if (!existingNode) {
@@ -86,12 +122,12 @@ export async function DELETE(request) {
       }
 
       // Eliminar usando el id del nodo encontrado
-      const deletedNode = await prisma.nodeTemplate.delete({
-        where: { id: existingNode.id },
+      await prisma.nodeTemplate.deleteMany({
+        where: { id: existingNode.id, ownerId: userId },
       });
 
-      console.log("Node deleted successfully:", deletedNode);
-      return NextResponse.json(deletedNode);
+      console.log("Node deleted successfully:", existingNode);
+      return NextResponse.json(existingNode);
     }
 
     // Si no hay ni id ni name en el body
@@ -120,6 +156,13 @@ export async function DELETE(request) {
 
 export async function PUT(request) {
   try {
+    const session = await auth();
+    const userId = session?.user?.id;
+
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await request.json();
     const { id, ...data } = body;
 
@@ -130,10 +173,16 @@ export async function PUT(request) {
       );
     }
 
-    const node = await prisma.nodeTemplate.update({
-      where: { id },
+    const updateResult = await prisma.nodeTemplate.updateMany({
+      where: { id, ownerId: userId },
       data,
     });
+
+    if (!updateResult.count) {
+      return NextResponse.json({ error: "Node not found" }, { status: 404 });
+    }
+
+    const node = await prisma.nodeTemplate.findUnique({ where: { id } });
     return NextResponse.json(node);
   } catch (error) {
     console.error("Error in PUT /api/nodes:", {

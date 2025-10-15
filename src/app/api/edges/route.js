@@ -1,15 +1,18 @@
 import { NextResponse } from "next/server";
 import prisma from "@/app/lib/db";
+import { auth } from "@/auth";
 
 export async function GET() {
   try {
-    console.log("Prisma client initialized:", !!prisma);
-    const models = Object.keys(prisma).filter(
-      (key) => typeof prisma[key]?.findMany === "function"
-    );
-    console.log("Available models:", models);
+    const session = await auth();
+    const userId = session?.user?.id;
+
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     const edges = await prisma.edgeTemplate.findMany({
+      where: { ownerId: userId },
       include: {
         owner: {
           select: {
@@ -40,8 +43,21 @@ export async function GET() {
 
 export async function POST(request) {
   try {
+    const session = await auth();
+    const userId = session?.user?.id;
+
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await request.json();
-    const edge = await prisma.edgeTemplate.create({ data: body });
+    const { ownerId, ...data } = body;
+    const edge = await prisma.edgeTemplate.create({
+      data: {
+        ...data,
+        ownerId: userId,
+      },
+    });
     return NextResponse.json(edge);
   } catch (error) {
     console.error("Error in /api/edges:", {
@@ -62,22 +78,37 @@ export async function POST(request) {
 
 export async function DELETE(request) {
   try {
+    const session = await auth();
+    const userId = session?.user?.id;
+
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await request.json();
     console.log("DELETE request body:", body); // Debug log
 
     // Opción 1: Si tu modelo tiene un campo 'id', usa esto:
     if (body.id) {
-      const node = await prisma.edgeTemplate.delete({
-        where: { id: body.id },
+      const existingEdge = await prisma.edgeTemplate.findFirst({
+        where: { id: body.id, ownerId: userId },
       });
-      return NextResponse.json(node);
+
+      if (!existingEdge) {
+        return NextResponse.json({ error: "Edge not found" }, { status: 404 });
+      }
+
+      await prisma.edgeTemplate.deleteMany({
+        where: { id: existingEdge.id, ownerId: userId },
+      });
+      return NextResponse.json(existingEdge);
     }
 
     // Opción 2: Si 'name' es único, primero busca el edge y luego elimínalo
     if (body.name) {
       // Primero verificar si el edge existe
       const existingEdge = await prisma.edgeTemplate.findFirst({
-        where: { name: body.name },
+        where: { name: body.name, ownerId: userId },
       });
 
       if (!existingEdge) {
@@ -86,12 +117,12 @@ export async function DELETE(request) {
       }
 
       // Eliminar usando el id del edge encontrado
-      const deletedEdge = await prisma.edgeTemplate.delete({
-        where: { id: existingEdge.id },
+      await prisma.edgeTemplate.deleteMany({
+        where: { id: existingEdge.id, ownerId: userId },
       });
 
-      console.log("Edge deleted successfully:", deletedEdge);
-      return NextResponse.json(deletedEdge);
+      console.log("Edge deleted successfully:", existingEdge);
+      return NextResponse.json(existingEdge);
     }
 
     // Si no hay ni id ni name en el body
@@ -120,6 +151,13 @@ export async function DELETE(request) {
 
 export async function PUT(request) {
   try {
+    const session = await auth();
+    const userId = session?.user?.id;
+
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await request.json();
     const { id, ...data } = body;
 
@@ -130,10 +168,16 @@ export async function PUT(request) {
       );
     }
 
-    const edge = await prisma.edgeTemplate.update({
-      where: { id },
+    const updateResult = await prisma.edgeTemplate.updateMany({
+      where: { id, ownerId: userId },
       data,
     });
+
+    if (!updateResult.count) {
+      return NextResponse.json({ error: "Edge not found" }, { status: 404 });
+    }
+
+    const edge = await prisma.edgeTemplate.findUnique({ where: { id } });
     return NextResponse.json(edge);
   } catch (error) {
     console.error("Error in PUT /api/edges:", {
