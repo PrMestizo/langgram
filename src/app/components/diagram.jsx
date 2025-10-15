@@ -384,20 +384,6 @@ function Diagram() {
     }
   };
 
-  const JSONtoFile = async () => {
-    const graphJSON = GraphJSON();
-    try {
-      const formattedJSON = JSON.stringify(graphJSON, null, 2);
-      setAlert({ message: formattedJSON, severity: "success", open: true });
-    } catch {
-      setAlert({
-        message: "Error al generar el código con IA",
-        severity: "error",
-        open: true,
-      });
-    }
-  };
-
   const openSaveDialog = () => {
     setDiagramName("");
     setIsSaveDialogOpen(true);
