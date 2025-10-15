@@ -5,30 +5,25 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
-const prisma = new PrismaClient();
+// Prisma singleton (evita múltiples conexiones en dev)
+const globalForPrisma = globalThis;
+const prisma =
+  globalForPrisma.prisma ??
+  new PrismaClient({
+    log:
+      process.env.NODE_ENV === "development"
+        ? ["query", "error", "warn"]
+        : ["error"],
+  });
+if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
-const authOptions = {
+export const authOptions = {
   adapter: PrismaAdapter(prisma),
-  session: {
-    strategy: "jwt", // Using JWT strategy instead of database for better performance
-  },
-  callbacks: {
-    async session({ session, token, user }) {
-      if (session?.user) {
-        session.user.id = token?.sub || user?.id;
-        session.user.role = token?.role || user?.role || "user";
-      }
-      return session;
-    },
-    async jwt({ token, user }) {
-      if (user) {
-        token.role = user.role;
-      }
-      return token;
-    },
-  },
+
+  // ✅ Usa SOLO una estrategia. Aquí JWT:
+  session: { strategy: "jwt" },
+
   providers: [
-    // Proveedor de credenciales (email y contraseña)
     CredentialsProvider({
       name: "Credentials",
       credentials: {
@@ -39,7 +34,6 @@ const authOptions = {
         if (!credentials?.email || !credentials?.password) {
           throw new Error("Debes proporcionar un correo y una contraseña.");
         }
-        // 1. Buscar usuario por email en la base de datos
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
         });
@@ -48,55 +42,52 @@ const authOptions = {
             "No se encontró una cuenta con ese correo electrónico."
           );
         }
-        // 2. Verificar la contraseña hashed almacenada usando bcrypt
-        const passwordValid = await bcrypt.compare(
-          credentials.password,
-          user.password
-        );
-        if (!passwordValid) {
+        const ok = await bcrypt.compare(credentials.password, user.password);
+        if (!ok) {
           throw new Error("La contraseña es incorrecta.");
         }
-        // 3. Retornar objeto de usuario si credenciales válidas (NextAuth genera la sesión JWT)
+        // Devuelve lo que quieras que viva en el JWT
         return {
           id: user.id,
           name: user.name,
           email: user.email,
-          role: user.role,
+          role: user.role ?? "user",
         };
       },
     }),
-    // Proveedor OAuth2 de Google
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     }),
   ],
-  pages: {
-    signIn: "/", // Página de inicio de sesión personalizada (ruta en /app/login)
-  },
-  session: {
-    strategy: "database",
-  },
+
   callbacks: {
-    async session({ session, user }) {
-      if (session.user) {
-        if (user?.role) {
-          session.user.role = user.role;
-        } else if (session.user.email) {
-          const dbUser = await prisma.user.findUnique({
-            where: { email: session.user.email },
-            select: { role: true },
-          });
-          session.user.role = dbUser?.role ?? session.user.role;
-        }
+    // Mete el role (y lo que necesites) en el token una sola vez
+    async jwt({ token, user }) {
+      if (user) {
+        token.role = user.role ?? "user";
+      }
+      return token;
+    },
+    // Propaga del token a la session (lado cliente)
+    async session({ session, token }) {
+      if (session?.user) {
+        session.user.id = token.sub;
+        session.user.role = token.role ?? "user";
       }
       return session;
     },
   },
-  secret: process.env.AUTH_SECRET,
+
+  pages: {
+    // Ajusta si tu formulario real vive en /login
+    signIn: "/",
+  },
+
+  secret: process.env.AUTH_SECRET, // En Auth.js v5 es AUTH_SECRET (ok). Si usas NextAuth v4 sería NEXTAUTH_SECRET.
 };
 
+// Exports para App Router /app/api/auth/[...nextauth]/route.js
 const handler = NextAuth(authOptions);
-const { auth, signIn, signOut } = handler;
-
-export { handler as GET, handler as POST, auth, signIn, signOut, authOptions };
+export { handler as GET, handler as POST };
+export const { auth, signIn, signOut } = handler;
