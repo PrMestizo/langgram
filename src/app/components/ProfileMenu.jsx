@@ -188,30 +188,21 @@ function ProfileMenu() {
 
       try {
         setIsSubmitting(true);
-        const result = await fetch("/api/auth/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email: trimmedEmail,
-            password: trimmedPassword,
-          }),
+        const signInResult = await signIn("credentials", {
+          redirect: false,
+          email: trimmedEmail,
+          password: trimmedPassword,
         });
 
-        const data = await result.json();
-
-        if (!result.ok) {
-          throw new Error(data?.error ?? "No se pudo iniciar sesión.");
-        }
-
-        if (result?.error) {
+        if (signInResult?.error) {
           const message =
-            result?.error === "CredentialsSignin"
+            signInResult.error === "CredentialsSignin"
               ? "Correo o contraseña incorrectos."
-              : result?.error ?? "Ocurrió un error al iniciar sesión.";
+              : signInResult.error ?? "No se pudo iniciar sesión.";
           throw new Error(message);
         }
-        closeAuthModal();
         showAlert("Inicio de sesión exitoso.");
+        closeAuthModal();
       } catch (err) {
         setError(err.message ?? "Ocurrió un error al iniciar sesión.");
       } finally {
