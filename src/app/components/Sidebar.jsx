@@ -117,8 +117,17 @@ const Sidebar = ({ onLoadDiagram }) => {
   const loadDiagrams = async () => {
     try {
       const res = await fetch("/api/diagrams");
+      if (!res.ok) {
+        console.error(
+          "Error al cargar diagramas: respuesta no válida",
+          res.status,
+          res.statusText
+        );
+        setCustomDiagrams([]);
+        return;
+      }
       const data = await res.json();
-      setCustomDiagrams(data);
+      setCustomDiagrams(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Error al cargar diagramas:", err);
     }
@@ -139,8 +148,17 @@ const Sidebar = ({ onLoadDiagram }) => {
     const fetchNodes = async () => {
       try {
         const res = await fetch("/api/nodes");
+        if (!res.ok) {
+          console.error(
+            "Error al cargar nodos: respuesta no válida",
+            res.status,
+            res.statusText
+          );
+          setCustomNodes([]);
+          return;
+        }
         const data = await res.json();
-        setCustomNodes(data); // aquí se guardan tus nodos de la DB
+        setCustomNodes(Array.isArray(data) ? data : []); // aquí se guardan tus nodos de la DB
       } catch (err) {
         console.error("Error al cargar nodos:", err);
       }
@@ -152,8 +170,17 @@ const Sidebar = ({ onLoadDiagram }) => {
     const fetchEdges = async () => {
       try {
         const res = await fetch("/api/edges");
+        if (!res.ok) {
+          console.error(
+            "Error al cargar edges: respuesta no válida",
+            res.status,
+            res.statusText
+          );
+          setCustomEdges([]);
+          return;
+        }
         const data = await res.json();
-        setCustomEdges(data);
+        setCustomEdges(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error("Error al cargar edges:", err);
       }
@@ -165,8 +192,17 @@ const Sidebar = ({ onLoadDiagram }) => {
     const fetchPrompts = async () => {
       try {
         const res = await fetch("/api/prompts");
+        if (!res.ok) {
+          console.error(
+            "Error al cargar prompts: respuesta no válida",
+            res.status,
+            res.statusText
+          );
+          setCustomPrompts([]);
+          return;
+        }
         const data = await res.json();
-        setCustomPrompts(data);
+        setCustomPrompts(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error("Error al cargar prompts:", err);
       }
@@ -178,8 +214,17 @@ const Sidebar = ({ onLoadDiagram }) => {
     const fetchChains = async () => {
       try {
         const res = await fetch("/api/chains");
+        if (!res.ok) {
+          console.error(
+            "Error al cargar chains: respuesta no válida",
+            res.status,
+            res.statusText
+          );
+          setCustomChains([]);
+          return;
+        }
         const data = await res.json();
-        setCustomChains(data);
+        setCustomChains(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error("Error al cargar chains:", err);
       }
@@ -327,10 +372,29 @@ const Sidebar = ({ onLoadDiagram }) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newNode),
       });
+
+      if (!res.ok) {
+        let message = `Error al guardar nodo (${res.status})`;
+        try {
+          const error = await res.json();
+          message = error?.details || message;
+        } catch (parseErr) {
+          console.error("No se pudo parsear el error del nodo:", parseErr);
+        }
+        alert(message);
+        return false;
+      }
+
       const saved = await res.json();
-      setCustomNodes((prev) => [...prev, saved]);
+      setCustomNodes((prev) => {
+        const safePrev = Array.isArray(prev) ? prev : [];
+        return [...safePrev, saved];
+      });
+      return true;
     } catch (err) {
       console.error("Error al guardar nodo:", err);
+      alert(`No se pudo guardar el nodo: ${err.message}`);
+      return false;
     }
   };
 
@@ -342,10 +406,29 @@ const Sidebar = ({ onLoadDiagram }) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newEdge),
       });
+
+      if (!res.ok) {
+        let message = `Error al guardar edge (${res.status})`;
+        try {
+          const error = await res.json();
+          message = error?.details || message;
+        } catch (parseErr) {
+          console.error("No se pudo parsear el error del edge:", parseErr);
+        }
+        alert(message);
+        return false;
+      }
+
       const saved = await res.json();
-      setCustomEdges((prev) => [...prev, saved]);
+      setCustomEdges((prev) => {
+        const safePrev = Array.isArray(prev) ? prev : [];
+        return [...safePrev, saved];
+      });
+      return true;
     } catch (err) {
       console.error("Error al guardar edge:", err);
+      alert(`No se pudo guardar el edge: ${err.message}`);
+      return false;
     }
   };
 
@@ -357,12 +440,29 @@ const Sidebar = ({ onLoadDiagram }) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newPrompt),
       });
+
+      if (!res.ok) {
+        let message = `Error al guardar prompt (${res.status})`;
+        try {
+          const error = await res.json();
+          message = error?.details || message;
+        } catch (parseErr) {
+          console.error("No se pudo parsear el error del prompt:", parseErr);
+        }
+        alert(message);
+        return false;
+      }
+
       const saved = await res.json();
-      setCustomPrompts((prev) =>
-        Array.isArray(prev) ? [...prev, saved] : [saved]
-      );
+      setCustomPrompts((prev) => {
+        const safePrev = Array.isArray(prev) ? prev : [];
+        return [...safePrev, saved];
+      });
+      return true;
     } catch (err) {
       console.error("Error al guardar prompt:", err);
+      alert(`No se pudo guardar el prompt: ${err.message}`);
+      return false;
     }
   };
 
@@ -374,12 +474,29 @@ const Sidebar = ({ onLoadDiagram }) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newChain),
       });
+
+      if (!res.ok) {
+        let message = `Error al guardar chain (${res.status})`;
+        try {
+          const error = await res.json();
+          message = error?.details || message;
+        } catch (parseErr) {
+          console.error("No se pudo parsear el error de la chain:", parseErr);
+        }
+        alert(message);
+        return false;
+      }
+
       const saved = await res.json();
-      setCustomChains((prev) =>
-        Array.isArray(prev) ? [...prev, saved] : [saved]
-      );
+      setCustomChains((prev) => {
+        const safePrev = Array.isArray(prev) ? prev : [];
+        return [...safePrev, saved];
+      });
+      return true;
     } catch (err) {
       console.error("Error al guardar chain:", err);
+      alert(`No se pudo guardar la chain: ${err.message}`);
+      return false;
     }
   };
 
@@ -562,7 +679,7 @@ const Sidebar = ({ onLoadDiagram }) => {
   };
 
   // Unified save handler so we can also switch to the right tab after save
-  const handleSaveFromPopup = (code, name) => {
+  const handleSaveFromPopup = async (code, name) => {
     if (editingContext) {
       const { type, item } = editingContext;
       if (type === "diagram") {
@@ -579,19 +696,30 @@ const Sidebar = ({ onLoadDiagram }) => {
     }
 
     if (popupMode === "edge") {
-      handleSaveCustomEdge(code, name);
-      setActiveTab("edges"); // switch to Edges tab
+      const result = await handleSaveCustomEdge(code, name);
+      if (result) {
+        setActiveTab("edges"); // switch to Edges tab
+      }
+      return result;
     } else if (popupMode === "prompt") {
-      handleSaveCustomPrompt(code, name);
-      setActiveTab("prompts"); // switch to Prompts tab
+      const result = await handleSaveCustomPrompt(code, name);
+      if (result) {
+        setActiveTab("prompts"); // switch to Prompts tab
+      }
+      return result;
     } else if (popupMode === "chain") {
-      handleSaveCustomChain(code, name);
-      setActiveTab("chains"); // switch to Chains tab
+      const result = await handleSaveCustomChain(code, name);
+      if (result) {
+        setActiveTab("chains"); // switch to Chains tab
+      }
+      return result;
     } else {
-      handleSaveCustomNode(code, name);
-      setActiveTab("nodes"); // switch to Nodes tab
+      const result = await handleSaveCustomNode(code, name);
+      if (result) {
+        setActiveTab("nodes"); // switch to Nodes tab
+      }
+      return result;
     }
-    return true;
   };
 
   const handleEditCustomDiagram = (diagram) => {
