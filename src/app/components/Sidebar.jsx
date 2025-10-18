@@ -1,6 +1,6 @@
 // Sidebar.jsx
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDnD } from "./DnDContext";
 import LongMenu from "./KebabMenu";
 import CustomModal from "./Modal";
@@ -14,9 +14,12 @@ import { GiCrossedChains } from "react-icons/gi";
 import { AiOutlineSetting } from "react-icons/ai";
 import { FaStore } from "react-icons/fa";
 import { usePathname, useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 
 const Sidebar = ({ onLoadDiagram }) => {
   const { setType, setCode, setDragPayload } = useDnD();
+  const { status } = useSession();
+  const isAuthenticated = status === "authenticated";
   const [isPopupVisible, setIsPopupVisible] = useState(false);
   const [popupMode, setPopupMode] = useState("node");
   const [customDiagrams, setCustomDiagrams] = useState([]);
@@ -30,13 +33,34 @@ const Sidebar = ({ onLoadDiagram }) => {
   const [editingContext, setEditingContext] = useState(null);
   const tabItems = useMemo(
     () => [
-      { id: "diagrams", label: "Diagrams", icon: <BsDiagram3 />, type: "panel" },
+      {
+        id: "diagrams",
+        label: "Diagrams",
+        icon: <BsDiagram3 />,
+        type: "panel",
+      },
       { id: "nodes", label: "Nodes", icon: <FaShareNodes />, type: "panel" },
       { id: "edges", label: "Edges", icon: <MdCable />, type: "panel" },
       { id: "prompts", label: "Prompts", icon: <TbPrompt />, type: "panel" },
-      { id: "chains", label: "Chains", icon: <GiCrossedChains />, type: "panel" },
-      { id: "store", label: "Store", icon: <FaStore />, type: "route", path: "/store" },
-      { id: "settings", label: "Settings", icon: <AiOutlineSetting />, type: "panel" },
+      {
+        id: "chains",
+        label: "Chains",
+        icon: <GiCrossedChains />,
+        type: "panel",
+      },
+      {
+        id: "store",
+        label: "Store",
+        icon: <FaStore />,
+        type: "route",
+        path: "/store",
+      },
+      {
+        id: "settings",
+        label: "Settings",
+        icon: <AiOutlineSetting />,
+        type: "panel",
+      },
     ],
     []
   );
@@ -114,18 +138,28 @@ const Sidebar = ({ onLoadDiagram }) => {
     },
   };
 
-  const loadDiagrams = async () => {
+  const loadDiagrams = useCallback(async () => {
+    if (!isAuthenticated) {
+      return;
+    }
     try {
       const res = await fetch("/api/diagrams");
+      if (!res.ok) {
+        throw new Error(`Error ${res.status}: ${res.statusText}`);
+      }
       const data = await res.json();
-      setCustomDiagrams(data);
+      setCustomDiagrams(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Error al cargar diagramas:", err);
     }
-  };
+  }, [isAuthenticated]);
 
   useEffect(() => {
-    // Cargar diagramas al montar
+    if (!isAuthenticated) {
+      setCustomDiagrams([]);
+      return;
+    }
+
     loadDiagrams();
 
     // Escuchar eventos de actualización
@@ -133,59 +167,87 @@ const Sidebar = ({ onLoadDiagram }) => {
     return () => {
       window.removeEventListener("diagrams-updated", loadDiagrams);
     };
-  }, []);
+  }, [isAuthenticated, loadDiagrams]);
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      setCustomNodes([]);
+      return;
+    }
     const fetchNodes = async () => {
       try {
         const res = await fetch("/api/nodes");
+        if (!res.ok) {
+          throw new Error(`Error ${res.status}: ${res.statusText}`);
+        }
         const data = await res.json();
-        setCustomNodes(data); // aquí se guardan tus nodos de la DB
+        setCustomNodes(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error("Error al cargar nodos:", err);
       }
     };
     fetchNodes();
-  }, []);
+  }, [isAuthenticated]);
 
   useEffect(() => {
     const fetchEdges = async () => {
+      if (!isAuthenticated) {
+        setCustomEdges([]);
+        return;
+      }
       try {
         const res = await fetch("/api/edges");
+        if (!res.ok) {
+          throw new Error(`Error ${res.status}: ${res.statusText}`);
+        }
         const data = await res.json();
-        setCustomEdges(data);
+        setCustomEdges(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error("Error al cargar edges:", err);
       }
     };
     fetchEdges();
-  }, []);
+  }, [isAuthenticated]);
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      setCustomPrompts([]);
+      return;
+    }
     const fetchPrompts = async () => {
       try {
         const res = await fetch("/api/prompts");
+        if (!res.ok) {
+          throw new Error(`Error ${res.status}: ${res.statusText}`);
+        }
         const data = await res.json();
-        setCustomPrompts(data);
+        setCustomPrompts(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error("Error al cargar prompts:", err);
       }
     };
     fetchPrompts();
-  }, []);
+  }, [isAuthenticated]);
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      setCustomChains([]);
+      return;
+    }
     const fetchChains = async () => {
       try {
         const res = await fetch("/api/chains");
+        if (!res.ok) {
+          throw new Error(`Error ${res.status}: ${res.statusText}`);
+        }
         const data = await res.json();
-        setCustomChains(data);
+        setCustomChains(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error("Error al cargar chains:", err);
       }
     };
     fetchChains();
-  }, []);
+  }, [isAuthenticated]);
 
   useEffect(() => {
     const handleEdgesUpdated = (event) => {
