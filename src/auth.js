@@ -1,4 +1,4 @@
-import NextAuth from "next-auth";
+import NextAuth, { getServerSession } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import { PrismaAdapter } from "@auth/prisma-adapter";
@@ -89,5 +89,7 @@ export const authOptions = {
 
 // Exports para App Router /app/api/auth/[...nextauth]/route.js
 const handler = NextAuth(authOptions);
+export async function auth() {
+  return getServerSession(authOptions);
+}
 export { handler as GET, handler as POST };
-export const { auth, signIn, signOut } = handler;
