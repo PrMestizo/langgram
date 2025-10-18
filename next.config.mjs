@@ -3,14 +3,14 @@ const nextConfig = {
   async redirects() {
     return [
       {
-        source: '/',
+        source: "/",
         has: [
           {
-            type: 'cookie',
-            key: 'next-auth.session-token',
+            type: "cookie",
+            key: "next-auth.session-token",
           },
         ],
-        destination: '/dashboard',
+        destination: "/",
         permanent: false,
       },
     ];
@@ -18,13 +18,13 @@ const nextConfig = {
   async rewrites() {
     return [
       {
-        source: '/api/auth/:path*',
-        destination: '/api/auth/:path*',
+        source: "/api/auth/:path*",
+        destination: "/api/auth/:path*",
       },
     ];
   },
   images: {
-    domains: ['lh3.googleusercontent.com'],
+    domains: ["lh3.googleusercontent.com"],
   },
 };
 
