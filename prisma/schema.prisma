@@ -91,6 +91,7 @@ model EdgeTemplate {
   metadata    Json?
   owner       User?   @relation("UserEdgeTemplates", fields: [ownerId], references: [id])
   ownerId     String?
+  isPublic    Boolean @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -117,6 +118,7 @@ model PromptTemplate {
   metadata    Json?
   owner       User?    @relation("UserPromptTemplates", fields: [ownerId], references: [id])
   ownerId     String?
+  isPublic    Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -130,6 +132,7 @@ model ChainTemplate {
   metadata    Json?
   owner       User?    @relation("UserChainTemplates", fields: [ownerId], references: [id])
   ownerId     String?
+  isPublic    Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }

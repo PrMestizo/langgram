@@ -18,8 +18,9 @@ import { useSession } from "next-auth/react";
 
 const Sidebar = ({ onLoadDiagram }) => {
   const { setType, setCode, setDragPayload } = useDnD();
-  const { status } = useSession();
+  const { data: session, status } = useSession();
   const isAuthenticated = status === "authenticated";
+  const userId = session?.user?.id;
   const [isPopupVisible, setIsPopupVisible] = useState(false);
   const [popupMode, setPopupMode] = useState("node");
   const [customDiagrams, setCustomDiagrams] = useState([]);
@@ -31,6 +32,7 @@ const Sidebar = ({ onLoadDiagram }) => {
   const [modalInitialName, setModalInitialName] = useState("");
   const [modalInitialCode, setModalInitialCode] = useState("");
   const [editingContext, setEditingContext] = useState(null);
+  const [togglingPublic, setTogglingPublic] = useState({});
   const tabItems = useMemo(
     () => [
       {
@@ -73,6 +75,132 @@ const Sidebar = ({ onLoadDiagram }) => {
   const isPanelVisible = activeTabConfig?.type === "panel";
 
   const isEditing = Boolean(editingContext);
+
+  const canManageItem = (item) => !item?.ownerId || item.ownerId === userId;
+
+  const getToggleKey = (typeKey, item) =>
+    item?.id ? `${typeKey}-${item.id}` : null;
+
+  const setToggleLoadingState = (key, value) => {
+    if (!key) {
+      return;
+    }
+    setTogglingPublic((prev) => {
+      const next = { ...prev };
+      if (value) {
+        next[key] = true;
+      } else {
+        delete next[key];
+      }
+      return next;
+    });
+  };
+
+  const toggleItemPublic = async ({
+    typeKey,
+    item,
+    nextValue,
+    endpoint,
+    setState,
+    errorLabel,
+  }) => {
+    if (!item?.id) {
+      console.warn(`No se pudo actualizar ${errorLabel} sin identificador.`);
+      return;
+    }
+
+    const toggleKey = getToggleKey(typeKey, item);
+    setToggleLoadingState(toggleKey, true);
+    try {
+      const res = await fetch(`/api/${endpoint}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: item.id, isPublic: nextValue }),
+      });
+
+      if (!res.ok) {
+        let errorMessage = `Error al actualizar ${errorLabel}`;
+        try {
+          const errorBody = await res.json();
+          errorMessage =
+            errorBody?.details || errorBody?.error || errorMessage;
+        } catch (error) {
+          console.error("Error parsing toggle response:", error);
+        }
+        throw new Error(errorMessage);
+      }
+
+      const updated = await res.json();
+      setState((prev) => {
+        if (!Array.isArray(prev)) {
+          return prev;
+        }
+        return prev.map((entry) =>
+          entry.id === updated.id ? { ...entry, ...updated } : entry
+        );
+      });
+    } catch (err) {
+      console.error(
+        `Error al actualizar visibilidad del ${errorLabel}:`,
+        err
+      );
+      alert(
+        `No se pudo actualizar la visibilidad del ${errorLabel}: ${err.message}`
+      );
+    } finally {
+      setToggleLoadingState(toggleKey, false);
+    }
+  };
+
+  const handleToggleDiagramPublic = (diagram, nextValue) =>
+    toggleItemPublic({
+      typeKey: "diagram",
+      item: diagram,
+      nextValue,
+      endpoint: "diagrams",
+      setState: setCustomDiagrams,
+      errorLabel: "diagram",
+    });
+
+  const handleToggleNodePublic = (node, nextValue) =>
+    toggleItemPublic({
+      typeKey: "node",
+      item: node,
+      nextValue,
+      endpoint: "nodes",
+      setState: setCustomNodes,
+      errorLabel: "node",
+    });
+
+  const handleToggleEdgePublic = (edge, nextValue) =>
+    toggleItemPublic({
+      typeKey: "edge",
+      item: edge,
+      nextValue,
+      endpoint: "edges",
+      setState: setCustomEdges,
+      errorLabel: "edge",
+    });
+
+  const handleTogglePromptPublic = (prompt, nextValue) =>
+    toggleItemPublic({
+      typeKey: "prompt",
+      item: prompt,
+      nextValue,
+      endpoint: "prompts",
+      setState: setCustomPrompts,
+      errorLabel: "prompt",
+    });
+
+  const handleToggleChainPublic = (chain, nextValue) =>
+    toggleItemPublic({
+      typeKey: "chain",
+      item: chain,
+      nextValue,
+      endpoint: "chains",
+      setState: setCustomChains,
+      errorLabel: "chain",
+    });
 
   useEffect(() => {
     if (pathname === "/store") {
@@ -918,27 +1046,51 @@ const Sidebar = ({ onLoadDiagram }) => {
             {customDiagrams.length > 0 && (
               <div className="node-section">
                 <div className="section-title">Saved Diagrams</div>
-                {customDiagrams.map((d) => (
-                  <div
-                    key={d.name}
-                    className="node-item"
-                    onClick={() => handleLoadDiagram(d)}
-                    style={{ cursor: "pointer" }}
-                  >
-                    <div className="node-icon">
-                      <FaAnkh />
+                {customDiagrams.map((d) => {
+                  const canManage = canManageItem(d);
+                  const toggleKey = getToggleKey("diagram", d);
+                  const isToggleLoading = Boolean(
+                    toggleKey && togglingPublic[toggleKey]
+                  );
+
+                  return (
+                    <div
+                      key={d.name}
+                      className="node-item"
+                      onClick={() => handleLoadDiagram(d)}
+                      style={{ cursor: "pointer" }}
+                    >
+                      <div className="node-icon">
+                        <FaAnkh />
+                      </div>
+                      {d.name}
+                      <LongMenu
+                        className="kebab-menu"
+                        onOpenChange={(open) =>
+                          setMenuOpenId(
+                            open ? `diagram-${d.id ?? d.name}` : null
+                          )
+                        }
+                        onEdit={
+                          canManage ? () => handleEditCustomDiagram(d) : undefined
+                        }
+                        onDelete={
+                          canManage
+                            ? () => handleDeleteCustomDiagram(d.name)
+                            : undefined
+                        }
+                        isPublic={Boolean(d.isPublic)}
+                        onTogglePublic={
+                          canManage
+                            ? (value) => handleToggleDiagramPublic(d, value)
+                            : undefined
+                        }
+                        toggleDisabled={isToggleLoading}
+                        toggleLabel="Public"
+                      />
                     </div>
-                    {d.name}
-                    <LongMenu
-                      className="kebab-menu"
-                      onOpenChange={(open) =>
-                        setMenuOpenId(open ? "node-Base" : null)
-                      }
-                      onEdit={() => handleEditCustomDiagram(d)}
-                      onDelete={() => handleDeleteCustomDiagram(d.name)}
-                    />
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -994,30 +1146,52 @@ const Sidebar = ({ onLoadDiagram }) => {
             {customNodes.length > 0 && (
               <div className="node-section">
                 <div className="section-title">Custom Nodes</div>
-                {customNodes.map((n) => (
-                  <div
-                    key={n.name}
-                    className={`node-item ${
-                      menuOpenId === `custom-${n.name}` ? "active" : ""
-                    }`}
-                    onDragStart={(event) => onDragStart(event, n.name, n.code)}
-                    onDragEnd={handleDragEnd}
-                    draggable
-                  >
-                    <div className="node-icon">
-                      <FaApple />
+                {customNodes.map((n) => {
+                  const canManage = canManageItem(n);
+                  const toggleKey = getToggleKey("node", n);
+                  const isToggleLoading = Boolean(
+                    toggleKey && togglingPublic[toggleKey]
+                  );
+
+                  return (
+                    <div
+                      key={n.name}
+                      className={`node-item ${
+                        menuOpenId === `custom-${n.name}` ? "active" : ""
+                      }`}
+                      onDragStart={(event) => onDragStart(event, n.name, n.code)}
+                      onDragEnd={handleDragEnd}
+                      draggable
+                    >
+                      <div className="node-icon">
+                        <FaApple />
+                      </div>
+                      {n.name}
+                      <LongMenu
+                        className="kebab-menu"
+                        onOpenChange={(open) =>
+                          setMenuOpenId(open ? `custom-${n.name}` : null)
+                        }
+                        onEdit={
+                          canManage ? () => handleEditCustomNode(n) : undefined
+                        }
+                        onDelete={
+                          canManage
+                            ? () => handleDeleteCustomNode(n.name)
+                            : undefined
+                        }
+                        isPublic={Boolean(n.isPublic)}
+                        onTogglePublic={
+                          canManage
+                            ? (value) => handleToggleNodePublic(n, value)
+                            : undefined
+                        }
+                        toggleDisabled={isToggleLoading}
+                        toggleLabel="Public"
+                      />
                     </div>
-                    {n.name}
-                    <LongMenu
-                      className="kebab-menu"
-                      onOpenChange={(open) =>
-                        setMenuOpenId(open ? `custom-${n.name}` : null)
-                      }
-                      onEdit={() => handleEditCustomNode(n)}
-                      onDelete={() => handleDeleteCustomNode(n.name)}
-                    />
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
             <div className="sidebar-action-buttons">
@@ -1076,30 +1250,52 @@ const Sidebar = ({ onLoadDiagram }) => {
             {customEdges.length > 0 && (
               <div className="node-section">
                 <div className="section-title">Custom Edges</div>
-                {customEdges.map((item) => (
-                  <div
-                    key={item.name}
-                    className={`node-item edge-item edge-item--custom ${
-                      menuOpenId === `custom-${item.name}` ? "active" : ""
-                    }`}
-                    onDragStart={(event) =>
-                      onEdgeDragStart(event, item.name, item.code)
-                    }
-                    onDragEnd={handleDragEnd}
-                    draggable
-                  >
-                    <div className="edge-item__circle">ƒ</div>
-                    {item.name}
-                    <LongMenu
-                      className="kebab-menu"
-                      onOpenChange={(open) =>
-                        setMenuOpenId(open ? `custom-${item.name}` : null)
+                {customEdges.map((item) => {
+                  const canManage = canManageItem(item);
+                  const toggleKey = getToggleKey("edge", item);
+                  const isToggleLoading = Boolean(
+                    toggleKey && togglingPublic[toggleKey]
+                  );
+
+                  return (
+                    <div
+                      key={item.name}
+                      className={`node-item edge-item edge-item--custom ${
+                        menuOpenId === `custom-${item.name}` ? "active" : ""
+                      }`}
+                      onDragStart={(event) =>
+                        onEdgeDragStart(event, item.name, item.code)
                       }
-                      onEdit={() => handleEditCustomEdge(item)}
-                      onDelete={() => handleDeleteCustomEdge(item.name)}
-                    />
-                  </div>
-                ))}
+                      onDragEnd={handleDragEnd}
+                      draggable
+                    >
+                      <div className="edge-item__circle">ƒ</div>
+                      {item.name}
+                      <LongMenu
+                        className="kebab-menu"
+                        onOpenChange={(open) =>
+                          setMenuOpenId(open ? `custom-${item.name}` : null)
+                        }
+                        onEdit={
+                          canManage ? () => handleEditCustomEdge(item) : undefined
+                        }
+                        onDelete={
+                          canManage
+                            ? () => handleDeleteCustomEdge(item.name)
+                            : undefined
+                        }
+                        isPublic={Boolean(item.isPublic)}
+                        onTogglePublic={
+                          canManage
+                            ? (value) => handleToggleEdgePublic(item, value)
+                            : undefined
+                        }
+                        toggleDisabled={isToggleLoading}
+                        toggleLabel="Public"
+                      />
+                    </div>
+                  );
+                })}
               </div>
             )}
             <div className="sidebar-action-buttons">
@@ -1119,27 +1315,49 @@ const Sidebar = ({ onLoadDiagram }) => {
             {customPrompts.length > 0 && (
               <div className="node-section">
                 <div className="section-title">Custom Prompts</div>
-                {customPrompts.map((p) => (
-                  <div
-                    key={p.name}
-                    className={`node-item ${
-                      menuOpenId === `prompt-${p.name}` ? "active" : ""
-                    }`}
-                  >
-                    <div className="node-icon">
-                      <TbPrompt />
+                {customPrompts.map((p) => {
+                  const canManage = canManageItem(p);
+                  const toggleKey = getToggleKey("prompt", p);
+                  const isToggleLoading = Boolean(
+                    toggleKey && togglingPublic[toggleKey]
+                  );
+
+                  return (
+                    <div
+                      key={p.name}
+                      className={`node-item ${
+                        menuOpenId === `prompt-${p.name}` ? "active" : ""
+                      }`}
+                    >
+                      <div className="node-icon">
+                        <TbPrompt />
+                      </div>
+                      {p.name}
+                      <LongMenu
+                        className="kebab-menu"
+                        onOpenChange={(open) =>
+                          setMenuOpenId(open ? `prompt-${p.name}` : null)
+                        }
+                        onEdit={
+                          canManage ? () => handleEditCustomPrompt(p) : undefined
+                        }
+                        onDelete={
+                          canManage
+                            ? () => handleDeleteCustomPrompt(p.name)
+                            : undefined
+                        }
+                        isPublic={Boolean(p.isPublic)}
+                        onTogglePublic={
+                          canManage
+                            ? (value) => handleTogglePromptPublic(p, value)
+                            : undefined
+                        }
+                        toggleDisabled={isToggleLoading}
+                        toggleLabel="Public"
+                      />
                     </div>
-                    {p.name}
-                    <LongMenu
-                      className="kebab-menu"
-                      onOpenChange={(open) =>
-                        setMenuOpenId(open ? `prompt-${p.name}` : null)
-                      }
-                      onEdit={() => handleEditCustomPrompt(p)}
-                      onDelete={() => handleDeleteCustomPrompt(p.name)}
-                    />
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
             <div className="sidebar-action-buttons">
@@ -1159,27 +1377,49 @@ const Sidebar = ({ onLoadDiagram }) => {
             {customChains.length > 0 && (
               <div className="node-section">
                 <div className="section-title">Custom Chains</div>
-                {customChains.map((c) => (
-                  <div
-                    key={c.name}
-                    className={`node-item ${
-                      menuOpenId === `chain-${c.name}` ? "active" : ""
-                    }`}
-                  >
-                    <div className="node-icon">
-                      <GiCrossedChains />
+                {customChains.map((c) => {
+                  const canManage = canManageItem(c);
+                  const toggleKey = getToggleKey("chain", c);
+                  const isToggleLoading = Boolean(
+                    toggleKey && togglingPublic[toggleKey]
+                  );
+
+                  return (
+                    <div
+                      key={c.name}
+                      className={`node-item ${
+                        menuOpenId === `chain-${c.name}` ? "active" : ""
+                      }`}
+                    >
+                      <div className="node-icon">
+                        <GiCrossedChains />
+                      </div>
+                      {c.name}
+                      <LongMenu
+                        className="kebab-menu"
+                        onOpenChange={(open) =>
+                          setMenuOpenId(open ? `chain-${c.name}` : null)
+                        }
+                        onEdit={
+                          canManage ? () => handleEditCustomChain(c) : undefined
+                        }
+                        onDelete={
+                          canManage
+                            ? () => handleDeleteCustomChain(c.name)
+                            : undefined
+                        }
+                        isPublic={Boolean(c.isPublic)}
+                        onTogglePublic={
+                          canManage
+                            ? (value) => handleToggleChainPublic(c, value)
+                            : undefined
+                        }
+                        toggleDisabled={isToggleLoading}
+                        toggleLabel="Public"
+                      />
                     </div>
-                    {c.name}
-                    <LongMenu
-                      className="kebab-menu"
-                      onOpenChange={(open) =>
-                        setMenuOpenId(open ? `chain-${c.name}` : null)
-                      }
-                      onEdit={() => handleEditCustomChain(c)}
-                      onDelete={() => handleDeleteCustomChain(c.name)}
-                    />
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
             <div className="sidebar-action-buttons">
