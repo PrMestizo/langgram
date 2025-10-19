@@ -1,20 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  async redirects() {
-    return [
-      {
-        source: "/",
-        has: [
-          {
-            type: "cookie",
-            key: "next-auth.session-token",
-          },
-        ],
-        destination: "/",
-        permanent: false,
-      },
-    ];
-  },
   async rewrites() {
     return [
       {
