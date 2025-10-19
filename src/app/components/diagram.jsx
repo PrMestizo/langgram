@@ -42,13 +42,11 @@ const getId = () => `dndnode_${id++}`;
 const initialNodes = [
   {
     id: "n1",
-    type: "Base",
     position: { x: 0, y: 0 },
     data: { label: "START" },
   },
   {
     id: "n2",
-    type: "Compile",
     position: { x: 0, y: 100 },
     data: { label: "END" },
   },
@@ -63,6 +61,18 @@ const initialEdges = [
     data: { filterCode: "", filterName: "" },
   },
 ];
+
+const cloneInitialNodes = () =>
+  initialNodes.map((node) => ({
+    ...node,
+    data: { ...node.data },
+  }));
+
+const cloneInitialEdges = () =>
+  initialEdges.map((edge) => ({
+    ...edge,
+    data: edge.data ? { ...edge.data } : undefined,
+  }));
 
 const hydrateEdge = (edge) => ({
   id: edge.id || `${edge.source}-${edge.target}`,
@@ -525,6 +535,25 @@ function Diagram() {
 
     persistDiagram();
   }, [GraphJSON, isHydrated]);
+
+  useEffect(() => {
+    const handleResetDiagram = () => {
+      setNodes(cloneInitialNodes());
+      setEdges(cloneInitialEdges());
+      setAlert({ message: "", severity: "success", open: false });
+      setIsMenuOpen(false);
+      setIsSaveDialogOpen(false);
+      setDiagramName("");
+      closeFilterEditor();
+      closeFilterContextMenu();
+      resetDrag();
+    };
+
+    window.addEventListener("reset-diagram", handleResetDiagram);
+    return () => {
+      window.removeEventListener("reset-diagram", handleResetDiagram);
+    };
+  }, [closeFilterContextMenu, closeFilterEditor, resetDrag]);
 
   const handleClearFilterFromEdge = useCallback(
     (edgeId) => {

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CgProfile } from "react-icons/cg";
 import { signIn, signOut, useSession } from "next-auth/react";
+import { clearPersistedDiagram } from "../lib/diagramStorage";
 
 const sanitizeName = (name) => name?.trim() ?? "";
 const sanitizeEmail = (email) => email?.trim().toLowerCase() ?? "";
@@ -115,9 +116,19 @@ function ProfileMenu() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   }, []);
 
-  const handleLogout = useCallback(() => {
+  const handleLogout = useCallback(async () => {
     closeDropdown();
-    signOut({ callbackUrl: "/" });
+    try {
+      await clearPersistedDiagram();
+    } catch (error) {
+      console.error("Error al limpiar el diagrama al cerrar sesión:", error);
+    }
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("reset-diagram"));
+    }
+
+    await signOut({ callbackUrl: "/" });
   }, [closeDropdown, signOut]);
 
   const handleNavigate = useCallback(
