@@ -18,8 +18,17 @@ import { DnDProvider, useDnD } from "./DnDContext";
 import { generateCodeFromGraph } from "../lib/codeGenerator";
 import FilterEdge from "./FilterEdge";
 import CustomModal from "./Modal";
-import Alert from "@mui/material/Alert";
-import Stack from "@mui/material/Stack";
+import {
+  Alert,
+  Stack,
+  Modal,
+  Box,
+  Typography,
+  TextField,
+  Button,
+  IconButton,
+} from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
 import { FiMenu } from "react-icons/fi";
 import {
   loadPersistedDiagram,
@@ -695,38 +704,84 @@ function Diagram() {
       )}
 
       {/* Save Diagram Name Dialog */}
-      {isSaveDialogOpen && (
-        <div className="poppup-text" style={{ maxWidth: 480 }}>
-          <div style={{ marginBottom: 8, fontWeight: 600 }}>
-            Guardar Diagrama
-          </div>
-          <label
-            htmlFor="diagram-name"
-            style={{ display: "block", marginBottom: 4 }}
+      <Modal
+        open={isSaveDialogOpen}
+        onClose={() => setIsSaveDialogOpen(false)}
+        aria-labelledby="save-diagram-modal"
+        aria-describedby="save-diagram-modal-description"
+      >
+        <Box
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: 500,
+            bgcolor: "background.paper",
+            boxShadow: 24,
+            borderRadius: 2,
+            p: 4,
+            outline: "none",
+          }}
+        >
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              mb: 3,
+            }}
           >
-            Nombre del diagrama
-          </label>
-          <input
-            id="diagram-name"
-            type="text"
-            value={diagramName}
-            onChange={(e) => setDiagramName(e.target.value)}
-            placeholder="Mi diagrama"
-            style={{ width: "100%", padding: 8, marginBottom: 12 }}
-          />
-          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-            <button
-              className="button"
+            <Typography id="save-diagram-modal" variant="h6" component="h2">
+              Guardar Diagrama
+            </Typography>
+            <IconButton
+              edge="end"
+              color="inherit"
               onClick={() => setIsSaveDialogOpen(false)}
+              aria-label="close"
+              sx={{ ml: 2 }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </Box>
+
+          <Box sx={{ mb: 3 }}>
+            <TextField
+              fullWidth
+              id="diagram-name"
+              label="Nombre del diagrama"
+              variant="outlined"
+              value={diagramName}
+              onChange={(e) => setDiagramName(e.target.value)}
+              placeholder="Mi diagrama"
+              margin="normal"
+              autoFocus
+              sx={{ mb: 2 }}
+            />
+          </Box>
+
+          <Box
+            sx={{ display: "flex", justifyContent: "center", gap: 2, mt: 3 }}
+          >
+            <Button
+              variant="contained"
+              onClick={saveDiagram}
+              disabled={!diagramName.trim()}
+              sx={{ textTransform: "none" }}
+            >
+              Guardar
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={() => setIsSaveDialogOpen(false)}
+              sx={{ textTransform: "none" }}
             >
               Cancelar
-            </button>
-            <button className="button" onClick={saveDiagram}>
-              Guardar
-            </button>
-          </div>
-        </div>
-      )}
+            </Button>
+          </Box>
+        </Box>
+      </Modal>
       <CustomModal
         isVisible={filterEditor.open}
         onClose={closeFilterEditor}
