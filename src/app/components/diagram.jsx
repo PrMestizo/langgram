@@ -1,8 +1,8 @@
 "use client";
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useSession } from "next-auth/react";
-import dynamic from 'next/dynamic';
-import { useTheme } from '@mui/material/styles';
+import dynamic from "next/dynamic";
+import { useTheme } from "@mui/material/styles";
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -16,9 +16,9 @@ import {
 } from "reactflow";
 
 // Importación dinámica del Monaco Editor para SSR
-const MonacoEditor = dynamic(() => import('@monaco-editor/react'), {
+const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
   ssr: false,
-  loading: () => <Box sx={{ p: 2 }}>Cargando editor...</Box>
+  loading: () => <Box sx={{ p: 2 }}>Cargando editor...</Box>,
 });
 
 import "reactflow/dist/style.css";
@@ -451,20 +451,27 @@ function Diagram() {
 
   const handleDownloadCode = useCallback(() => {
     const blob = new Blob([generatedCode], {
-      type: "text/plain;charset=utf-8",
+      type: "text/x-python;charset=utf-8",
     });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = "implementation.txt";
+    link.download = "implemented.py";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+
+    // Mostrar confirmación
+    setAlert({
+      message: "Archivo Python descargado correctamente",
+      severity: "success",
+      open: true,
+    });
   }, [generatedCode]);
 
   const handleGeneratedCodeChange = useCallback((value) => {
-    setGeneratedCode(value || '');
+    setGeneratedCode(value || "");
   }, []);
 
   const openSaveDialog = () => {
@@ -845,29 +852,29 @@ function Diagram() {
                 <Tab label="Implementation" value="implementation" />
               </Tabs>
 
-              <Box 
-                sx={{ 
+              <Box
+                sx={{
                   flex: 1,
-                  minHeight: '60vh',
-                  maxHeight: 'calc(90vh - 200px)',
-                  border: '1px solid',
-                  borderColor: 'divider',
+                  minHeight: "60vh",
+                  maxHeight: "calc(90vh - 200px)",
+                  border: "1px solid",
+                  borderColor: "divider",
                   borderRadius: 1,
-                  overflow: 'hidden',
-                  '& .monaco-editor': {
-                    '--vscode-editor-background': '#1E1E1E',
-                    '--vscode-editor-foreground': '#D4D4D4',
-                    '--vscode-editor-lineHighlightBackground': '#2A2D2E',
+                  overflow: "hidden",
+                  "& .monaco-editor": {
+                    "--vscode-editor-background": "#1E1E1E",
+                    "--vscode-editor-foreground": "#D4D4D4",
+                    "--vscode-editor-lineHighlightBackground": "#2A2D2E",
                   },
-                  '& .monaco-scrollable-element > .scrollbar > .slider': {
-                    background: 'rgba(121, 121, 121, 0.4) !important',
-                    '&:hover': {
-                      background: 'rgba(100, 100, 100, 0.7) !important',
+                  "& .monaco-scrollable-element > .scrollbar > .slider": {
+                    background: "rgba(121, 121, 121, 0.4) !important",
+                    "&:hover": {
+                      background: "rgba(100, 100, 100, 0.7) !important",
                     },
-                    '&:active': {
-                      background: 'rgba(191, 191, 191, 0.4) !important',
-                    }
-                  }
+                    "&:active": {
+                      background: "rgba(191, 191, 191, 0.4) !important",
+                    },
+                  },
                 }}
               >
                 <MonacoEditor
@@ -879,15 +886,15 @@ function Diagram() {
                   options={{
                     automaticLayout: true,
                     fontSize: 14,
-                    lineNumbers: 'on',
-                    wordWrap: 'on',
+                    lineNumbers: "on",
+                    wordWrap: "on",
                     minimap: { enabled: true },
                     scrollBeyondLastLine: false,
                     fontFamily: 'Menlo, Monaco, "Courier New", monospace',
                     tabSize: 2,
                     scrollbar: {
-                      vertical: 'auto',
-                      horizontal: 'auto',
+                      vertical: "auto",
+                      horizontal: "auto",
                       useShadows: true,
                     },
                   }}
