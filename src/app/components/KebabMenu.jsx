@@ -1,8 +1,11 @@
 import * as React from "react";
 import IconButton from "@mui/material/IconButton";
+import Divider from "@mui/material/Divider";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
+import ListItemText from "@mui/material/ListItemText";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
+import Switch from "@mui/material/Switch";
 
 const ITEM_HEIGHT = 48;
 
@@ -11,6 +14,10 @@ export default function LongMenu({
   onOpenChange,
   onDelete,
   onEdit,
+  isPublic,
+  onTogglePublic,
+  toggleDisabled = false,
+  toggleLabel = "Public",
 }) {
   const [anchorEl, setAnchorEl] = React.useState(null);
   const open = Boolean(anchorEl);
@@ -34,7 +41,10 @@ export default function LongMenu({
     return list;
   }, [onDelete, onEdit]);
 
-  if (!options.length) {
+  const hasToggle = typeof onTogglePublic === "function";
+  const hasOptions = options.length > 0;
+
+  if (!hasToggle && !hasOptions) {
     return null;
   }
 
@@ -81,6 +91,34 @@ export default function LongMenu({
           },
         }}
       >
+        {hasToggle && (
+          <MenuItem
+            disableRipple
+            onClick={(event) => {
+              event.stopPropagation();
+            }}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 1,
+            }}
+          >
+            <ListItemText>{toggleLabel}</ListItemText>
+            <Switch
+              edge="end"
+              checked={Boolean(isPublic)}
+              onClick={(event) => event.stopPropagation()}
+              onChange={(event) => {
+                event.stopPropagation();
+                onTogglePublic?.(event.target.checked);
+              }}
+              disabled={toggleDisabled}
+              inputProps={{ "aria-label": toggleLabel }}
+            />
+          </MenuItem>
+        )}
+        {hasToggle && hasOptions && <Divider component="li" />}
         {options.map((option) => (
           <MenuItem
             key={option.label}

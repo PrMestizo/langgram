@@ -12,7 +12,9 @@ export async function GET() {
     }
 
     const chains = await prisma.chainTemplate.findMany({
-      where: { ownerId: userId },
+      where: {
+        OR: [{ ownerId: userId }, { isPublic: true }],
+      },
       include: {
         owner: {
           select: {

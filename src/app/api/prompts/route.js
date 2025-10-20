@@ -12,7 +12,9 @@ export async function GET() {
     }
 
     const prompts = await prisma.promptTemplate.findMany({
-      where: { ownerId: userId },
+      where: {
+        OR: [{ ownerId: userId }, { isPublic: true }],
+      },
       include: {
         owner: {
           select: {
