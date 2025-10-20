@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CgProfile } from "react-icons/cg";
 import { signIn, signOut, useSession } from "next-auth/react";
 import { clearPersistedDiagram } from "../lib/diagramStorage";
+import SettingsModal from "./SettingsModal";
 
 const sanitizeName = (name) => name?.trim() ?? "";
 const sanitizeEmail = (email) => email?.trim().toLowerCase() ?? "";
@@ -14,6 +15,7 @@ function ProfileMenu() {
   const isSessionLoading = status === "loading";
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [authMode, setAuthMode] = useState("login");
   const [formData, setFormData] = useState({
     name: "",
@@ -41,6 +43,10 @@ function ProfileMenu() {
 
   const closeDropdown = useCallback(() => {
     setIsDropdownOpen(false);
+  }, []);
+
+  const closeSettingsModal = useCallback(() => {
+    setIsSettingsOpen(false);
   }, []);
 
   const showAlert = useCallback((message) => {
@@ -140,6 +146,11 @@ function ProfileMenu() {
     },
     [closeDropdown]
   );
+
+  const handleOpenSettings = useCallback(() => {
+    closeDropdown();
+    setIsSettingsOpen(true);
+  }, [closeDropdown]);
 
   const handleAuthSubmit = useCallback(
     async (event) => {
@@ -279,7 +290,7 @@ function ProfileMenu() {
           <button
             type="button"
             className="profile-dropdown__item"
-            onClick={() => handleNavigate("settings")}
+            onClick={handleOpenSettings}
           >
             Settings
           </button>
@@ -387,6 +398,8 @@ function ProfileMenu() {
           </div>
         </div>
       )}
+
+      <SettingsModal isOpen={isSettingsOpen} onClose={closeSettingsModal} />
     </div>
   );
 }
