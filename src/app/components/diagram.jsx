@@ -28,6 +28,8 @@ import {
   TextField,
   Button,
   IconButton,
+  Tabs,
+  Tab,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { FiMenu } from "react-icons/fi";
@@ -110,6 +112,8 @@ function Diagram() {
   });
   const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
   const [diagramName, setDiagramName] = useState("");
+  const [isCodeDialogOpen, setIsCodeDialogOpen] = useState(false);
+  const [generatedCode, setGeneratedCode] = useState("");
   const [filterEditor, setFilterEditor] = useState({
     open: false,
     edgeId: null,
@@ -392,11 +396,34 @@ function Diagram() {
     event.dataTransfer.effectAllowed = "move";
   };
 
-  const generateCodeWithAI = async () => {
+  const GraphJSON = useCallback(() => {
+    const nodeData = nodes.map((n) => ({
+      id: n.id,
+      type: n.type,
+      label: n.data.label,
+      position: n.position,
+      code: n.code || "# código no definido",
+    }));
+
+    const edgeData = edges.map((e) => ({
+      source: e.source,
+      target: e.target,
+      id: e.id,
+      type: e.type,
+      filterCode: e.data?.filterCode || "",
+      filterName: e.data?.filterName || "",
+    }));
+
+    const graphJSON = { nodes: nodeData, edges: edgeData };
+    return graphJSON;
+  }, [nodes, edges]);
+
+  const generateCodeWithAI = useCallback(async () => {
     const graphJSON = GraphJSON();
     try {
       const code = await generateCodeFromGraph(graphJSON);
-      setAlert({ message: code, severity: "success", open: true });
+      setGeneratedCode(code ?? "");
+      setIsCodeDialogOpen(true);
     } catch {
       setAlert({
         message: "Error al generar el código con IA",
@@ -404,7 +431,29 @@ function Diagram() {
         open: true,
       });
     }
-  };
+  }, [GraphJSON]);
+
+  const handleCloseCodeDialog = useCallback(() => {
+    setIsCodeDialogOpen(false);
+  }, []);
+
+  const handleDownloadCode = useCallback(() => {
+    const blob = new Blob([generatedCode], {
+      type: "text/plain;charset=utf-8",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "implementation.txt";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }, [generatedCode]);
+
+  const handleGeneratedCodeChange = useCallback((event) => {
+    setGeneratedCode(event.target.value);
+  }, []);
 
   const openSaveDialog = () => {
     setDiagramName("");
@@ -462,28 +511,6 @@ function Diagram() {
       });
     }
   };
-
-  const GraphJSON = useCallback(() => {
-    const nodeData = nodes.map((n) => ({
-      id: n.id,
-      type: n.type,
-      label: n.data.label,
-      position: n.position,
-      code: n.code || "# código no definido",
-    }));
-
-    const edgeData = edges.map((e) => ({
-      source: e.source,
-      target: e.target,
-      id: e.id,
-      type: e.type,
-      filterCode: e.data?.filterCode || "",
-      filterName: e.data?.filterName || "",
-    }));
-
-    const graphJSON = { nodes: nodeData, edges: edgeData };
-    return graphJSON;
-  }, [nodes, edges]);
 
   useEffect(() => {
     let cancelled = false;
@@ -736,6 +763,87 @@ function Diagram() {
           </Alert>
         </Stack>
       )}
+
+      <Modal
+        open={isCodeDialogOpen}
+        onClose={handleCloseCodeDialog}
+        aria-labelledby="generated-code-modal"
+        aria-describedby="generated-code-modal-description"
+      >
+        <Box
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: 720,
+            maxWidth: "90vw",
+            bgcolor: "background.paper",
+            boxShadow: 24,
+            borderRadius: 2,
+            p: 4,
+            outline: "none",
+            maxHeight: "80vh",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              mb: 2,
+            }}
+          >
+            <Typography id="generated-code-modal" variant="h6" component="h2">
+              Código generado
+            </Typography>
+            <IconButton
+              edge="end"
+              color="inherit"
+              onClick={handleCloseCodeDialog}
+              aria-label="close"
+            >
+              <CloseIcon />
+            </IconButton>
+          </Box>
+
+          <Tabs
+            value="implementation"
+            aria-label="Tabs del código generado"
+            sx={{ borderBottom: 1, borderColor: "divider", mb: 2 }}
+          >
+            <Tab label="Implementation" value="implementation" />
+          </Tabs>
+
+          <TextField
+            id="generated-code-modal-description"
+            multiline
+            minRows={10}
+            value={generatedCode}
+            onChange={handleGeneratedCodeChange}
+            fullWidth
+            sx={{
+              flexGrow: 1,
+              "& .MuiInputBase-root": {
+                fontFamily: "Menlo, Monaco, Consolas, 'Courier New', monospace",
+              },
+            }}
+          />
+
+          <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 3 }}>
+            <Button
+              variant="contained"
+              onClick={handleDownloadCode}
+              disabled={!generatedCode.trim()}
+              sx={{ textTransform: "none" }}
+            >
+              Descargar código
+            </Button>
+          </Box>
+        </Box>
+      </Modal>
 
       {/* Save Diagram Name Dialog */}
       <Modal
