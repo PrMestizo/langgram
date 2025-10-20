@@ -1,5 +1,6 @@
 "use client";
 
+import { dividerClasses } from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
 import {
   FiSettings,
@@ -15,14 +16,12 @@ import {
 
 const SECTIONS = [
   { id: "general", label: "General", icon: FiSettings },
+  { id: "account", label: "Cuenta", icon: FiUser },
   { id: "notifications", label: "Notificaciones", icon: FiBell },
   { id: "personalization", label: "Personalización", icon: FiSliders },
   { id: "apps", label: "Aplicaciones y conecto...", icon: FiGrid },
-  { id: "calendars", label: "Calendarios", icon: FiCalendar },
   { id: "data", label: "Controles de datos", icon: FiDatabase },
   { id: "security", label: "Seguridad", icon: FiShield },
-  { id: "parental", label: "Controles parentales", icon: FiUsers },
-  { id: "account", label: "Cuenta", icon: FiUser },
 ];
 
 const accentOptions = [
@@ -69,10 +68,39 @@ function SettingsModal({ isOpen, onClose }) {
     };
   }, [isOpen, onClose]);
 
+  const sectionTitles = useMemo(
+    () => ({
+      general: "Configuración General",
+      account: "Configuración de Cuenta",
+      notifications: "Notificaciones",
+      personalization: "Personalización",
+      apps: "Aplicaciones y Conexiones",
+      data: "Controles de Datos",
+      security: "Seguridad",
+    }),
+    []
+  );
+
+  const sectionDescriptions = useMemo(
+    () => ({
+      general:
+        "Personaliza tu experiencia de Langgram y ajusta tus preferencias generales.",
+      account:
+        "Administra la información de tu cuenta y configuración de perfil.",
+      notifications: "Controla cómo y cuándo recibes notificaciones.",
+      personalization:
+        "Ajusta la apariencia y comportamiento de la aplicación.",
+      apps: "Gestiona las aplicaciones y servicios conectados a tu cuenta.",
+      data: "Controla cómo se recopilan y utilizan tus datos.",
+      security:
+        "Administra la seguridad de tu cuenta y protege tu información.",
+    }),
+    []
+  );
+
   const activeSectionTitle = useMemo(() => {
-    const section = SECTIONS.find((item) => item.id === activeSection);
-    return section?.label ?? "";
-  }, [activeSection]);
+    return sectionTitles[activeSection] || "";
+  }, [activeSection, sectionTitles]);
 
   if (!isOpen) {
     return null;
@@ -110,18 +138,9 @@ function SettingsModal({ isOpen, onClose }) {
                     type="button"
                     className={`settings-modal__sidebar-button${
                       isActive ? " settings-modal__sidebar-button--active" : ""
-                    }${
-                      id !== "general"
-                        ? " settings-modal__sidebar-button--disabled"
-                        : ""
                     }`}
-                    onClick={() => {
-                      if (id === "general") {
-                        setActiveSection(id);
-                      }
-                    }}
+                    onClick={() => setActiveSection(id)}
                     aria-current={isActive ? "true" : undefined}
-                    aria-disabled={id !== "general"}
                   >
                     <Icon aria-hidden="true" />
                     <span>{label}</span>
@@ -135,8 +154,8 @@ function SettingsModal({ isOpen, onClose }) {
           <header className="settings-modal__header">
             <h2 id="settings-modal-title">{activeSectionTitle}</h2>
             <p className="settings-modal__description">
-              Personaliza tu experiencia de Langgram y ajusta tus preferencias
-              generales.
+              {sectionDescriptions[activeSection] ||
+                "Configuración personalizada."}
             </p>
           </header>
 
@@ -269,6 +288,20 @@ function SettingsModal({ isOpen, onClose }) {
           ) : (
             <div className="settings-modal__placeholder">
               Esta sección estará disponible próximamente.
+            </div>
+          )}
+          {activeSection === "account" && (
+            <div className="settings-modal__group">
+              <div className="settings-modal__item">
+                <div className="settings-modal__item-label">Nombre</div>
+                <div className="settings-modal__control">
+                  <input
+                    type="text"
+                    name="name"
+                    className="settings-modal__input"
+                  />
+                </div>
+              </div>
             </div>
           )}
         </section>
