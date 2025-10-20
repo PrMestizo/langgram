@@ -27,6 +27,7 @@ import { DnDProvider, useDnD } from "./DnDContext";
 import { generateCodeFromGraph } from "../lib/codeGenerator";
 import FilterEdge from "./FilterEdge";
 import CustomModal from "./Modal";
+import NodeWithAttachments from "./NodeWithAttachments";
 import {
   Alert,
   Stack,
@@ -54,13 +55,15 @@ const getId = () => `dndnode_${id++}`;
 const initialNodes = [
   {
     id: "n1",
+    type: "langgramNode",
     position: { x: 0, y: 0 },
-    data: { label: "START" },
+    data: { label: "START", nodeType: "START", prompts: [], chains: [] },
   },
   {
     id: "n2",
+    type: "langgramNode",
     position: { x: 0, y: 100 },
-    data: { label: "END" },
+    data: { label: "END", nodeType: "END", prompts: [], chains: [] },
   },
 ];
 
@@ -77,7 +80,11 @@ const initialEdges = [
 const cloneInitialNodes = () =>
   initialNodes.map((node) => ({
     ...node,
-    data: { ...node.data },
+    data: {
+      ...node.data,
+      prompts: Array.isArray(node.data?.prompts) ? [...node.data.prompts] : [],
+      chains: Array.isArray(node.data?.chains) ? [...node.data.chains] : [],
+    },
   }));
 
 const cloneInitialEdges = () =>
@@ -114,6 +121,12 @@ function Diagram() {
   );
   const { setType, setCode, dragPayload, setDragPayload, resetDrag } = useDnD();
   const { screenToFlowPosition } = useReactFlow();
+  const nodeTypes = useMemo(
+    () => ({
+      langgramNode: NodeWithAttachments,
+    }),
+    []
+  );
   const [alert, setAlert] = useState({
     message: "",
     severity: "success",
@@ -360,8 +373,9 @@ function Diagram() {
   const onDragOver = useCallback(
     (event) => {
       event.preventDefault();
-      event.dataTransfer.dropEffect =
-        dragPayload?.kind === "edge" ? "copy" : "move";
+      const shouldCopy =
+        dragPayload?.kind && dragPayload.kind !== "node" ? true : false;
+      event.dataTransfer.dropEffect = shouldCopy ? "copy" : "move";
     },
     [dragPayload?.kind]
   );
@@ -370,7 +384,12 @@ function Diagram() {
     (event) => {
       event.preventDefault();
 
-      if (!dragPayload?.type || !dragPayload?.code) {
+      if (dragPayload?.kind !== "node") {
+        resetDrag();
+        return;
+      }
+
+      if (!dragPayload?.type) {
         return;
       }
 
@@ -378,12 +397,18 @@ function Diagram() {
         x: event.clientX,
         y: event.clientY,
       });
+      const label = dragPayload?.name ?? dragPayload?.type;
       const newNode = {
         id: getId(),
-        type: dragPayload?.type,
+        type: "langgramNode",
         position,
-        data: { label: `${dragPayload?.type}` },
-        code: dragPayload?.code,
+        data: {
+          label,
+          nodeType: dragPayload?.type,
+          prompts: [],
+          chains: [],
+        },
+        code: dragPayload?.code ?? "",
       };
 
       setNodes((nds) => nds.concat(newNode));
@@ -409,10 +434,13 @@ function Diagram() {
   const GraphJSON = useCallback(() => {
     const nodeData = nodes.map((n) => ({
       id: n.id,
-      type: n.type,
-      label: n.data.label,
+      type: n.data?.nodeType ?? n.type,
+      componentType: n.type,
+      label: n.data?.label ?? n.data?.nodeType ?? "",
       position: n.position,
-      code: n.code || "# código no definido",
+      code: n.code ?? "",
+      prompts: Array.isArray(n.data?.prompts) ? n.data.prompts : [],
+      chains: Array.isArray(n.data?.chains) ? n.data.chains : [],
     }));
 
     const edgeData = edges.map((e) => ({
@@ -544,13 +572,24 @@ function Diagram() {
 
       if (storedGraph) {
         try {
-          const nextNodes = (storedGraph.nodes || []).map((n) => ({
-            id: n.id,
-            type: n.type,
-            position: n.position || { x: 0, y: 0 },
-            data: { label: n.label },
-            code: n.code,
-          }));
+          const nextNodes = (storedGraph.nodes || []).map((n) => {
+            const nodeType = n.nodeType ?? n.type ?? n.componentType;
+            const label = n.label ?? nodeType ?? "";
+            const prompts = Array.isArray(n.prompts) ? n.prompts : [];
+            const chains = Array.isArray(n.chains) ? n.chains : [];
+            return {
+              id: n.id,
+              type: "langgramNode",
+              position: n.position || { x: 0, y: 0 },
+              data: {
+                label,
+                nodeType,
+                prompts,
+                chains,
+              },
+              code: n.code ?? "",
+            };
+          });
           const nextEdges = (storedGraph.edges || []).map(hydrateEdge);
           setNodes(nextNodes);
           setEdges(nextEdges);
@@ -658,13 +697,24 @@ function Diagram() {
       const graph = ev?.detail;
       if (!graph) return;
       try {
-        const nextNodes = (graph.nodes || []).map((n) => ({
-          id: n.id,
-          type: n.type,
-          position: n.position || { x: 0, y: 0 },
-          data: { label: n.label },
-          code: n.code,
-        }));
+        const nextNodes = (graph.nodes || []).map((n) => {
+          const nodeType = n.nodeType ?? n.type ?? n.componentType;
+          const label = n.label ?? nodeType ?? "";
+          const prompts = Array.isArray(n.prompts) ? n.prompts : [];
+          const chains = Array.isArray(n.chains) ? n.chains : [];
+          return {
+            id: n.id,
+            type: "langgramNode",
+            position: n.position || { x: 0, y: 0 },
+            data: {
+              label,
+              nodeType,
+              prompts,
+              chains,
+            },
+            code: n.code ?? "",
+          };
+        });
         const nextEdges = (graph.edges || []).map(hydrateEdge);
         setNodes(nextNodes);
         setEdges(nextEdges);
@@ -679,13 +729,24 @@ function Diagram() {
       <Sidebar
         onLoadDiagram={(graph) => {
           try {
-            const nextNodes = (graph.nodes || []).map((n) => ({
-              id: n.id,
-              type: n.type,
-              position: n.position || { x: 0, y: 0 },
-              data: { label: n.label },
-              code: n.code,
-            }));
+            const nextNodes = (graph.nodes || []).map((n) => {
+              const nodeType = n.nodeType ?? n.type ?? n.componentType;
+              const label = n.label ?? nodeType ?? "";
+              const prompts = Array.isArray(n.prompts) ? n.prompts : [];
+              const chains = Array.isArray(n.chains) ? n.chains : [];
+              return {
+                id: n.id,
+                type: "langgramNode",
+                position: n.position || { x: 0, y: 0 },
+                data: {
+                  label,
+                  nodeType,
+                  prompts,
+                  chains,
+                },
+                code: n.code ?? "",
+              };
+            });
             const nextEdges = (graph.edges || []).map(hydrateEdge);
             setNodes(nextNodes);
             setEdges(nextEdges);
@@ -740,6 +801,7 @@ function Diagram() {
             onDragStart={onDragStart}
             onDragOver={onDragOver}
             edgeTypes={edgeTypes}
+            nodeTypes={nodeTypes}
             fitView
           >
             <Background />

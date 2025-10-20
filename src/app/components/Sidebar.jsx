@@ -314,6 +314,41 @@ const Sidebar = ({ onLoadDiagram }) => {
     }, 0);
   };
 
+  const onPromptDragStart = (event, prompt) => {
+    if (!prompt) {
+      return;
+    }
+    setType(null);
+    setCode(null);
+    const payload = {
+      kind: "prompt",
+      type: "prompt",
+      name: prompt.name,
+      content: prompt.content ?? "",
+    };
+    setDragPayload(payload);
+    event.dataTransfer.setData("application/prompt-name", prompt.name ?? "");
+    event.dataTransfer.effectAllowed = "copy";
+  };
+
+  const onChainDragStart = (event, chain) => {
+    if (!chain) {
+      return;
+    }
+    setType(null);
+    setCode(null);
+    const payload = {
+      kind: "chain",
+      type: "chain",
+      name: chain.name,
+      code: chain.code ?? "",
+    };
+    setDragPayload(payload);
+    event.dataTransfer.setData("application/chain-name", chain.name ?? "");
+    event.dataTransfer.setData("application/chain-code", chain.code ?? "");
+    event.dataTransfer.effectAllowed = "copy";
+  };
+
   const handleDragEnd = () => {
     setType(null);
     setCode(null);
@@ -1125,6 +1160,9 @@ const Sidebar = ({ onLoadDiagram }) => {
                     className={`node-item ${
                       menuOpenId === `prompt-${p.name}` ? "active" : ""
                     }`}
+                    draggable
+                    onDragStart={(event) => onPromptDragStart(event, p)}
+                    onDragEnd={handleDragEnd}
                   >
                     <div className="node-icon">
                       <TbPrompt />
@@ -1165,6 +1203,9 @@ const Sidebar = ({ onLoadDiagram }) => {
                     className={`node-item ${
                       menuOpenId === `chain-${c.name}` ? "active" : ""
                     }`}
+                    draggable
+                    onDragStart={(event) => onChainDragStart(event, c)}
+                    onDragEnd={handleDragEnd}
                   >
                     <div className="node-icon">
                       <GiCrossedChains />
