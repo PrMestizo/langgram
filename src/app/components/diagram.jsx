@@ -1,5 +1,6 @@
 "use client";
 import { useState, useCallback, useEffect, useMemo } from "react";
+import { useSession } from "next-auth/react";
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -89,6 +90,8 @@ const hydrateEdge = (edge) => ({
 const topNavActionsId = "top-nav-actions";
 
 function Diagram() {
+  const { data: session } = useSession();
+  const user = session?.user ?? null;
   const [nodes, setNodes] = useState(initialNodes);
   const [edges, setEdges] = useState(initialEdges);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -657,19 +660,21 @@ function Diagram() {
               <FiMenu className="hamburger-nav-bar" />
             </button>
             <div id={topNavActionsId} className={topNavActionsClassName}>
+              {user && (
+                <button
+                  type="button"
+                  className="top-nav__button top-nav__button--secondary"
+                  onClick={handleSaveButtonClick}
+                >
+                  Guardar diagrama
+                </button>
+              )}
               <button
                 type="button"
                 className="top-nav__button top-nav__button--secondary"
                 onClick={handleGenerateButtonClick}
               >
                 Generar código
-              </button>
-              <button
-                type="button"
-                className="top-nav__button top-nav__button--secondary"
-                onClick={handleSaveButtonClick}
-              >
-                Guardar diagrama
               </button>
               <ProfileMenu />
             </div>
