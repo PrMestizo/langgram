@@ -1,6 +1,8 @@
 "use client";
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useSession } from "next-auth/react";
+import dynamic from 'next/dynamic';
+import { useTheme } from '@mui/material/styles';
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -12,6 +14,12 @@ import {
   MiniMap,
   useReactFlow,
 } from "reactflow";
+
+// Importación dinámica del Monaco Editor para SSR
+const MonacoEditor = dynamic(() => import('@monaco-editor/react'), {
+  ssr: false,
+  loading: () => <Box sx={{ p: 2 }}>Cargando editor...</Box>
+});
 
 import "reactflow/dist/style.css";
 import Sidebar from "./Sidebar";
@@ -30,6 +38,7 @@ import {
   IconButton,
   Tabs,
   Tab,
+  CircularProgress,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { FiMenu } from "react-icons/fi";
@@ -114,6 +123,7 @@ function Diagram() {
   const [diagramName, setDiagramName] = useState("");
   const [isCodeDialogOpen, setIsCodeDialogOpen] = useState(false);
   const [generatedCode, setGeneratedCode] = useState("");
+  const [isGeneratingCode, setIsGeneratingCode] = useState(false);
   const [filterEditor, setFilterEditor] = useState({
     open: false,
     edgeId: null,
@@ -423,13 +433,15 @@ function Diagram() {
     try {
       const code = await generateCodeFromGraph(graphJSON);
       setGeneratedCode(code ?? "");
-      setIsCodeDialogOpen(true);
     } catch {
       setAlert({
         message: "Error al generar el código con IA",
         severity: "error",
         open: true,
       });
+      setIsCodeDialogOpen(false);
+    } finally {
+      setIsGeneratingCode(false);
     }
   }, [GraphJSON]);
 
@@ -451,8 +463,8 @@ function Diagram() {
     URL.revokeObjectURL(url);
   }, [generatedCode]);
 
-  const handleGeneratedCodeChange = useCallback((event) => {
-    setGeneratedCode(event.target.value);
+  const handleGeneratedCodeChange = useCallback((value) => {
+    setGeneratedCode(value || '');
   }, []);
 
   const openSaveDialog = () => {
@@ -463,6 +475,8 @@ function Diagram() {
   const handleGenerateButtonClick = useCallback(() => {
     closeTopNavMenu();
     generateCodeWithAI();
+    setIsCodeDialogOpen(true);
+    setIsGeneratingCode(true);
   }, [closeTopNavMenu, generateCodeWithAI]);
 
   const handleSaveButtonClick = useCallback(() => {
@@ -776,14 +790,15 @@ function Diagram() {
             top: "50%",
             left: "50%",
             transform: "translate(-50%, -50%)",
-            width: 720,
-            maxWidth: "90vw",
+            width: 800,
+            maxWidth: "95vw",
             bgcolor: "background.paper",
             boxShadow: 24,
             borderRadius: 2,
-            p: 4,
+            p: 3,
             outline: "none",
-            maxHeight: "80vh",
+            height: "90vh",
+            maxHeight: "90vh",
             display: "flex",
             flexDirection: "column",
           }}
@@ -809,39 +824,88 @@ function Diagram() {
             </IconButton>
           </Box>
 
-          <Tabs
-            value="implementation"
-            aria-label="Tabs del código generado"
-            sx={{ borderBottom: 1, borderColor: "divider", mb: 2 }}
-          >
-            <Tab label="Implementation" value="implementation" />
-          </Tabs>
-
-          <TextField
-            id="generated-code-modal-description"
-            multiline
-            minRows={10}
-            value={generatedCode}
-            onChange={handleGeneratedCodeChange}
-            fullWidth
-            sx={{
-              flexGrow: 1,
-              "& .MuiInputBase-root": {
-                fontFamily: "Menlo, Monaco, Consolas, 'Courier New', monospace",
-              },
-            }}
-          />
-
-          <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 3 }}>
-            <Button
-              variant="contained"
-              onClick={handleDownloadCode}
-              disabled={!generatedCode.trim()}
-              sx={{ textTransform: "none" }}
+          {isGeneratingCode ? (
+            <Box
+              sx={{
+                flexGrow: 1,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
             >
-              Descargar código
-            </Button>
-          </Box>
+              <CircularProgress aria-label="Generando código" />
+            </Box>
+          ) : (
+            <>
+              <Tabs
+                value="implementation"
+                aria-label="Tabs del código generado"
+                sx={{ borderBottom: 1, borderColor: "divider", mb: 2 }}
+              >
+                <Tab label="Implementation" value="implementation" />
+              </Tabs>
+
+              <Box 
+                sx={{ 
+                  flex: 1,
+                  minHeight: '60vh',
+                  maxHeight: 'calc(90vh - 200px)',
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  borderRadius: 1,
+                  overflow: 'hidden',
+                  '& .monaco-editor': {
+                    '--vscode-editor-background': '#1E1E1E',
+                    '--vscode-editor-foreground': '#D4D4D4',
+                    '--vscode-editor-lineHighlightBackground': '#2A2D2E',
+                  },
+                  '& .monaco-scrollable-element > .scrollbar > .slider': {
+                    background: 'rgba(121, 121, 121, 0.4) !important',
+                    '&:hover': {
+                      background: 'rgba(100, 100, 100, 0.7) !important',
+                    },
+                    '&:active': {
+                      background: 'rgba(191, 191, 191, 0.4) !important',
+                    }
+                  }
+                }}
+              >
+                <MonacoEditor
+                  height="100%"
+                  defaultLanguage="python"
+                  value={generatedCode}
+                  onChange={setGeneratedCode}
+                  theme="vs-dark"
+                  options={{
+                    automaticLayout: true,
+                    fontSize: 14,
+                    lineNumbers: 'on',
+                    wordWrap: 'on',
+                    minimap: { enabled: true },
+                    scrollBeyondLastLine: false,
+                    fontFamily: 'Menlo, Monaco, "Courier New", monospace',
+                    tabSize: 2,
+                    scrollbar: {
+                      vertical: 'auto',
+                      horizontal: 'auto',
+                      useShadows: true,
+                    },
+                  }}
+                />
+              </Box>
+
+              <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 3 }}>
+                <Button
+                  variant="contained"
+                  onClick={handleDownloadCode}
+                  disabled={!generatedCode.trim()}
+                  sx={{ textTransform: "none" }}
+                >
+                  Descargar código
+                </Button>
+              </Box>
+            </>
+          )}
         </Box>
       </Modal>
 
