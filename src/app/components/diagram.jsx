@@ -42,6 +42,8 @@ import {
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { FiMenu } from "react-icons/fi";
+import { TbPrompt } from "react-icons/tb";
+import { GiCrossedChains } from "react-icons/gi";
 import {
   loadPersistedDiagram,
   savePersistedDiagram,
@@ -51,16 +53,82 @@ import ProfileMenu from "./ProfileMenu";
 let id = 0;
 const getId = () => `dndnode_${id++}`;
 
+const NODE_TYPE = "customNode";
+
+const createEmptyAttachments = () => ({ prompts: [], chains: [] });
+
+const normalizeNodeData = (node) => {
+  const attachments = node?.data?.attachments ?? createEmptyAttachments();
+  return {
+    ...node,
+    type: NODE_TYPE,
+    data: {
+      ...node.data,
+      label: node?.data?.label ?? node?.label ?? "Node",
+      attachments: {
+        prompts: [...(attachments.prompts ?? [])],
+        chains: [...(attachments.chains ?? [])],
+      },
+      nodeType:
+        node?.data?.nodeType ??
+        (node?.type && node.type !== NODE_TYPE ? node.type : null),
+    },
+  };
+};
+
+const CustomNode = ({ data }) => {
+  const attachments = data?.attachments ?? createEmptyAttachments();
+  const promptItems = attachments.prompts ?? [];
+  const chainItems = attachments.chains ?? [];
+  const items = [
+    ...promptItems.map((item) => ({ ...item, kind: "prompt" })),
+    ...chainItems.map((item) => ({ ...item, kind: "chain" })),
+  ];
+
+  return (
+    <div className="custom-node">
+      <div className="custom-node__label">{data?.label ?? "Node"}</div>
+      {items.length > 0 && (
+        <div className="custom-node__attachments" aria-label="node attachments">
+          {items.map((item, index) => (
+            <div
+              key={`${item.kind}-${item.name}-${index}`}
+              className={`custom-node__attachment custom-node__attachment--${item.kind}`}
+            >
+              <div className="custom-node__attachment-icon" aria-hidden="true">
+                {item.kind === "prompt" ? <TbPrompt /> : <GiCrossedChains />}
+              </div>
+              <span className="custom-node__tooltip" role="tooltip">
+                {item.name}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const initialNodes = [
   {
     id: "n1",
+    type: NODE_TYPE,
     position: { x: 0, y: 0 },
-    data: { label: "START" },
+    data: {
+      label: "START",
+      attachments: createEmptyAttachments(),
+      nodeType: "START",
+    },
   },
   {
     id: "n2",
+    type: NODE_TYPE,
     position: { x: 0, y: 100 },
-    data: { label: "END" },
+    data: {
+      label: "END",
+      attachments: createEmptyAttachments(),
+      nodeType: "END",
+    },
   },
 ];
 
@@ -75,10 +143,12 @@ const initialEdges = [
 ];
 
 const cloneInitialNodes = () =>
-  initialNodes.map((node) => ({
-    ...node,
-    data: { ...node.data },
-  }));
+  initialNodes.map((node) =>
+    normalizeNodeData({
+      ...node,
+      data: { ...node.data },
+    })
+  );
 
 const cloneInitialEdges = () =>
   initialEdges.map((edge) => ({
@@ -98,12 +168,37 @@ const hydrateEdge = (edge) => ({
   },
 });
 
+const deserializeNodes = (graphNodes = []) =>
+  (graphNodes || []).map((node) => {
+    const attachmentsFromGraph =
+      node.attachments ??
+      node.data?.attachments ??
+      createEmptyAttachments();
+
+    return normalizeNodeData({
+      id: node.id,
+      position: node.position || { x: 0, y: 0 },
+      data: {
+        label: node.label ?? node.data?.label ?? "Node",
+        attachments: {
+          prompts: [...(attachmentsFromGraph.prompts ?? [])],
+          chains: [...(attachmentsFromGraph.chains ?? [])],
+        },
+        nodeType:
+          node.nodeType ??
+          node.data?.nodeType ??
+          (node.type && node.type !== NODE_TYPE ? node.type : null),
+      },
+      code: node.code ?? node.data?.code ?? "",
+    });
+  });
+
 const topNavActionsId = "top-nav-actions";
 
 function Diagram() {
   const { data: session } = useSession();
   const user = session?.user ?? null;
-  const [nodes, setNodes] = useState(initialNodes);
+  const [nodes, setNodes] = useState(() => cloneInitialNodes());
   const [edges, setEdges] = useState(initialEdges);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
@@ -113,7 +208,7 @@ function Diagram() {
     []
   );
   const { setType, setCode, dragPayload, setDragPayload, resetDrag } = useDnD();
-  const { screenToFlowPosition } = useReactFlow();
+  const { screenToFlowPosition, getNodes } = useReactFlow();
   const [alert, setAlert] = useState({
     message: "",
     severity: "success",
@@ -332,6 +427,13 @@ function Diagram() {
     [handleApplyFilterFromDrag, handleFilterClick, openFilterContextMenu]
   );
 
+  const nodeTypes = useMemo(
+    () => ({
+      [NODE_TYPE]: CustomNode,
+    }),
+    []
+  );
+
   const onNodesChange = useCallback(
     (changes) =>
       setNodes((nodesSnapshot) => applyNodeChanges(changes, nodesSnapshot)),
@@ -366,30 +468,124 @@ function Diagram() {
     [dragPayload?.kind]
   );
 
+  const findTargetNode = useCallback(
+    (position) => {
+      const padding = 16;
+      const nodesSnapshot = getNodes();
+      return nodesSnapshot.find((node) => {
+        if (!node?.positionAbsolute) {
+          return false;
+        }
+        const width = node.width ?? 180;
+        const height = node.height ?? 60;
+        const { x, y } = node.positionAbsolute;
+        return (
+          position.x >= x - padding &&
+          position.x <= x + width + padding &&
+          position.y >= y - padding &&
+          position.y <= y + height + padding
+        );
+      });
+    },
+    [getNodes]
+  );
+
   const onDrop = useCallback(
     (event) => {
       event.preventDefault();
-
-      if (!dragPayload?.type || !dragPayload?.code) {
-        return;
-      }
 
       const position = screenToFlowPosition({
         x: event.clientX,
         y: event.clientY,
       });
-      const newNode = {
-        id: getId(),
-        type: dragPayload?.type,
-        position,
-        data: { label: `${dragPayload?.type}` },
-        code: dragPayload?.code,
-      };
 
-      setNodes((nds) => nds.concat(newNode));
-      resetDrag();
+      if (dragPayload?.kind === "prompt" || dragPayload?.kind === "chain") {
+        const targetNode = findTargetNode(position);
+
+        if (targetNode) {
+          const attachmentKey =
+            dragPayload.kind === "prompt" ? "prompts" : "chains";
+
+          setNodes((prevNodes) =>
+            prevNodes.map((node) => {
+              if (node.id !== targetNode.id) {
+                return node;
+              }
+
+              const normalized = normalizeNodeData(node);
+              const existingAttachments =
+                normalized.data.attachments?.[attachmentKey] ?? [];
+
+              if (
+                existingAttachments.some((item) => {
+                  if (dragPayload.id && item.id) {
+                    return item.id === dragPayload.id;
+                  }
+                  return item.name === dragPayload.name;
+                })
+              ) {
+                return normalized;
+              }
+
+              const attachmentPayload = {
+                id: dragPayload.id ?? null,
+                name:
+                  dragPayload.name ??
+                  (dragPayload.kind === "prompt" ? "Prompt" : "Chain"),
+              };
+
+              if (dragPayload.kind === "prompt") {
+                attachmentPayload.content = dragPayload.content ?? "";
+              }
+
+              if (dragPayload.kind === "chain") {
+                attachmentPayload.code = dragPayload.code ?? "";
+              }
+
+              return {
+                ...normalized,
+                data: {
+                  ...normalized.data,
+                  attachments: {
+                    ...normalized.data.attachments,
+                    [attachmentKey]: [
+                      ...existingAttachments,
+                      attachmentPayload,
+                    ],
+                  },
+                },
+              };
+            })
+          );
+        }
+
+        resetDrag();
+        return;
+      }
+
+      if (dragPayload?.kind === "node" && dragPayload?.code !== undefined) {
+        const newNode = normalizeNodeData({
+          id: getId(),
+          position,
+          data: {
+            label: dragPayload?.name ?? "Node",
+            attachments: createEmptyAttachments(),
+            nodeType: dragPayload?.nodeType ?? dragPayload?.name ?? null,
+          },
+          code: dragPayload?.code ?? "",
+        });
+
+        setNodes((nds) => nds.concat(newNode));
+        resetDrag();
+      }
     },
-    [dragPayload, resetDrag, screenToFlowPosition, setNodes]
+    [
+      dragPayload,
+      findTargetNode,
+      resetDrag,
+      screenToFlowPosition,
+      setNodes,
+    ]
   );
 
   const onDragStart = (event, nodeType, nodeCode) => {
@@ -397,7 +593,7 @@ function Diagram() {
     setCode(nodeCode);
     setDragPayload({
       kind: "node",
-      type: nodeType,
+      nodeType,
       code: nodeCode || "",
       name: nodeType,
     });
@@ -413,6 +609,11 @@ function Diagram() {
       label: n.data.label,
       position: n.position,
       code: n.code || "# código no definido",
+      attachments: {
+        prompts: [...(n.data?.attachments?.prompts ?? [])],
+        chains: [...(n.data?.attachments?.chains ?? [])],
+      },
+      nodeType: n.data?.nodeType ?? null,
     }));
 
     const edgeData = edges.map((e) => ({
@@ -544,13 +745,7 @@ function Diagram() {
 
       if (storedGraph) {
         try {
-          const nextNodes = (storedGraph.nodes || []).map((n) => ({
-            id: n.id,
-            type: n.type,
-            position: n.position || { x: 0, y: 0 },
-            data: { label: n.label },
-            code: n.code,
-          }));
+          const nextNodes = deserializeNodes(storedGraph.nodes || []);
           const nextEdges = (storedGraph.edges || []).map(hydrateEdge);
           setNodes(nextNodes);
           setEdges(nextEdges);
@@ -658,13 +853,7 @@ function Diagram() {
       const graph = ev?.detail;
       if (!graph) return;
       try {
-        const nextNodes = (graph.nodes || []).map((n) => ({
-          id: n.id,
-          type: n.type,
-          position: n.position || { x: 0, y: 0 },
-          data: { label: n.label },
-          code: n.code,
-        }));
+        const nextNodes = deserializeNodes(graph.nodes || []);
         const nextEdges = (graph.edges || []).map(hydrateEdge);
         setNodes(nextNodes);
         setEdges(nextEdges);
@@ -679,14 +868,8 @@ function Diagram() {
       <Sidebar
         onLoadDiagram={(graph) => {
           try {
-            const nextNodes = (graph.nodes || []).map((n) => ({
-              id: n.id,
-              type: n.type,
-              position: n.position || { x: 0, y: 0 },
-              data: { label: n.label },
-              code: n.code,
-            }));
-            const nextEdges = (graph.edges || []).map(hydrateEdge);
+            const nextNodes = deserializeNodes(graph?.nodes || []);
+            const nextEdges = (graph?.edges || []).map(hydrateEdge);
             setNodes(nextNodes);
             setEdges(nextEdges);
           } catch {}
@@ -740,6 +923,7 @@ function Diagram() {
             onDragStart={onDragStart}
             onDragOver={onDragOver}
             edgeTypes={edgeTypes}
+            nodeTypes={nodeTypes}
             fitView
           >
             <Background />

@@ -1664,6 +1664,105 @@ body {
   }
 }
 
+.custom-node {
+  background: #ffffff;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  border-radius: 12px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 168px;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+}
+
+.custom-node__label {
+  flex: 1;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.custom-node__attachments {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.custom-node__attachment {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  background: rgba(226, 232, 240, 0.6);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #1f2937;
+  transition: transform 0.15s ease, box-shadow 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.custom-node__attachment-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+}
+
+.custom-node__attachment--prompt {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.4);
+  color: #4338ca;
+}
+
+.custom-node__attachment--chain {
+  background: rgba(14, 165, 233, 0.15);
+  border-color: rgba(14, 165, 233, 0.4);
+  color: #0f766e;
+}
+
+.custom-node__attachment:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.18);
+  border-color: rgba(30, 64, 175, 0.5);
+}
+
+.custom-node__tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(17, 24, 39, 0.92);
+  color: #f8fafc;
+  font-size: 0.7rem;
+  white-space: nowrap;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.25);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+}
+
+.custom-node__attachment::after {
+  content: "";
+  position: absolute;
+  bottom: calc(100% + 2px);
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 6px;
+  border-style: solid;
+  border-color: rgba(17, 24, 39, 0.92) transparent transparent transparent;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.custom-node__attachment:hover .custom-node__tooltip,
+.custom-node__attachment:hover::after {
+  opacity: 1;
+}
+
 @keyframes modalScale {
   from {
     opacity: 0;

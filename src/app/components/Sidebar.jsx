@@ -278,6 +278,7 @@ const Sidebar = ({ onLoadDiagram }) => {
       type: nodeType,
       code: nodeCode || "",
       name: nodeType,
+      nodeType,
     };
     setType(nodeType);
     setCode(nodeCode);
@@ -312,6 +313,34 @@ const Sidebar = ({ onLoadDiagram }) => {
         preview.parentNode.removeChild(preview);
       }
     }, 0);
+  };
+
+  const onPromptDragStart = (event, prompt) => {
+    setType(null);
+    setCode(null);
+    const payload = {
+      kind: "prompt",
+      id: prompt.id ?? null,
+      name: prompt.name,
+      content: prompt.content ?? "",
+    };
+    setDragPayload(payload);
+    event.dataTransfer.setData("application/prompt-name", prompt.name ?? "");
+    event.dataTransfer.effectAllowed = "copy";
+  };
+
+  const onChainDragStart = (event, chain) => {
+    setType(null);
+    setCode(null);
+    const payload = {
+      kind: "chain",
+      id: chain.id ?? null,
+      name: chain.name,
+      code: chain.code ?? "",
+    };
+    setDragPayload(payload);
+    event.dataTransfer.setData("application/chain-name", chain.name ?? "");
+    event.dataTransfer.effectAllowed = "copy";
   };
 
   const handleDragEnd = () => {
@@ -1125,6 +1154,9 @@ const Sidebar = ({ onLoadDiagram }) => {
                     className={`node-item ${
                       menuOpenId === `prompt-${p.name}` ? "active" : ""
                     }`}
+                    draggable
+                    onDragStart={(event) => onPromptDragStart(event, p)}
+                    onDragEnd={handleDragEnd}
                   >
                     <div className="node-icon">
                       <TbPrompt />
@@ -1165,6 +1197,9 @@ const Sidebar = ({ onLoadDiagram }) => {
                     className={`node-item ${
                       menuOpenId === `chain-${c.name}` ? "active" : ""
                     }`}
+                    draggable
+                    onDragStart={(event) => onChainDragStart(event, c)}
+                    onDragEnd={handleDragEnd}
                   >
                     <div className="node-icon">
                       <GiCrossedChains />
