@@ -5,15 +5,33 @@ export async function POST(req) {
     const { graphJSON } = await req.json();
 
     const prompt = `
-Eres un generador de código para LangGraph.
-Dado este JSON, construye un script Python válido que haga que el chatbot hecho con LangGraph tenga sentido.
-${JSON.stringify(graphJSON, null, 2)}
+Transpila JSON→Python (LangGraph v1). Aplica SOLO estas reglas:
 
-Devuelve un script válido que:
-1. Importe lo necesario.
-2. Defina las funciones de cada nodo.
-3. Construya un StateGraph con esos nodos y edges.
-4. Compile el grafo listo para ejecutarse.
+INPUT: JSON con {nodes:[{id,type,label?,code?}], edges:[{source,target}]}. Ignora cualquier otro campo.
+
+REGLAS:
+1) Importa: 
+   from langgraph.graph import StateGraph, START, END
+2) Inserta al inicio el code del nodo START exactamente tal cual.
+3) Para cada nodo con type=NODE:
+   - NAME = label si existe, si no id
+   - func_name = slug(NAME) en snake_case ASCII
+   - define: 
+     def {func_name}(state: State) -> State:
+         <pegar code del nodo>
+4) Crea g = StateGraph(State) una sola vez.
+5) Añade nodos: g.add_node("{NAME}", {func_name}) para cada NODE.
+6) Traduce edges:
+   - source START→ usa START
+   - target END→ usa END
+   - otros: usa "{NAME}" correspondiente
+   - Emite g.add_edge(<src>, <dst>) en el orden dado.
+7) Compila: app = g.compile() al final.
+8) Si falta code en un NODE: usa raise NotImplementedError.
+9) Salida: SOLO un bloque python sin texto extra ni comentarios.
+
+Ahora transpila este JSON:
+${JSON.stringify(graphJSON, null, 2)}
 `;
 
     const apiKey = process.env.OPENAI_API_KEY;
