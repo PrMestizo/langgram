@@ -137,6 +137,7 @@ function Diagram() {
   const [isCodeDialogOpen, setIsCodeDialogOpen] = useState(false);
   const [generatedCode, setGeneratedCode] = useState("");
   const [isGeneratingCode, setIsGeneratingCode] = useState(false);
+  const [showJsonModal, setShowJsonModal] = useState(false);
   const [filterEditor, setFilterEditor] = useState({
     open: false,
     edgeId: null,
@@ -785,10 +786,84 @@ function Diagram() {
               >
                 Generar código
               </button>
+              <button
+                type="button"
+                className="top-nav__button top-nav__button--secondary"
+                onClick={() => setShowJsonModal(true)}
+              >
+                Ver JSON
+              </button>
               <ProfileMenu />
             </div>
           </div>
         </header>
+
+        {/* JSON Modal */}
+        <Modal
+          open={showJsonModal}
+          onClose={() => setShowJsonModal(false)}
+          aria-labelledby="json-modal-title"
+          aria-describedby="json-modal-description"
+        >
+          <Box sx={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: '80%',
+            maxWidth: '800px',
+            maxHeight: '80vh',
+            bgcolor: 'background.paper',
+            boxShadow: 24,
+            p: 4,
+            borderRadius: 1,
+            display: 'flex',
+            flexDirection: 'column',
+          }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Typography id="json-modal-title" variant="h6" component="h2">
+                Diagrama JSON
+              </Typography>
+              <IconButton onClick={() => setShowJsonModal(false)}>
+                <CloseIcon />
+              </IconButton>
+            </Box>
+            <Box sx={{ 
+              flexGrow: 1, 
+              overflow: 'auto', 
+              bgcolor: '#f5f5f5', 
+              p: 2, 
+              borderRadius: 1,
+              fontFamily: 'monospace',
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-all'
+            }}>
+              {JSON.stringify(GraphJSON(), null, 2)}
+            </Box>
+            <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
+              <Button 
+                variant="contained" 
+                onClick={() => {
+                  navigator.clipboard.writeText(JSON.stringify(GraphJSON(), null, 2));
+                  setAlert({
+                    message: 'JSON copiado al portapapeles',
+                    severity: 'success',
+                    open: true,
+                  });
+                }}
+                sx={{ mr: 1 }}
+              >
+                Copiar
+              </Button>
+              <Button 
+                variant="outlined" 
+                onClick={() => setShowJsonModal(false)}
+              >
+                Cerrar
+              </Button>
+            </Box>
+          </Box>
+        </Modal>
 
         <div className="canvas-wrapper">
           <ReactFlow
