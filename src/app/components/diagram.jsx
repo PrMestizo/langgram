@@ -1,8 +1,7 @@
 "use client";
-import { useState, useCallback, useEffect, useMemo, useRef } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import dynamic from "next/dynamic";
-import { useTheme } from "@mui/material/styles";
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -43,6 +42,8 @@ import {
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { FiMenu } from "react-icons/fi";
+import { TbPrompt } from "react-icons/tb";
+import { GiCrossedChains } from "react-icons/gi";
 import {
   loadPersistedDiagram,
   savePersistedDiagram,
@@ -77,6 +78,11 @@ const initialEdges = [
   },
 ];
 
+const initialResources = {
+  prompts: [],
+  chains: [],
+};
+
 const cloneInitialNodes = () =>
   initialNodes.map((node) => ({
     ...node,
@@ -107,13 +113,39 @@ const hydrateEdge = (edge) => ({
 
 const topNavActionsId = "top-nav-actions";
 
+const truncateText = (value, maxLength = 80) => {
+  if (typeof value !== "string") {
+    return "";
+  }
+
+  return value.length > maxLength
+    ? `${value.slice(0, Math.max(0, maxLength - 1))}…`
+    : value;
+};
+
 function Diagram() {
   const { data: session } = useSession();
   const user = session?.user ?? null;
   const [nodes, setNodes] = useState(initialNodes);
   const [edges, setEdges] = useState(initialEdges);
+  const [diagramResources, setDiagramResources] = useState(() => ({
+    ...initialResources,
+  }));
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
+  const [isResourcePanelOpen, setIsResourcePanelOpen] = useState(false);
+  const resourcePrompts = useMemo(
+    () =>
+      Array.isArray(diagramResources.prompts)
+        ? diagramResources.prompts
+        : [],
+    [diagramResources]
+  );
+  const resourceChains = useMemo(
+    () =>
+      Array.isArray(diagramResources.chains) ? diagramResources.chains : [],
+    [diagramResources]
+  );
   const closeTopNavMenu = useCallback(() => setIsMenuOpen(false), []);
   const toggleTopNavMenu = useCallback(
     () => setIsMenuOpen((prev) => !prev),
@@ -432,6 +464,76 @@ function Diagram() {
     event.dataTransfer.effectAllowed = "move";
   };
 
+  const isResourceDrag =
+    dragPayload?.kind === "prompt" || dragPayload?.kind === "chain";
+
+  const handleResourceDragOver = useCallback(
+    (event) => {
+      if (!isResourceDrag) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      event.dataTransfer.dropEffect = "copy";
+    },
+    [isResourceDrag]
+  );
+
+  const handleResourceDrop = useCallback(
+    (event) => {
+      if (!isResourceDrag || !dragPayload) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      const listKey = dragPayload.kind === "prompt" ? "prompts" : "chains";
+      const nextEntry =
+        dragPayload.kind === "prompt"
+          ? { name: dragPayload.name, content: dragPayload.content ?? "" }
+          : { name: dragPayload.name, code: dragPayload.code ?? "" };
+
+      setDiagramResources((prev) => {
+        const currentList = Array.isArray(prev[listKey]) ? prev[listKey] : [];
+        const nextList = [...currentList];
+        const existingIndex = nextList.findIndex(
+          (entry) => entry.name === nextEntry.name
+        );
+
+        if (existingIndex !== -1) {
+          nextList[existingIndex] = nextEntry;
+        } else {
+          nextList.push(nextEntry);
+        }
+
+        return {
+          ...prev,
+          [listKey]: nextList,
+        };
+      });
+
+      resetDrag();
+    },
+    [dragPayload, isResourceDrag, resetDrag, setDiagramResources]
+  );
+
+  const handleRemoveResource = useCallback((kind, name) => {
+    const listKey = kind === "prompt" ? "prompts" : "chains";
+    setDiagramResources((prev) => {
+      const currentList = Array.isArray(prev[listKey]) ? prev[listKey] : [];
+      return {
+        ...prev,
+        [listKey]: currentList.filter((entry) => entry.name !== name),
+      };
+    });
+  }, []);
+
+  const toggleResourcePanel = useCallback(() => {
+    setIsResourcePanelOpen((prev) => !prev);
+  }, []);
+
   const GraphJSON = useCallback(() => {
     const nodeData = nodes.map((n) => ({
       id: n.id,
@@ -453,9 +555,23 @@ function Diagram() {
       filterName: e.data?.filterName || "",
     }));
 
-    const graphJSON = { nodes: nodeData, edges: edgeData };
+    const resourcePrompts = Array.isArray(diagramResources.prompts)
+      ? diagramResources.prompts.map((prompt) => ({ ...prompt }))
+      : [];
+    const resourceChains = Array.isArray(diagramResources.chains)
+      ? diagramResources.chains.map((chain) => ({ ...chain }))
+      : [];
+
+    const graphJSON = {
+      nodes: nodeData,
+      edges: edgeData,
+      resources: {
+        prompts: resourcePrompts,
+        chains: resourceChains,
+      },
+    };
     return graphJSON;
-  }, [nodes, edges]);
+  }, [diagramResources, edges, nodes]);
 
   const generateCodeWithAI = useCallback(async () => {
     const graphJSON = GraphJSON();
@@ -594,12 +710,25 @@ function Diagram() {
           const nextEdges = (storedGraph.edges || []).map(hydrateEdge);
           setNodes(nextNodes);
           setEdges(nextEdges);
+          const storedResources = storedGraph.resources || {};
+          const storedPrompts = Array.isArray(storedResources.prompts)
+            ? storedResources.prompts.map((prompt) => ({ ...prompt }))
+            : [];
+          const storedChains = Array.isArray(storedResources.chains)
+            ? storedResources.chains.map((chain) => ({ ...chain }))
+            : [];
+          setDiagramResources({
+            prompts: storedPrompts,
+            chains: storedChains,
+          });
         } catch (error) {
           console.error(
             "Error al hidratar el diagrama desde el almacenamiento local:",
             error
           );
         }
+      } else {
+        setDiagramResources(() => ({ ...initialResources }));
       }
 
       if (!cancelled) {
@@ -631,6 +760,7 @@ function Diagram() {
     const handleResetDiagram = () => {
       setNodes(cloneInitialNodes());
       setEdges(cloneInitialEdges());
+      setDiagramResources(() => ({ ...initialResources }));
       setAlert({ message: "", severity: "success", open: false });
       setIsMenuOpen(false);
       setIsSaveDialogOpen(false);
@@ -638,6 +768,7 @@ function Diagram() {
       closeFilterEditor();
       closeFilterContextMenu();
       resetDrag();
+      setIsResourcePanelOpen(false);
     };
 
     window.addEventListener("reset-diagram", handleResetDiagram);
@@ -719,6 +850,17 @@ function Diagram() {
         const nextEdges = (graph.edges || []).map(hydrateEdge);
         setNodes(nextNodes);
         setEdges(nextEdges);
+        const resources = graph.resources || {};
+        const graphPrompts = Array.isArray(resources.prompts)
+          ? resources.prompts.map((prompt) => ({ ...prompt }))
+          : [];
+        const graphChains = Array.isArray(resources.chains)
+          ? resources.chains.map((chain) => ({ ...chain }))
+          : [];
+        setDiagramResources({
+          prompts: graphPrompts,
+          chains: graphChains,
+        });
       } catch {}
     };
     window.addEventListener("load-diagram", handler);
@@ -751,6 +893,17 @@ function Diagram() {
             const nextEdges = (graph.edges || []).map(hydrateEdge);
             setNodes(nextNodes);
             setEdges(nextEdges);
+            const resources = graph.resources || {};
+            const graphPrompts = Array.isArray(resources.prompts)
+              ? resources.prompts.map((prompt) => ({ ...prompt }))
+              : [];
+            const graphChains = Array.isArray(resources.chains)
+              ? resources.chains.map((chain) => ({ ...chain }))
+              : [];
+            setDiagramResources({
+              prompts: graphPrompts,
+              chains: graphChains,
+            });
           } catch {}
         }}
       />
@@ -865,30 +1018,161 @@ function Diagram() {
           </Box>
         </Modal>
 
-        <div className="canvas-wrapper">
-          <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            onConnect={onConnect}
-            onDrop={onDrop}
-            onDragStart={onDragStart}
-            onDragOver={onDragOver}
-            edgeTypes={edgeTypes}
-            nodeTypes={nodeTypes}
-            fitView
-          >
-            <Background />
-            <Controls />
-          </ReactFlow>
-        </div>
+      <div className="canvas-wrapper">
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          onConnect={onConnect}
+          onDrop={onDrop}
+          onDragStart={onDragStart}
+          onDragOver={onDragOver}
+          edgeTypes={edgeTypes}
+          nodeTypes={nodeTypes}
+          fitView
+        >
+          <Background />
+          <Controls />
+        </ReactFlow>
+      </div>
+    </div>
+
+    <button
+      type="button"
+      className={`diagram-resource-tab${
+        isResourcePanelOpen ? " diagram-resource-tab--open" : ""
+      }`}
+      onClick={toggleResourcePanel}
+      aria-expanded={isResourcePanelOpen}
+      aria-controls="diagram-resource-sidebar"
+    >
+      Recursos
+    </button>
+    <aside
+      id="diagram-resource-sidebar"
+      className={`diagram-resource-sidebar${
+        isResourcePanelOpen ? " diagram-resource-sidebar--open" : ""
+      }${
+        isResourcePanelOpen && isResourceDrag
+          ? " diagram-resource-sidebar--active-drop"
+          : ""
+      }`}
+      aria-hidden={!isResourcePanelOpen}
+      aria-labelledby="diagram-resource-sidebar-title"
+      onDragOver={handleResourceDragOver}
+      onDrop={handleResourceDrop}
+    >
+      <div className="diagram-resource-sidebar__header">
+        <h2
+          id="diagram-resource-sidebar-title"
+          className="diagram-resource-sidebar__title"
+        >
+          Recursos del diagrama
+        </h2>
+        <p className="diagram-resource-sidebar__subtitle">
+          Arrastra prompts y chains desde la barra izquierda para incluirlos en el
+          diagrama sin asociarlos a un nodo.
+        </p>
       </div>
 
-      {contextMenu.open && (
-        <div
-          className="filter-context-menu"
-          style={{ top: contextMenu.y, left: contextMenu.x }}
+      <div className="diagram-resource-sidebar__section">
+        <h3 className="diagram-resource-sidebar__section-title">
+          <TbPrompt aria-hidden="true" />
+          <span>Prompts</span>
+          <span className="diagram-resource-sidebar__count">
+            {resourcePrompts.length}
+          </span>
+        </h3>
+        {resourcePrompts.length === 0 ? (
+          <p className="diagram-resource-sidebar__empty">
+            Aún no hay prompts en el diagrama.
+          </p>
+        ) : (
+          <ul className="diagram-resource-sidebar__list">
+            {resourcePrompts.map((prompt) => (
+              <li
+                key={`prompt-${prompt.name}`}
+                className="diagram-resource-sidebar__item diagram-resource-sidebar__item--prompt"
+              >
+                <div className="diagram-resource-sidebar__item-icon" aria-hidden="true">
+                  <TbPrompt />
+                </div>
+                <div className="diagram-resource-sidebar__item-body">
+                  <span className="diagram-resource-sidebar__item-title">
+                    {prompt.name}
+                  </span>
+                  {prompt.content ? (
+                    <span className="diagram-resource-sidebar__item-description">
+                      {truncateText(prompt.content, 120)}
+                    </span>
+                  ) : null}
+                </div>
+                <button
+                  type="button"
+                  className="diagram-resource-sidebar__remove"
+                  onClick={() => handleRemoveResource("prompt", prompt.name)}
+                  aria-label={`Quitar prompt ${prompt.name}`}
+                >
+                  ×
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <div className="diagram-resource-sidebar__section">
+        <h3 className="diagram-resource-sidebar__section-title">
+          <GiCrossedChains aria-hidden="true" />
+          <span>Chains</span>
+          <span className="diagram-resource-sidebar__count">
+            {resourceChains.length}
+          </span>
+        </h3>
+        {resourceChains.length === 0 ? (
+          <p className="diagram-resource-sidebar__empty">
+            Aún no hay chains en el diagrama.
+          </p>
+        ) : (
+          <ul className="diagram-resource-sidebar__list">
+            {resourceChains.map((chain) => (
+              <li
+                key={`chain-${chain.name}`}
+                className="diagram-resource-sidebar__item diagram-resource-sidebar__item--chain"
+              >
+                <div className="diagram-resource-sidebar__item-icon" aria-hidden="true">
+                  <GiCrossedChains />
+                </div>
+                <div className="diagram-resource-sidebar__item-body">
+                  <span className="diagram-resource-sidebar__item-title">
+                    {chain.name}
+                  </span>
+                  {chain.code ? (
+                    <span className="diagram-resource-sidebar__item-description">
+                      {truncateText(chain.code, 120)}
+                    </span>
+                  ) : null}
+                </div>
+                <button
+                  type="button"
+                  className="diagram-resource-sidebar__remove"
+                  onClick={() => handleRemoveResource("chain", chain.name)}
+                  aria-label={`Quitar chain ${chain.name}`}
+                >
+                  ×
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </aside>
+
+    {contextMenu.open && (
+      <div
+        className="filter-context-menu"
+        style={{ top: contextMenu.y, left: contextMenu.x }}
           role="menu"
           onClick={(event) => event.stopPropagation()}
           onContextMenu={(event) => event.preventDefault()}
