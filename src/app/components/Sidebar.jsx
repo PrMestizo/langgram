@@ -31,6 +31,21 @@ const Sidebar = ({ onLoadDiagram }) => {
   const [modalInitialName, setModalInitialName] = useState("");
   const [modalInitialCode, setModalInitialCode] = useState("");
   const [editingContext, setEditingContext] = useState(null);
+  const broadcastPromptTemplates = useCallback((list) => {
+    window.dispatchEvent(
+      new CustomEvent("prompt-templates-changed", {
+        detail: Array.isArray(list) ? list : [],
+      })
+    );
+  }, []);
+
+  const broadcastChainTemplates = useCallback((list) => {
+    window.dispatchEvent(
+      new CustomEvent("chain-templates-changed", {
+        detail: Array.isArray(list) ? list : [],
+      })
+    );
+  }, []);
   const tabItems = useMemo(
     () => [
       {
@@ -212,6 +227,7 @@ const Sidebar = ({ onLoadDiagram }) => {
   useEffect(() => {
     if (!isAuthenticated) {
       setCustomPrompts([]);
+      broadcastPromptTemplates([]);
       return;
     }
     const fetchPrompts = async () => {
@@ -221,17 +237,20 @@ const Sidebar = ({ onLoadDiagram }) => {
           throw new Error(`Error ${res.status}: ${res.statusText}`);
         }
         const data = await res.json();
-        setCustomPrompts(Array.isArray(data) ? data : []);
+        const prompts = Array.isArray(data) ? data : [];
+        setCustomPrompts(prompts);
+        broadcastPromptTemplates(prompts);
       } catch (err) {
         console.error("Error al cargar prompts:", err);
       }
     };
     fetchPrompts();
-  }, [isAuthenticated]);
+  }, [broadcastPromptTemplates, isAuthenticated]);
 
   useEffect(() => {
     if (!isAuthenticated) {
       setCustomChains([]);
+      broadcastChainTemplates([]);
       return;
     }
     const fetchChains = async () => {
@@ -241,13 +260,15 @@ const Sidebar = ({ onLoadDiagram }) => {
           throw new Error(`Error ${res.status}: ${res.statusText}`);
         }
         const data = await res.json();
-        setCustomChains(Array.isArray(data) ? data : []);
+        const chains = Array.isArray(data) ? data : [];
+        setCustomChains(chains);
+        broadcastChainTemplates(chains);
       } catch (err) {
         console.error("Error al cargar chains:", err);
       }
     };
     fetchChains();
-  }, [isAuthenticated]);
+  }, [broadcastChainTemplates, isAuthenticated]);
 
   useEffect(() => {
     const handleEdgesUpdated = (event) => {
@@ -455,9 +476,11 @@ const Sidebar = ({ onLoadDiagram }) => {
         body: JSON.stringify(newPrompt),
       });
       const saved = await res.json();
-      setCustomPrompts((prev) =>
-        Array.isArray(prev) ? [...prev, saved] : [saved]
-      );
+      setCustomPrompts((prev) => {
+        const next = Array.isArray(prev) ? [...prev, saved] : [saved];
+        broadcastPromptTemplates(next);
+        return next;
+      });
     } catch (err) {
       console.error("Error al guardar prompt:", err);
     }
@@ -472,9 +495,11 @@ const Sidebar = ({ onLoadDiagram }) => {
         body: JSON.stringify(newChain),
       });
       const saved = await res.json();
-      setCustomChains((prev) =>
-        Array.isArray(prev) ? [...prev, saved] : [saved]
-      );
+      setCustomChains((prev) => {
+        const next = Array.isArray(prev) ? [...prev, saved] : [saved];
+        broadcastChainTemplates(next);
+        return next;
+      });
     } catch (err) {
       console.error("Error al guardar chain:", err);
     }
@@ -612,9 +637,11 @@ const Sidebar = ({ onLoadDiagram }) => {
       }
 
       const saved = await res.json();
-      setCustomPrompts((prev) =>
-        prev.map((item) => (item.id === saved.id ? saved : item))
-      );
+      setCustomPrompts((prev) => {
+        const next = prev.map((item) => (item.id === saved.id ? saved : item));
+        broadcastPromptTemplates(next);
+        return next;
+      });
       return true;
     } catch (err) {
       console.error("Error al actualizar prompt:", err);
@@ -647,9 +674,11 @@ const Sidebar = ({ onLoadDiagram }) => {
       }
 
       const saved = await res.json();
-      setCustomChains((prev) =>
-        prev.map((item) => (item.id === saved.id ? saved : item))
-      );
+      setCustomChains((prev) => {
+        const next = prev.map((item) => (item.id === saved.id ? saved : item));
+        broadcastChainTemplates(next);
+        return next;
+      });
       return true;
     } catch (err) {
       console.error("Error al actualizar chain:", err);
@@ -836,9 +865,11 @@ const Sidebar = ({ onLoadDiagram }) => {
       }
 
       await res.json();
-      setCustomPrompts((prev) =>
-        prev.filter((prompt) => prompt.name !== promptName)
-      );
+      setCustomPrompts((prev) => {
+        const next = prev.filter((prompt) => prompt.name !== promptName);
+        broadcastPromptTemplates(next);
+        return next;
+      });
     } catch (err) {
       console.error("Error al eliminar prompt:", err);
       alert(`No se pudo eliminar el prompt: ${err.message}`);
@@ -867,9 +898,11 @@ const Sidebar = ({ onLoadDiagram }) => {
       }
 
       await res.json();
-      setCustomChains((prev) =>
-        prev.filter((chain) => chain.name !== chainName)
-      );
+      setCustomChains((prev) => {
+        const next = prev.filter((chain) => chain.name !== chainName);
+        broadcastChainTemplates(next);
+        return next;
+      });
     } catch (err) {
       console.error("Error al eliminar chain:", err);
       alert(`No se pudo eliminar la chain: ${err.message}`);

@@ -23,6 +23,7 @@ const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
 
 import "reactflow/dist/style.css";
 import Sidebar from "./Sidebar";
+import ResourceDock from "./ResourceDock";
 import { DnDProvider, useDnD } from "./DnDContext";
 import { generateCodeFromGraph } from "../lib/codeGenerator";
 import FilterEdge from "./FilterEdge";
@@ -112,6 +113,10 @@ function Diagram() {
   const user = session?.user ?? null;
   const [nodes, setNodes] = useState(initialNodes);
   const [edges, setEdges] = useState(initialEdges);
+  const [diagramResources, setDiagramResources] = useState({
+    prompts: [],
+    chains: [],
+  });
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
   const closeTopNavMenu = useCallback(() => setIsMenuOpen(false), []);
@@ -385,7 +390,57 @@ function Diagram() {
     (event) => {
       event.preventDefault();
 
-      if (dragPayload?.kind !== "node") {
+      if (!dragPayload) {
+        return;
+      }
+
+      if (dragPayload.kind === "prompt" || dragPayload.kind === "chain") {
+        const listKey = dragPayload.kind === "prompt" ? "prompts" : "chains";
+        const nextEntry =
+          dragPayload.kind === "prompt"
+            ? {
+                name: dragPayload.name,
+                content: dragPayload.content ?? "",
+              }
+            : {
+                name: dragPayload.name,
+                code: dragPayload.code ?? "",
+              };
+
+        setDiagramResources((current) => {
+          const existingList = Array.isArray(current[listKey])
+            ? current[listKey]
+            : [];
+          const existingIndex = existingList.findIndex(
+            (entry) => entry.name === nextEntry.name
+          );
+          let nextList;
+
+          if (existingIndex !== -1) {
+            const shouldUpdate = Object.keys(nextEntry).some(
+              (key) => existingList[existingIndex]?.[key] !== nextEntry[key]
+            );
+            if (!shouldUpdate) {
+              return current;
+            }
+            nextList = existingList.map((entry, index) =>
+              index === existingIndex ? nextEntry : entry
+            );
+          } else {
+            nextList = [...existingList, nextEntry];
+          }
+
+          return {
+            ...current,
+            [listKey]: nextList,
+          };
+        });
+
+        resetDrag();
+        return;
+      }
+
+      if (dragPayload.kind !== "node") {
         resetDrag();
         return;
       }
@@ -415,7 +470,7 @@ function Diagram() {
       setNodes((nds) => nds.concat(newNode));
       resetDrag();
     },
-    [dragPayload, resetDrag, screenToFlowPosition, setNodes]
+    [dragPayload, resetDrag, screenToFlowPosition]
   );
 
   const onDragStart = (event, nodeType, nodeCode) => {
@@ -453,9 +508,47 @@ function Diagram() {
       filterName: e.data?.filterName || "",
     }));
 
-    const graphJSON = { nodes: nodeData, edges: edgeData };
+    const promptResources = Array.isArray(diagramResources.prompts)
+      ? diagramResources.prompts
+      : [];
+    const chainResources = Array.isArray(diagramResources.chains)
+      ? diagramResources.chains
+      : [];
+
+    const graphJSON = {
+      nodes: nodeData,
+      edges: edgeData,
+      prompts: promptResources,
+      chains: chainResources,
+    };
     return graphJSON;
-  }, [nodes, edges]);
+  }, [diagramResources, edges, nodes]);
+
+  const syncResourcesFromGraph = useCallback((graph) => {
+    const graphPrompts = Array.isArray(graph?.prompts) ? graph.prompts : [];
+    const graphChains = Array.isArray(graph?.chains) ? graph.chains : [];
+    setDiagramResources({
+      prompts: graphPrompts.map((item) => ({ ...item })),
+      chains: graphChains.map((item) => ({ ...item })),
+    });
+  }, []);
+
+  const handleRemoveResource = useCallback((kind, name) => {
+    const listKey = kind === "chain" ? "chains" : "prompts";
+    setDiagramResources((current) => {
+      const existingList = Array.isArray(current[listKey])
+        ? current[listKey]
+        : [];
+      const nextList = existingList.filter((entry) => entry.name !== name);
+      if (nextList.length === existingList.length) {
+        return current;
+      }
+      return {
+        ...current,
+        [listKey]: nextList,
+      };
+    });
+  }, []);
 
   const generateCodeWithAI = useCallback(async () => {
     const graphJSON = GraphJSON();
@@ -594,6 +687,7 @@ function Diagram() {
           const nextEdges = (storedGraph.edges || []).map(hydrateEdge);
           setNodes(nextNodes);
           setEdges(nextEdges);
+          syncResourcesFromGraph(storedGraph);
         } catch (error) {
           console.error(
             "Error al hidratar el diagrama desde el almacenamiento local:",
@@ -631,6 +725,7 @@ function Diagram() {
     const handleResetDiagram = () => {
       setNodes(cloneInitialNodes());
       setEdges(cloneInitialEdges());
+      setDiagramResources({ prompts: [], chains: [] });
       setAlert({ message: "", severity: "success", open: false });
       setIsMenuOpen(false);
       setIsSaveDialogOpen(false);
@@ -719,11 +814,12 @@ function Diagram() {
         const nextEdges = (graph.edges || []).map(hydrateEdge);
         setNodes(nextNodes);
         setEdges(nextEdges);
+        syncResourcesFromGraph(graph);
       } catch {}
     };
     window.addEventListener("load-diagram", handler);
     return () => window.removeEventListener("load-diagram", handler);
-  }, [setNodes, setEdges]);
+  }, [setNodes, setEdges, syncResourcesFromGraph]);
 
   return (
     <div className="dndflow">
@@ -751,6 +847,7 @@ function Diagram() {
             const nextEdges = (graph.edges || []).map(hydrateEdge);
             setNodes(nextNodes);
             setEdges(nextEdges);
+            syncResourcesFromGraph(graph);
           } catch {}
         }}
       />
@@ -884,6 +981,10 @@ function Diagram() {
           </ReactFlow>
         </div>
       </div>
+      <ResourceDock
+        resources={diagramResources}
+        onRemoveResource={handleRemoveResource}
+      />
 
       {contextMenu.open && (
         <div
