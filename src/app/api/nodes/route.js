@@ -1,29 +1,85 @@
 import { NextResponse } from "next/server";
 import prisma from "@/app/lib/db";
 import { auth } from "@/auth";
+import {
+  resolvePublicationState,
+  splitPublicationFields,
+  Visibility,
+} from "@/app/lib/visibility";
 
-export async function GET() {
+const ownerSelect = {
+  id: true,
+  name: true,
+  email: true,
+};
+
+const nodeInclude = {
+  owner: {
+    select: ownerSelect,
+  },
+};
+
+const getRole = (session) => session?.user?.role ?? "user";
+const isAdminSession = (session) => getRole(session) === "admin";
+
+const unauthorized = () =>
+  NextResponse.json(
+    { error: "Unauthorized" },
+    { status: 401 }
+  );
+
+const forbidden = () =>
+  NextResponse.json(
+    { error: "Forbidden" },
+    { status: 403 }
+  );
+
+export async function GET(request) {
   try {
     const session = await auth();
     const userId = session?.user?.id;
+    const isAdmin = isAdminSession(session);
+    const surface = new URL(request.url).searchParams.get("surface");
 
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (surface === "store") {
+      const nodes = await prisma.nodeTemplate.findMany({
+        where: { visibility: Visibility.PUBLIC, showInStore: true },
+        include: nodeInclude,
+        orderBy: { updatedAt: "desc" },
+      });
+      return NextResponse.json(nodes);
     }
 
-    const nodes = await prisma.nodeTemplate.findMany({
-      where: {
-        OR: [{ ownerId: userId }, { isPublic: true }],
-      },
-      include: {
-        owner: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
+    if (surface === "sidebar") {
+      const nodes = await prisma.nodeTemplate.findMany({
+        where: {
+          visibility: Visibility.PUBLIC,
+          isGlobal: true,
+          showInSidebar: true,
         },
-      },
+        include: nodeInclude,
+        orderBy: { updatedAt: "desc" },
+      });
+      return NextResponse.json(nodes);
+    }
+
+    if (!userId) {
+      return unauthorized();
+    }
+
+    const where = isAdmin
+      ? {}
+      : {
+          OR: [
+            { ownerId: userId },
+            { visibility: Visibility.PUBLIC, isGlobal: true },
+          ],
+        };
+
+    const nodes = await prisma.nodeTemplate.findMany({
+      where,
+      include: nodeInclude,
+      orderBy: { updatedAt: "desc" },
     });
     return NextResponse.json(nodes);
   } catch (error) {
@@ -47,18 +103,43 @@ export async function POST(request) {
   try {
     const session = await auth();
     const userId = session?.user?.id;
+    const isAdmin = isAdminSession(session);
 
     if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     const body = await request.json();
-    const { ownerId, ...data } = body;
+    const { ownerId: requestedOwnerId, ...payload } = body;
+    const { rest, controls } = splitPublicationFields(payload);
+
+    const ownerId = isAdmin
+      ? Object.prototype.hasOwnProperty.call(body, "ownerId")
+        ? requestedOwnerId ?? null
+        : userId
+      : userId;
+
+    const { errors, publication } = resolvePublicationState({
+      controls,
+      existing: {},
+      isAdmin,
+      isOwner: ownerId === userId,
+    });
+
+    if (errors?.length) {
+      return NextResponse.json(
+        { error: errors[0], details: errors },
+        { status: 400 }
+      );
+    }
+
     const node = await prisma.nodeTemplate.create({
       data: {
-        ...data,
-        ownerId: userId,
+        ...rest,
+        ownerId,
+        ...publication,
       },
+      include: nodeInclude,
     });
     return NextResponse.json(node);
   } catch (error) {
@@ -82,59 +163,45 @@ export async function DELETE(request) {
   try {
     const session = await auth();
     const userId = session?.user?.id;
+    const isAdmin = isAdminSession(session);
 
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!userId && !isAdmin) {
+      return unauthorized();
     }
 
     const body = await request.json();
-    console.log("DELETE request body:", body); // Debug log
+    const identifier = body.id
+      ? { id: body.id }
+      : body.name
+        ? { name: body.name }
+        : null;
 
-    // Opción 1: Si tu modelo tiene un campo 'id', usa esto:
-    if (body.id) {
-      const existingNode = await prisma.nodeTemplate.findFirst({
-        where: { id: body.id, ownerId: userId },
-      });
-
-      if (!existingNode) {
-        return NextResponse.json(
-          { error: "Node not found" },
-          { status: 404 }
-        );
-      }
-
-      await prisma.nodeTemplate.deleteMany({
-        where: { id: existingNode.id, ownerId: userId },
-      });
-      return NextResponse.json(existingNode);
+    if (!identifier) {
+      return NextResponse.json(
+        { error: "Missing identifier (id or name)" },
+        { status: 400 }
+      );
     }
 
-    // Opción 2: Si 'name' es único, primero busca el nodo y luego elimínalo
-    if (body.name) {
-      // Primero verificar si el nodo existe
-      const existingNode = await prisma.nodeTemplate.findFirst({
-        where: { name: body.name, ownerId: userId },
-      });
+    const existingNode = await prisma.nodeTemplate.findFirst({
+      where: {
+        ...identifier,
+        ...(isAdmin ? {} : { ownerId: userId }),
+      },
+      include: nodeInclude,
+    });
 
-      if (!existingNode) {
-        console.error("Node not found with name:", body.name);
-        return NextResponse.json({ error: "Node not found" }, { status: 404 });
-      }
-
-      // Eliminar usando el id del nodo encontrado
-      await prisma.nodeTemplate.deleteMany({
-        where: { id: existingNode.id, ownerId: userId },
-      });
-
-      console.log("Node deleted successfully:", existingNode);
-      return NextResponse.json(existingNode);
+    if (!existingNode) {
+      return NextResponse.json({ error: "Node not found" }, { status: 404 });
     }
 
-    // Si no hay ni id ni name en el body
-    return NextResponse.json(
-      { error: "Missing identifier (id or name)" },
-      { status: 400 }
-    );
+    if (!isAdmin && existingNode.ownerId !== userId) {
+      return forbidden();
+    }
+
+    await prisma.nodeTemplate.delete({ where: { id: existingNode.id } });
+
+    return NextResponse.json(existingNode);
   } catch (error) {
     console.error("Error in DELETE /api/nodes:", {
       message: error.message,
@@ -158,13 +225,14 @@ export async function PUT(request) {
   try {
     const session = await auth();
     const userId = session?.user?.id;
+    const isAdmin = isAdminSession(session);
 
     if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     const body = await request.json();
-    const { id, ...data } = body;
+    const { id, ownerId: _ownerId, ...payload } = body;
 
     if (!id) {
       return NextResponse.json(
@@ -173,16 +241,43 @@ export async function PUT(request) {
       );
     }
 
-    const updateResult = await prisma.nodeTemplate.updateMany({
-      where: { id, ownerId: userId },
-      data,
+    const existingNode = await prisma.nodeTemplate.findUnique({
+      where: { id },
     });
 
-    if (!updateResult.count) {
+    if (!existingNode) {
       return NextResponse.json({ error: "Node not found" }, { status: 404 });
     }
 
-    const node = await prisma.nodeTemplate.findUnique({ where: { id } });
+    const isOwner = existingNode.ownerId === userId;
+
+    if (!isAdmin && !isOwner) {
+      return forbidden;
+    }
+
+    const { rest, controls } = splitPublicationFields(payload);
+    const { errors, publication } = resolvePublicationState({
+      controls,
+      existing: existingNode,
+      isAdmin,
+      isOwner,
+    });
+
+    if (errors?.length) {
+      return NextResponse.json(
+        { error: errors[0], details: errors },
+        { status: 400 }
+      );
+    }
+
+    const node = await prisma.nodeTemplate.update({
+      where: { id },
+      data: {
+        ...rest,
+        ...publication,
+      },
+      include: nodeInclude,
+    });
     return NextResponse.json(node);
   } catch (error) {
     console.error("Error in PUT /api/nodes:", {

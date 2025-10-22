@@ -76,7 +76,10 @@ model NodeTemplate {
   metadata    Json?    // icon, default props, etc.
   owner       User?    @relation("UserNodeTemplates", fields: [ownerId], references: [id])
   ownerId     String?
-  isPublic    Boolean  @default(false)
+  visibility    Visibility @default(PRIVATE)
+  isGlobal      Boolean    @default(false)
+  showInStore   Boolean    @default(false)
+  showInSidebar Boolean    @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -91,6 +94,10 @@ model EdgeTemplate {
   metadata    Json?
   owner       User?   @relation("UserEdgeTemplates", fields: [ownerId], references: [id])
   ownerId     String?
+  visibility    Visibility @default(PRIVATE)
+  isGlobal      Boolean    @default(false)
+  showInStore   Boolean    @default(false)
+  showInSidebar Boolean    @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -102,7 +109,10 @@ model Diagram {
   ownerId    String?
   // Guarda el snapshot completo y cualquier layout (usar JSONB)
   content    Json    @db.JsonB
-  isPublic   Boolean @default(false)
+  visibility    Visibility @default(PRIVATE)
+  isGlobal      Boolean    @default(false)
+  showInStore   Boolean    @default(false)
+  showInSidebar Boolean    @default(false)
   version    Int     @default(1) // opcional: versión del diagrama
   tags       String[] @default([]) // etiquetas simples
   createdAt  DateTime @default(now())
@@ -117,6 +127,10 @@ model PromptTemplate {
   metadata    Json?
   owner       User?    @relation("UserPromptTemplates", fields: [ownerId], references: [id])
   ownerId     String?
+  visibility    Visibility @default(PRIVATE)
+  isGlobal      Boolean    @default(false)
+  showInStore   Boolean    @default(false)
+  showInSidebar Boolean    @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -130,6 +144,16 @@ model ChainTemplate {
   metadata    Json?
   owner       User?    @relation("UserChainTemplates", fields: [ownerId], references: [id])
   ownerId     String?
+  visibility    Visibility @default(PRIVATE)
+  isGlobal      Boolean    @default(false)
+  showInStore   Boolean    @default(false)
+  showInSidebar Boolean    @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+enum Visibility {
+  PRIVATE
+  UNLISTED
+  PUBLIC
 }

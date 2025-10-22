@@ -22,6 +22,11 @@ const Sidebar = ({ onLoadDiagram }) => {
   const isAuthenticated = status === "authenticated";
   const [isPopupVisible, setIsPopupVisible] = useState(false);
   const [popupMode, setPopupMode] = useState("node");
+  const [featuredDiagrams, setFeaturedDiagrams] = useState([]);
+  const [featuredNodes, setFeaturedNodes] = useState([]);
+  const [featuredEdges, setFeaturedEdges] = useState([]);
+  const [featuredPrompts, setFeaturedPrompts] = useState([]);
+  const [featuredChains, setFeaturedChains] = useState([]);
   const [customDiagrams, setCustomDiagrams] = useState([]);
   const [customNodes, setCustomNodes] = useState([]);
   const [customEdges, setCustomEdges] = useState([]);
@@ -73,6 +78,28 @@ const Sidebar = ({ onLoadDiagram }) => {
   const isPanelVisible = activeTabConfig?.type === "panel";
 
   const isEditing = Boolean(editingContext);
+
+  useEffect(() => {
+    const fetchFeatured = async (endpoint, setter) => {
+      try {
+        const response = await fetch(endpoint, { cache: "no-store" });
+        if (!response.ok) {
+          throw new Error(`Error ${response.status}: ${response.statusText}`);
+        }
+        const data = await response.json();
+        setter(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error(`Error al cargar destacados (${endpoint}):`, err);
+        setter([]);
+      }
+    };
+
+    fetchFeatured("/api/diagrams?surface=sidebar", setFeaturedDiagrams);
+    fetchFeatured("/api/nodes?surface=sidebar", setFeaturedNodes);
+    fetchFeatured("/api/edges?surface=sidebar", setFeaturedEdges);
+    fetchFeatured("/api/prompts?surface=sidebar", setFeaturedPrompts);
+    fetchFeatured("/api/chains?surface=sidebar", setFeaturedChains);
+  }, []);
 
   useEffect(() => {
     if (pathname === "/store") {
@@ -950,6 +977,24 @@ const Sidebar = ({ onLoadDiagram }) => {
                 />
               </div>
             </div>
+            {featuredDiagrams.length > 0 && (
+              <div className="node-section">
+                <div className="section-title">Featured Diagrams</div>
+                {featuredDiagrams.map((d) => (
+                  <div
+                    key={d.id}
+                    className="node-item"
+                    onClick={() => handleLoadDiagram(d)}
+                    style={{ cursor: "pointer" }}
+                  >
+                    <div className="node-icon">
+                      <FaAnkh />
+                    </div>
+                    {d.name}
+                  </div>
+                ))}
+              </div>
+            )}
             {customDiagrams.length > 0 && (
               <div className="node-section">
                 <div className="section-title">Saved Diagrams</div>
@@ -1026,6 +1071,27 @@ const Sidebar = ({ onLoadDiagram }) => {
                 />
               </div>
             </div>
+            {featuredNodes.length > 0 && (
+              <div className="node-section">
+                <div className="section-title">Featured Nodes</div>
+                {featuredNodes.map((n) => (
+                  <div
+                    key={n.id}
+                    className="node-item"
+                    onDragStart={(event) =>
+                      onDragStart(event, n.name, n.code)
+                    }
+                    onDragEnd={handleDragEnd}
+                    draggable
+                  >
+                    <div className="node-icon">
+                      <FaApple />
+                    </div>
+                    {n.name}
+                  </div>
+                ))}
+              </div>
+            )}
             {customNodes.length > 0 && (
               <div className="node-section">
                 <div className="section-title">Custom Nodes</div>
@@ -1108,6 +1174,25 @@ const Sidebar = ({ onLoadDiagram }) => {
                 />
               </div>
             </div>
+            {featuredEdges.length > 0 && (
+              <div className="node-section">
+                <div className="section-title">Featured Edges</div>
+                {featuredEdges.map((item) => (
+                  <div
+                    key={item.id}
+                    className="node-item edge-item edge-item--custom"
+                    onDragStart={(event) =>
+                      onEdgeDragStart(event, item.name, item.code)
+                    }
+                    onDragEnd={handleDragEnd}
+                    draggable
+                  >
+                    <div className="edge-item__circle">ƒ</div>
+                    {item.name}
+                  </div>
+                ))}
+              </div>
+            )}
             {customEdges.length > 0 && (
               <div className="node-section">
                 <div className="section-title">Custom Edges</div>
@@ -1151,6 +1236,25 @@ const Sidebar = ({ onLoadDiagram }) => {
       case "prompts":
         return (
           <div className="tab-content">
+            {featuredPrompts.length > 0 && (
+              <div className="node-section">
+                <div className="section-title">Featured Prompts</div>
+                {featuredPrompts.map((p) => (
+                  <div
+                    key={p.id}
+                    className="node-item"
+                    draggable
+                    onDragStart={(event) => onPromptDragStart(event, p)}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <div className="node-icon">
+                      <TbPrompt />
+                    </div>
+                    {p.name}
+                  </div>
+                ))}
+              </div>
+            )}
             {customPrompts.length > 0 && (
               <div className="node-section">
                 <div className="section-title">Custom Prompts</div>
@@ -1194,6 +1298,25 @@ const Sidebar = ({ onLoadDiagram }) => {
       case "chains":
         return (
           <div className="tab-content">
+            {featuredChains.length > 0 && (
+              <div className="node-section">
+                <div className="section-title">Featured Chains</div>
+                {featuredChains.map((c) => (
+                  <div
+                    key={c.id}
+                    className="node-item"
+                    draggable
+                    onDragStart={(event) => onChainDragStart(event, c)}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <div className="node-icon">
+                      <GiCrossedChains />
+                    </div>
+                    {c.name}
+                  </div>
+                ))}
+              </div>
+            )}
             {customChains.length > 0 && (
               <div className="node-section">
                 <div className="section-title">Custom Chains</div>

@@ -25,31 +25,31 @@ const SECTION_CONFIG = {
     title: "Diagrams",
     blurb: "Blueprints ready to plug into your workflows.",
     accents: ["#6366F1", "#0EA5E9", "#F97316", "#38BDF8"],
-    endpoint: "/api/diagrams",
+    endpoint: "/api/diagrams?surface=store",
   },
   nodes: {
     title: "Nodes",
     blurb: "Reusable building blocks for your diagram canvas.",
     accents: ["#10B981", "#EC4899", "#6366F1", "#FB7185"],
-    endpoint: "/api/nodes",
+    endpoint: "/api/nodes?surface=store",
   },
   edges: {
     title: "Edges",
     blurb: "Smart connectors with programmable logic.",
     accents: ["#14B8A6", "#F43F5E", "#F59E0B", "#8B5CF6"],
-    endpoint: "/api/edges",
+    endpoint: "/api/edges?surface=store",
   },
   prompts: {
     title: "Prompts",
     blurb: "Expert-crafted prompts for specialised tasks.",
     accents: ["#A855F7", "#3B82F6", "#6366F1", "#F97316"],
-    endpoint: "/api/prompts",
+    endpoint: "/api/prompts?surface=store",
   },
   chains: {
     title: "Chains",
     blurb: "Opinionated orchestrations for end-to-end use cases.",
     accents: ["#F59E0B", "#8B5CF6", "#0EA5E9", "#10B981"],
-    endpoint: "/api/chains",
+    endpoint: "/api/chains?surface=store",
   },
 };
 
