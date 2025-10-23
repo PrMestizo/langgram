@@ -45,6 +45,12 @@ const SECTION_CONFIG = {
     accents: ["#A855F7", "#3B82F6", "#6366F1", "#F97316"],
     endpoint: "/api/prompts",
   },
+  tools: {
+    title: "Tools",
+    blurb: "Utilities ready to empower your graph workflows.",
+    accents: ["#60A5FA", "#7C3AED", "#22D3EE", "#F97316"],
+    endpoint: "/api/tools",
+  },
   chains: {
     title: "Chains",
     blurb: "Opinionated orchestrations for end-to-end use cases.",
@@ -115,6 +121,7 @@ const resolveDescription = (item, sectionId) => {
     edges: "Conector configurable para tus diagramas.",
     prompts: "Prompt curado por la comunidad.",
     chains: "Cadena lista para integrarse en tus soluciones.",
+    tools: "Tool lista para ampliar tus capacidades Langgram.",
   };
 
   return fallbacks[sectionId] ?? "Recurso de la comunidad.";
@@ -303,7 +310,7 @@ export default function StorePage() {
                 fullWidth
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
-                placeholder="Buscar diagramas, nodos, prompts..."
+                placeholder="Buscar diagramas, nodos, prompts, tools..."
                 input={{
                   startAdornment: (
                     <InputAdornment position="start">
