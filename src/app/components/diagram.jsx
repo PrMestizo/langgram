@@ -44,6 +44,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import { FiMenu } from "react-icons/fi";
 import { TbPrompt } from "react-icons/tb";
 import { GiCrossedChains } from "react-icons/gi";
+import { FaTools } from "react-icons/fa";
 import {
   loadPersistedDiagram,
   savePersistedDiagram,
@@ -58,13 +59,13 @@ const initialNodes = [
     id: "n1",
     type: "langgramNode",
     position: { x: 0, y: 0 },
-    data: { label: "START", nodeType: "START", prompts: [], chains: [] },
+    data: { label: "START", nodeType: "START", prompts: [], chains: [], tools: [] },
   },
   {
     id: "n2",
     type: "langgramNode",
     position: { x: 0, y: 100 },
-    data: { label: "END", nodeType: "END", prompts: [], chains: [] },
+    data: { label: "END", nodeType: "END", prompts: [], chains: [], tools: [] },
   },
 ];
 
@@ -81,6 +82,7 @@ const initialEdges = [
 const initialResources = {
   prompts: [],
   chains: [],
+  tools: [],
 };
 
 const cloneInitialNodes = () =>
@@ -90,6 +92,7 @@ const cloneInitialNodes = () =>
       ...node.data,
       prompts: Array.isArray(node.data?.prompts) ? [...node.data.prompts] : [],
       chains: Array.isArray(node.data?.chains) ? [...node.data.chains] : [],
+      tools: Array.isArray(node.data?.tools) ? [...node.data.tools] : [],
     },
   }));
 
@@ -144,6 +147,11 @@ function Diagram() {
   const resourceChains = useMemo(
     () =>
       Array.isArray(diagramResources.chains) ? diagramResources.chains : [],
+    [diagramResources]
+  );
+  const resourceTools = useMemo(
+    () =>
+      Array.isArray(diagramResources.tools) ? diagramResources.tools : [],
     [diagramResources]
   );
   const closeTopNavMenu = useCallback(() => setIsMenuOpen(false), []);
@@ -440,6 +448,7 @@ function Diagram() {
           nodeType: dragPayload?.type,
           prompts: [],
           chains: [],
+          tools: [],
         },
         code: dragPayload?.code ?? "",
       };
@@ -465,7 +474,9 @@ function Diagram() {
   };
 
   const isResourceDrag =
-    dragPayload?.kind === "prompt" || dragPayload?.kind === "chain";
+    dragPayload?.kind === "prompt" ||
+    dragPayload?.kind === "chain" ||
+    dragPayload?.kind === "tool";
 
   const handleResourceDragOver = useCallback(
     (event) => {
@@ -489,11 +500,25 @@ function Diagram() {
       event.preventDefault();
       event.stopPropagation();
 
-      const listKey = dragPayload.kind === "prompt" ? "prompts" : "chains";
-      const nextEntry =
+      const listKey =
         dragPayload.kind === "prompt"
-          ? { name: dragPayload.name, content: dragPayload.content ?? "" }
-          : { name: dragPayload.name, code: dragPayload.code ?? "" };
+          ? "prompts"
+          : dragPayload.kind === "chain"
+          ? "chains"
+          : "tools";
+      const nextEntry = (() => {
+        if (dragPayload.kind === "prompt") {
+          return { name: dragPayload.name, content: dragPayload.content ?? "" };
+        }
+        if (dragPayload.kind === "chain") {
+          return { name: dragPayload.name, code: dragPayload.code ?? "" };
+        }
+        return {
+          name: dragPayload.name,
+          code: dragPayload.code ?? "",
+          description: dragPayload.description ?? "",
+        };
+      })();
 
       setDiagramResources((prev) => {
         const currentList = Array.isArray(prev[listKey]) ? prev[listKey] : [];
@@ -520,7 +545,15 @@ function Diagram() {
   );
 
   const handleRemoveResource = useCallback((kind, name) => {
-    const listKey = kind === "prompt" ? "prompts" : "chains";
+    const keyMap = {
+      prompt: "prompts",
+      chain: "chains",
+      tool: "tools",
+    };
+    const listKey = keyMap[kind];
+    if (!listKey) {
+      return;
+    }
     setDiagramResources((prev) => {
       const currentList = Array.isArray(prev[listKey]) ? prev[listKey] : [];
       return {
@@ -544,6 +577,7 @@ function Diagram() {
       code: n.code ?? "",
       prompts: Array.isArray(n.data?.prompts) ? n.data.prompts : [],
       chains: Array.isArray(n.data?.chains) ? n.data.chains : [],
+      tools: Array.isArray(n.data?.tools) ? n.data.tools : [],
     }));
 
     const edgeData = edges.map((e) => ({
@@ -561,6 +595,9 @@ function Diagram() {
     const resourceChains = Array.isArray(diagramResources.chains)
       ? diagramResources.chains.map((chain) => ({ ...chain }))
       : [];
+    const resourceTools = Array.isArray(diagramResources.tools)
+      ? diagramResources.tools.map((tool) => ({ ...tool }))
+      : [];
 
     const graphJSON = {
       nodes: nodeData,
@@ -568,6 +605,7 @@ function Diagram() {
       resources: {
         prompts: resourcePrompts,
         chains: resourceChains,
+        tools: resourceTools,
       },
     };
     return graphJSON;
@@ -694,6 +732,7 @@ function Diagram() {
             const label = n.label ?? nodeType ?? "";
             const prompts = Array.isArray(n.prompts) ? n.prompts : [];
             const chains = Array.isArray(n.chains) ? n.chains : [];
+            const tools = Array.isArray(n.tools) ? n.tools : [];
             return {
               id: n.id,
               type: "langgramNode",
@@ -703,6 +742,7 @@ function Diagram() {
                 nodeType,
                 prompts,
                 chains,
+                tools,
               },
               code: n.code ?? "",
             };
@@ -717,9 +757,13 @@ function Diagram() {
           const storedChains = Array.isArray(storedResources.chains)
             ? storedResources.chains.map((chain) => ({ ...chain }))
             : [];
+          const storedTools = Array.isArray(storedResources.tools)
+            ? storedResources.tools.map((tool) => ({ ...tool }))
+            : [];
           setDiagramResources({
             prompts: storedPrompts,
             chains: storedChains,
+            tools: storedTools,
           });
         } catch (error) {
           console.error(
@@ -834,6 +878,7 @@ function Diagram() {
           const label = n.label ?? nodeType ?? "";
           const prompts = Array.isArray(n.prompts) ? n.prompts : [];
           const chains = Array.isArray(n.chains) ? n.chains : [];
+          const tools = Array.isArray(n.tools) ? n.tools : [];
           return {
             id: n.id,
             type: "langgramNode",
@@ -843,6 +888,7 @@ function Diagram() {
               nodeType,
               prompts,
               chains,
+              tools,
             },
             code: n.code ?? "",
           };
@@ -857,9 +903,13 @@ function Diagram() {
         const graphChains = Array.isArray(resources.chains)
           ? resources.chains.map((chain) => ({ ...chain }))
           : [];
+        const graphTools = Array.isArray(resources.tools)
+          ? resources.tools.map((tool) => ({ ...tool }))
+          : [];
         setDiagramResources({
           prompts: graphPrompts,
           chains: graphChains,
+          tools: graphTools,
         });
       } catch {}
     };
@@ -877,6 +927,7 @@ function Diagram() {
               const label = n.label ?? nodeType ?? "";
               const prompts = Array.isArray(n.prompts) ? n.prompts : [];
               const chains = Array.isArray(n.chains) ? n.chains : [];
+              const tools = Array.isArray(n.tools) ? n.tools : [];
               return {
                 id: n.id,
                 type: "langgramNode",
@@ -886,6 +937,7 @@ function Diagram() {
                   nodeType,
                   prompts,
                   chains,
+                  tools,
                 },
                 code: n.code ?? "",
               };
@@ -900,9 +952,13 @@ function Diagram() {
             const graphChains = Array.isArray(resources.chains)
               ? resources.chains.map((chain) => ({ ...chain }))
               : [];
+            const graphTools = Array.isArray(resources.tools)
+              ? resources.tools.map((tool) => ({ ...tool }))
+              : [];
             setDiagramResources({
               prompts: graphPrompts,
               chains: graphChains,
+              tools: graphTools,
             });
           } catch {}
         }}
@@ -1071,8 +1127,8 @@ function Diagram() {
           Recursos del diagrama
         </h2>
         <p className="diagram-resource-sidebar__subtitle">
-          Arrastra prompts y chains desde la barra izquierda para incluirlos en el
-          diagrama sin asociarlos a un nodo.
+          Arrastra prompts, chains y tools desde la barra izquierda para
+          incluirlos en el diagrama sin asociarlos a un nodo.
         </p>
       </div>
 
@@ -1159,6 +1215,52 @@ function Diagram() {
                   className="diagram-resource-sidebar__remove"
                   onClick={() => handleRemoveResource("chain", chain.name)}
                   aria-label={`Quitar chain ${chain.name}`}
+                >
+                  ×
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <div className="diagram-resource-sidebar__section">
+        <h3 className="diagram-resource-sidebar__section-title">
+          <FaTools aria-hidden="true" />
+          <span>Tools</span>
+          <span className="diagram-resource-sidebar__count">
+            {resourceTools.length}
+          </span>
+        </h3>
+        {resourceTools.length === 0 ? (
+          <p className="diagram-resource-sidebar__empty">
+            Aún no hay tools en el diagrama.
+          </p>
+        ) : (
+          <ul className="diagram-resource-sidebar__list">
+            {resourceTools.map((tool) => (
+              <li
+                key={`tool-${tool.name}`}
+                className="diagram-resource-sidebar__item diagram-resource-sidebar__item--tool"
+              >
+                <div className="diagram-resource-sidebar__item-icon" aria-hidden="true">
+                  <FaTools />
+                </div>
+                <div className="diagram-resource-sidebar__item-body">
+                  <span className="diagram-resource-sidebar__item-title">
+                    {tool.name}
+                  </span>
+                  {tool.description || tool.code ? (
+                    <span className="diagram-resource-sidebar__item-description">
+                      {truncateText(tool.description || tool.code, 120)}
+                    </span>
+                  ) : null}
+                </div>
+                <button
+                  type="button"
+                  className="diagram-resource-sidebar__remove"
+                  onClick={() => handleRemoveResource("tool", tool.name)}
+                  aria-label={`Quitar tool ${tool.name}`}
                 >
                   ×
                 </button>

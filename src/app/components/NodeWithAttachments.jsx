@@ -4,6 +4,7 @@ import { useCallback, useMemo } from "react";
 import { Handle, Position, useReactFlow } from "reactflow";
 import { TbPrompt } from "react-icons/tb";
 import { GiCrossedChains } from "react-icons/gi";
+import { FaTools } from "react-icons/fa";
 import { useDnD } from "./DnDContext";
 
 const ATTACHMENT_KINDS = {
@@ -23,6 +24,15 @@ const ATTACHMENT_KINDS = {
     }),
     icon: GiCrossedChains,
   },
+  tool: {
+    key: "tools",
+    build: (payload) => ({
+      name: payload.name,
+      code: payload.code ?? "",
+      description: payload.description ?? "",
+    }),
+    icon: FaTools,
+  },
 };
 
 const normalizeAttachmentList = (value) => (Array.isArray(value) ? value : []);
@@ -31,11 +41,14 @@ const NodeWithAttachments = ({ id, data }) => {
   const label = data?.label ?? data?.nodeType ?? "Node";
   const prompts = normalizeAttachmentList(data?.prompts);
   const chains = normalizeAttachmentList(data?.chains);
+  const tools = normalizeAttachmentList(data?.tools);
   const { dragPayload, resetDrag } = useDnD();
   const { setNodes } = useReactFlow();
 
   const isAttachmentDrag =
-    dragPayload?.kind === "prompt" || dragPayload?.kind === "chain";
+    dragPayload?.kind === "prompt" ||
+    dragPayload?.kind === "chain" ||
+    dragPayload?.kind === "tool";
 
   const handleDragOver = useCallback(
     (event) => {
@@ -108,8 +121,13 @@ const NodeWithAttachments = ({ id, data }) => {
         name: chain.name,
         Icon: ATTACHMENT_KINDS.chain.icon,
       })),
+      ...tools.map((tool) => ({
+        kind: "tool",
+        name: tool.name,
+        Icon: ATTACHMENT_KINDS.tool.icon,
+      })),
     ],
-    [chains, prompts]
+    [chains, prompts, tools]
   );
 
   const attachmentsClassName = `langgram-node__attachments${
@@ -131,14 +149,20 @@ const NodeWithAttachments = ({ id, data }) => {
       <span className="langgram-node__label">{label}</span>
       <div className={attachmentsClassName} aria-label="Recursos asociados">
         {attachments.map(({ kind, name, Icon }) => (
-          <div
-            key={`${kind}-${name}`}
-            className={`langgram-node__attachment langgram-node__attachment--${kind}`}
-            title={name}
-            data-label={name}
-            role="img"
-            aria-label={`${kind === "prompt" ? "Prompt" : "Chain"} ${name}`}
-          >
+            <div
+              key={`${kind}-${name}`}
+              className={`langgram-node__attachment langgram-node__attachment--${kind}`}
+              title={name}
+              data-label={name}
+              role="img"
+              aria-label={`${
+                kind === "prompt"
+                  ? "Prompt"
+                  : kind === "chain"
+                  ? "Chain"
+                  : "Tool"
+              } ${name}`}
+            >
             <Icon aria-hidden="true" />
           </div>
         ))}

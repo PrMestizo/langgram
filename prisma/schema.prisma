@@ -31,6 +31,7 @@ model User {
   edgeTemplates   EdgeTemplate[]   @relation("UserEdgeTemplates")
   promptTemplates PromptTemplate[] @relation("UserPromptTemplates")
   chainTemplates  ChainTemplate[]  @relation("UserChainTemplates")
+  toolTemplates   ToolTemplate[]   @relation("UserToolTemplates")
   diagrams        Diagram[]        @relation("UserDiagrams")
 }
 
@@ -130,6 +131,20 @@ model ChainTemplate {
   metadata    Json?
   owner       User?    @relation("UserChainTemplates", fields: [ownerId], references: [id])
   ownerId     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ToolTemplate {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  code        String   @db.Text
+  language    String?
+  metadata    Json?
+  owner       User?    @relation("UserToolTemplates", fields: [ownerId], references: [id])
+  ownerId     String?
+  isPublic    Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }

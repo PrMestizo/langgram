@@ -7,7 +7,7 @@ import CustomModal from "./Modal";
 import { BsDiagram3 } from "react-icons/bs";
 import { FaShareNodes } from "react-icons/fa6";
 import { MdCable } from "react-icons/md";
-import { FaApple } from "react-icons/fa";
+import { FaApple, FaTools } from "react-icons/fa";
 import { FaAnkh } from "react-icons/fa";
 import { TbPrompt } from "react-icons/tb";
 import { GiCrossedChains } from "react-icons/gi";
@@ -27,6 +27,7 @@ const Sidebar = ({ onLoadDiagram }) => {
   const [customEdges, setCustomEdges] = useState([]);
   const [customPrompts, setCustomPrompts] = useState([]);
   const [customChains, setCustomChains] = useState([]);
+  const [customTools, setCustomTools] = useState([]);
   const [menuOpenId, setMenuOpenId] = useState(null);
   const [modalInitialName, setModalInitialName] = useState("");
   const [modalInitialCode, setModalInitialCode] = useState("");
@@ -42,6 +43,7 @@ const Sidebar = ({ onLoadDiagram }) => {
       { id: "nodes", label: "Nodes", icon: <FaShareNodes />, type: "panel" },
       { id: "edges", label: "Edges", icon: <MdCable />, type: "panel" },
       { id: "prompts", label: "Prompts", icon: <TbPrompt />, type: "panel" },
+      { id: "tools", label: "Tools", icon: <FaTools />, type: "panel" },
       {
         id: "chains",
         label: "Chains",
@@ -124,6 +126,16 @@ const Sidebar = ({ onLoadDiagram }) => {
       namePlaceholder: "Nombre de la chain",
       initialCode:
         "# Define aquí la lógica de tu chain personalizada\n# def mi_chain(state):\n#     return state\n",
+      language: "python",
+      editorType: "code",
+    },
+    tool: {
+      title: "Nueva tool personalizada",
+      editTitle: "Editar tool personalizada",
+      nameLabel: "Nombre",
+      namePlaceholder: "Nombre de la tool",
+      initialCode:
+        "# Define aquí tu tool personalizada\n# def mi_tool(state):\n#     return state\n",
       language: "python",
       editorType: "code",
     },
@@ -250,6 +262,26 @@ const Sidebar = ({ onLoadDiagram }) => {
   }, [isAuthenticated]);
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      setCustomTools([]);
+      return;
+    }
+    const fetchTools = async () => {
+      try {
+        const res = await fetch("/api/tools");
+        if (!res.ok) {
+          throw new Error(`Error ${res.status}: ${res.statusText}`);
+        }
+        const data = await res.json();
+        setCustomTools(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error("Error al cargar tools:", err);
+      }
+    };
+    fetchTools();
+  }, [isAuthenticated]);
+
+  useEffect(() => {
     const handleEdgesUpdated = (event) => {
       const savedEdge = event?.detail;
       if (!savedEdge) {
@@ -346,6 +378,25 @@ const Sidebar = ({ onLoadDiagram }) => {
     setDragPayload(payload);
     event.dataTransfer.setData("application/chain-name", chain.name ?? "");
     event.dataTransfer.setData("application/chain-code", chain.code ?? "");
+    event.dataTransfer.effectAllowed = "copy";
+  };
+
+  const onToolDragStart = (event, tool) => {
+    if (!tool) {
+      return;
+    }
+    setType(null);
+    setCode(null);
+    const payload = {
+      kind: "tool",
+      type: "tool",
+      name: tool.name,
+      code: tool.code ?? "",
+      description: tool.description ?? "",
+    };
+    setDragPayload(payload);
+    event.dataTransfer.setData("application/tool-name", tool.name ?? "");
+    event.dataTransfer.setData("application/tool-code", tool.code ?? "");
     event.dataTransfer.effectAllowed = "copy";
   };
 
@@ -477,6 +528,23 @@ const Sidebar = ({ onLoadDiagram }) => {
       );
     } catch (err) {
       console.error("Error al guardar chain:", err);
+    }
+  };
+
+  const handleSaveCustomTool = async (code, toolName) => {
+    const newTool = { name: toolName, code, language: "python" };
+    try {
+      const res = await fetch("/api/tools", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newTool),
+      });
+      const saved = await res.json();
+      setCustomTools((prev) =>
+        Array.isArray(prev) ? [...prev, saved] : [saved]
+      );
+    } catch (err) {
+      console.error("Error al guardar tool:", err);
     }
   };
 
@@ -658,6 +726,41 @@ const Sidebar = ({ onLoadDiagram }) => {
     }
   };
 
+  const handleUpdateCustomTool = async (tool, code, toolName) => {
+    try {
+      const payload = {
+        id: tool.id,
+        name: toolName,
+        code,
+      };
+
+      if (tool.language) {
+        payload.language = tool.language;
+      }
+
+      const res = await fetch("/api/tools", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error?.details || "Error al actualizar tool");
+      }
+
+      const saved = await res.json();
+      setCustomTools((prev) =>
+        prev.map((item) => (item.id === saved.id ? saved : item))
+      );
+      return true;
+    } catch (err) {
+      console.error("Error al actualizar tool:", err);
+      alert(`No se pudo actualizar la tool: ${err.message}`);
+      return false;
+    }
+  };
+
   // Unified save handler so we can also switch to the right tab after save
   const handleSaveFromPopup = (code, name) => {
     if (editingContext) {
@@ -670,6 +773,8 @@ const Sidebar = ({ onLoadDiagram }) => {
         return handleUpdateCustomPrompt(item, code, name);
       } else if (type === "chain") {
         return handleUpdateCustomChain(item, code, name);
+      } else if (type === "tool") {
+        return handleUpdateCustomTool(item, code, name);
       } else {
         return handleUpdateCustomNode(item, code, name);
       }
@@ -684,6 +789,9 @@ const Sidebar = ({ onLoadDiagram }) => {
     } else if (popupMode === "chain") {
       handleSaveCustomChain(code, name);
       setActiveTab("chains"); // switch to Chains tab
+    } else if (popupMode === "tool") {
+      handleSaveCustomTool(code, name);
+      setActiveTab("tools"); // switch to Tools tab
     } else {
       handleSaveCustomNode(code, name);
       setActiveTab("nodes"); // switch to Nodes tab
@@ -709,6 +817,10 @@ const Sidebar = ({ onLoadDiagram }) => {
 
   const handleEditCustomChain = (chain) => {
     openModalForEdit("chain", chain);
+  };
+
+  const handleEditCustomTool = (tool) => {
+    openModalForEdit("tool", tool);
   };
 
   const handleDeleteCustomDiagram = async (diagramName) => {
@@ -873,6 +985,35 @@ const Sidebar = ({ onLoadDiagram }) => {
     } catch (err) {
       console.error("Error al eliminar chain:", err);
       alert(`No se pudo eliminar la chain: ${err.message}`);
+    }
+  };
+
+  const handleDeleteCustomTool = async (toolName) => {
+    try {
+      const toolToDelete = customTools.find((tool) => tool.name === toolName);
+
+      const requestBody = toolToDelete?.id
+        ? { id: toolToDelete.id, name: toolName }
+        : { name: toolName };
+
+      const res = await fetch("/api/tools", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.details || "Error al eliminar tool");
+      }
+
+      await res.json();
+      setCustomTools((prev) =>
+        prev.filter((tool) => tool.name !== toolName)
+      );
+    } catch (err) {
+      console.error("Error al eliminar tool:", err);
+      alert(`No se pudo eliminar la tool: ${err.message}`);
     }
   };
 
@@ -1187,6 +1328,49 @@ const Sidebar = ({ onLoadDiagram }) => {
               >
                 <span className="btn-icon">➕</span>
                 Add Custom Prompt
+              </button>
+            </div>
+          </div>
+        );
+      case "tools":
+        return (
+          <div className="tab-content">
+            {customTools.length > 0 && (
+              <div className="node-section">
+                <div className="section-title">Custom Tools</div>
+                {customTools.map((t) => (
+                  <div
+                    key={t.name}
+                    className={`node-item ${
+                      menuOpenId === `tool-${t.name}` ? "active" : ""
+                    }`}
+                    draggable
+                    onDragStart={(event) => onToolDragStart(event, t)}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <div className="node-icon">
+                      <FaTools />
+                    </div>
+                    {t.name}
+                    <LongMenu
+                      className="kebab-menu"
+                      onOpenChange={(open) =>
+                        setMenuOpenId(open ? `tool-${t.name}` : null)
+                      }
+                      onEdit={() => handleEditCustomTool(t)}
+                      onDelete={() => handleDeleteCustomTool(t.name)}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="sidebar-action-buttons">
+              <button
+                className="sidebar-action-btn primary"
+                onClick={() => popupAction("tool")}
+              >
+                <span className="btn-icon">➕</span>
+                Add Custom Tool
               </button>
             </div>
           </div>
