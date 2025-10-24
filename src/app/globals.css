@@ -181,8 +181,9 @@ body {
 
 .diagram-resource-sidebar {
   position: fixed;
-  height: 50vh;
-  top: 20%;
+  overflow-y: auto;
+  height: 60vh;
+  top: 17%;
   right: 0;
   border-radius: 12px 0 0 12px;
   transform: translateY(-50%) translateX(100%);
@@ -235,7 +236,7 @@ body {
 .diagram-resource-sidebar__subtitle {
   margin: 0;
   color: rgba(241, 245, 249, 0.75);
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   line-height: 1.4;
 }
 
