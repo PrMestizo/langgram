@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import prisma from "@/app/lib/db";
 import { auth } from "@/auth";
+import {
+  validateNodeTemplateCreate,
+  validateNodeTemplateUpdate,
+  validateDeleteByIdOrName,
+} from "../utils/schemas";
+import { handleRouteError, parseJsonBody } from "../utils/http";
 
 export async function GET() {
   try {
@@ -25,20 +31,13 @@ export async function GET() {
         },
       },
     });
+
     return NextResponse.json(nodes);
   } catch (error) {
-    console.error("Error in /api/nodes:", {
-      message: error.message,
-      name: error.name,
-      stack: error.stack,
-      prismaError: error.code,
-    });
-    return NextResponse.json(
-      {
-        error: "Failed to fetch nodes",
-        details: error.message,
-      },
-      { status: 500 }
+    return handleRouteError(
+      error,
+      "Error in GET /api/nodes",
+      "No se pudieron obtener los nodos"
     );
   }
 }
@@ -52,28 +51,20 @@ export async function POST(request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { ownerId, ...data } = body;
+    const payload = await parseJsonBody(request, validateNodeTemplateCreate);
     const node = await prisma.nodeTemplate.create({
       data: {
-        ...data,
+        ...payload,
         ownerId: userId,
       },
     });
-    return NextResponse.json(node);
+
+    return NextResponse.json(node, { status: 201 });
   } catch (error) {
-    console.error("Error in /api/nodes:", {
-      message: error.message,
-      name: error.name,
-      stack: error.stack,
-      prismaError: error.code,
-    });
-    return NextResponse.json(
-      {
-        error: "Failed to create node",
-        details: error.message,
-      },
-      { status: 500 }
+    return handleRouteError(
+      error,
+      "Error in POST /api/nodes",
+      "No se pudo crear el nodo"
     );
   }
 }
@@ -87,69 +78,42 @@ export async function DELETE(request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json();
-    console.log("DELETE request body:", body); // Debug log
+    const identifier = await parseJsonBody(request, validateDeleteByIdOrName);
 
-    // Opción 1: Si tu modelo tiene un campo 'id', usa esto:
-    if (body.id) {
+    if (identifier.id) {
       const existingNode = await prisma.nodeTemplate.findFirst({
-        where: { id: body.id, ownerId: userId },
+        where: { id: identifier.id, ownerId: userId },
       });
 
       if (!existingNode) {
-        return NextResponse.json(
-          { error: "Node not found" },
-          { status: 404 }
-        );
-      }
-
-      await prisma.nodeTemplate.deleteMany({
-        where: { id: existingNode.id, ownerId: userId },
-      });
-      return NextResponse.json(existingNode);
-    }
-
-    // Opción 2: Si 'name' es único, primero busca el nodo y luego elimínalo
-    if (body.name) {
-      // Primero verificar si el nodo existe
-      const existingNode = await prisma.nodeTemplate.findFirst({
-        where: { name: body.name, ownerId: userId },
-      });
-
-      if (!existingNode) {
-        console.error("Node not found with name:", body.name);
         return NextResponse.json({ error: "Node not found" }, { status: 404 });
       }
 
-      // Eliminar usando el id del nodo encontrado
       await prisma.nodeTemplate.deleteMany({
         where: { id: existingNode.id, ownerId: userId },
       });
 
-      console.log("Node deleted successfully:", existingNode);
       return NextResponse.json(existingNode);
     }
 
-    // Si no hay ni id ni name en el body
-    return NextResponse.json(
-      { error: "Missing identifier (id or name)" },
-      { status: 400 }
-    );
-  } catch (error) {
-    console.error("Error in DELETE /api/nodes:", {
-      message: error.message,
-      name: error.name,
-      stack: error.stack,
-      prismaError: error.code,
-      prismaMetadata: error.meta,
+    const existingNode = await prisma.nodeTemplate.findFirst({
+      where: { name: identifier.name, ownerId: userId },
     });
-    return NextResponse.json(
-      {
-        error: "Failed to delete node",
-        details: error.message,
-        code: error.code,
-      },
-      { status: 500 }
+
+    if (!existingNode) {
+      return NextResponse.json({ error: "Node not found" }, { status: 404 });
+    }
+
+    await prisma.nodeTemplate.deleteMany({
+      where: { id: existingNode.id, ownerId: userId },
+    });
+
+    return NextResponse.json(existingNode);
+  } catch (error) {
+    return handleRouteError(
+      error,
+      "Error in DELETE /api/nodes",
+      "No se pudo eliminar el nodo"
     );
   }
 }
@@ -163,15 +127,8 @@ export async function PUT(request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { id, ...data } = body;
-
-    if (!id) {
-      return NextResponse.json(
-        { error: "Missing node identifier" },
-        { status: 400 }
-      );
-    }
+    const payload = await parseJsonBody(request, validateNodeTemplateUpdate);
+    const { id, ...data } = payload;
 
     const updateResult = await prisma.nodeTemplate.updateMany({
       where: { id, ownerId: userId },
@@ -185,20 +142,10 @@ export async function PUT(request) {
     const node = await prisma.nodeTemplate.findUnique({ where: { id } });
     return NextResponse.json(node);
   } catch (error) {
-    console.error("Error in PUT /api/nodes:", {
-      message: error.message,
-      name: error.name,
-      stack: error.stack,
-      prismaError: error.code,
-      prismaMetadata: error.meta,
-    });
-    return NextResponse.json(
-      {
-        error: "Failed to update node",
-        details: error.message,
-        code: error.code,
-      },
-      { status: 500 }
+    return handleRouteError(
+      error,
+      "Error in PUT /api/nodes",
+      "No se pudo actualizar el nodo"
     );
   }
 }

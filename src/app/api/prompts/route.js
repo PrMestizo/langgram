@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import prisma from "@/app/lib/db";
 import { auth } from "@/auth";
+import {
+  validatePromptTemplateCreate,
+  validatePromptTemplateUpdate,
+  validateDeleteByIdOrName,
+} from "../utils/schemas";
+import { handleRouteError, parseJsonBody } from "../utils/http";
 
 export async function GET() {
   try {
@@ -25,18 +31,10 @@ export async function GET() {
     });
     return NextResponse.json(prompts);
   } catch (error) {
-    console.error("Error in /api/prompts:", {
-      message: error.message,
-      name: error.name,
-      stack: error.stack,
-      prismaError: error.code,
-    });
-    return NextResponse.json(
-      {
-        error: "Failed to fetch prompts",
-        details: error.message,
-      },
-      { status: 500 }
+    return handleRouteError(
+      error,
+      "Error in GET /api/prompts",
+      "No se pudieron obtener los prompts"
     );
   }
 }
@@ -50,28 +48,19 @@ export async function POST(request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { ownerId, ...data } = body;
+    const payload = await parseJsonBody(request, validatePromptTemplateCreate);
     const prompt = await prisma.promptTemplate.create({
       data: {
-        ...data,
+        ...payload,
         ownerId: userId,
       },
     });
-    return NextResponse.json(prompt);
+    return NextResponse.json(prompt, { status: 201 });
   } catch (error) {
-    console.error("Error in POST /api/prompts:", {
-      message: error.message,
-      name: error.name,
-      stack: error.stack,
-      prismaError: error.code,
-    });
-    return NextResponse.json(
-      {
-        error: "Failed to create prompt",
-        details: error.message,
-      },
-      { status: 500 }
+    return handleRouteError(
+      error,
+      "Error in POST /api/prompts",
+      "No se pudo crear el prompt"
     );
   }
 }
@@ -85,36 +74,15 @@ export async function DELETE(request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json();
+    const identifier = await parseJsonBody(request, validateDeleteByIdOrName);
 
-    if (body.id) {
+    if (identifier.id) {
       const existingPrompt = await prisma.promptTemplate.findFirst({
-        where: { id: body.id, ownerId: userId },
+        where: { id: identifier.id, ownerId: userId },
       });
 
       if (!existingPrompt) {
-        return NextResponse.json(
-          { error: "Prompt not found" },
-          { status: 404 }
-        );
-      }
-
-      await prisma.promptTemplate.deleteMany({
-        where: { id: existingPrompt.id, ownerId: userId },
-      });
-      return NextResponse.json(existingPrompt);
-    }
-
-    if (body.name) {
-      const existingPrompt = await prisma.promptTemplate.findFirst({
-        where: { name: body.name, ownerId: userId },
-      });
-
-      if (!existingPrompt) {
-        return NextResponse.json(
-          { error: "Prompt not found" },
-          { status: 404 }
-        );
+        return NextResponse.json({ error: "Prompt not found" }, { status: 404 });
       }
 
       await prisma.promptTemplate.deleteMany({
@@ -124,25 +92,24 @@ export async function DELETE(request) {
       return NextResponse.json(existingPrompt);
     }
 
-    return NextResponse.json(
-      { error: "Missing identifier (id or name)" },
-      { status: 400 }
-    );
-  } catch (error) {
-    console.error("Error in DELETE /api/prompts:", {
-      message: error.message,
-      name: error.name,
-      stack: error.stack,
-      prismaError: error.code,
-      prismaMetadata: error.meta,
+    const existingPrompt = await prisma.promptTemplate.findFirst({
+      where: { name: identifier.name, ownerId: userId },
     });
-    return NextResponse.json(
-      {
-        error: "Failed to delete prompt",
-        details: error.message,
-        code: error.code,
-      },
-      { status: 500 }
+
+    if (!existingPrompt) {
+      return NextResponse.json({ error: "Prompt not found" }, { status: 404 });
+    }
+
+    await prisma.promptTemplate.deleteMany({
+      where: { id: existingPrompt.id, ownerId: userId },
+    });
+
+    return NextResponse.json(existingPrompt);
+  } catch (error) {
+    return handleRouteError(
+      error,
+      "Error in DELETE /api/prompts",
+      "No se pudo eliminar el prompt"
     );
   }
 }
@@ -156,15 +123,8 @@ export async function PUT(request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { id, ...data } = body;
-
-    if (!id) {
-      return NextResponse.json(
-        { error: "Missing prompt identifier" },
-        { status: 400 }
-      );
-    }
+    const payload = await parseJsonBody(request, validatePromptTemplateUpdate);
+    const { id, ...data } = payload;
 
     const updateResult = await prisma.promptTemplate.updateMany({
       where: { id, ownerId: userId },
@@ -172,29 +132,16 @@ export async function PUT(request) {
     });
 
     if (!updateResult.count) {
-      return NextResponse.json(
-        { error: "Prompt not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Prompt not found" }, { status: 404 });
     }
 
     const prompt = await prisma.promptTemplate.findUnique({ where: { id } });
     return NextResponse.json(prompt);
   } catch (error) {
-    console.error("Error in PUT /api/prompts:", {
-      message: error.message,
-      name: error.name,
-      stack: error.stack,
-      prismaError: error.code,
-      prismaMetadata: error.meta,
-    });
-    return NextResponse.json(
-      {
-        error: "Failed to update prompt",
-        details: error.message,
-        code: error.code,
-      },
-      { status: 500 }
+    return handleRouteError(
+      error,
+      "Error in PUT /api/prompts",
+      "No se pudo actualizar el prompt"
     );
   }
 }
