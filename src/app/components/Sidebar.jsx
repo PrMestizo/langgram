@@ -13,7 +13,7 @@ import { TbPrompt } from "react-icons/tb";
 import { GiCrossedChains } from "react-icons/gi";
 import { AiOutlineSetting } from "react-icons/ai";
 import { FaStore } from "react-icons/fa";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 
 const Sidebar = ({ onLoadDiagram }) => {
@@ -67,9 +67,68 @@ const Sidebar = ({ onLoadDiagram }) => {
     []
   );
   const defaultPanelId = tabItems[0].id;
-  const [activeTab, setActiveTab] = useState(defaultPanelId);
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [activeTab, setActiveTab] = useState(() => {
+    if (pathname === "/store") {
+      return "store";
+    }
+
+    const tabParam = searchParams?.get("tab");
+    const matchingPanel = tabItems.find(
+      (item) => item.id === tabParam && item.type === "panel"
+    );
+
+    return matchingPanel?.id ?? defaultPanelId;
+  });
+
+  const updateTabQuery = useCallback(
+    (nextTabId, { method = "replace" } = {}) => {
+      const params = new URLSearchParams(searchParams?.toString());
+
+      if (nextTabId) {
+        params.set("tab", nextTabId);
+      } else {
+        params.delete("tab");
+      }
+
+      const queryString = params.toString();
+      const targetUrl = queryString ? `/?${queryString}` : "/";
+      const navigate = method === "push" ? router.push : router.replace;
+      navigate(targetUrl, { scroll: false });
+    },
+    [router, searchParams]
+  );
+
+  const selectPanelTab = useCallback(
+    (tabId, options = {}) => {
+      const { method, skipUrl } = options;
+
+      setActiveTab(tabId);
+
+      if (skipUrl) {
+        return;
+      }
+
+      if (pathname === "/store") {
+        if (tabId && tabId !== "store") {
+          updateTabQuery(tabId, { method: method ?? "push" });
+        }
+        return;
+      }
+
+      if (tabId === null) {
+        updateTabQuery(null, { method: method ?? "replace" });
+        return;
+      }
+
+      if (tabId !== "store") {
+        updateTabQuery(tabId, { method: method ?? "replace" });
+      }
+    },
+    [pathname, updateTabQuery]
+  );
 
   const activeTabConfig = tabItems.find((item) => item.id === activeTab);
   const isPanelVisible = activeTabConfig?.type === "panel";
@@ -78,15 +137,31 @@ const Sidebar = ({ onLoadDiagram }) => {
 
   useEffect(() => {
     if (pathname === "/store") {
-      setActiveTab("store");
+      if (activeTab !== "store") {
+        selectPanelTab("store", { skipUrl: true });
+      }
       setMenuOpenId(null);
       return;
     }
 
-    if (activeTab === "store" && pathname !== "/store") {
-      setActiveTab(defaultPanelId);
+    const tabParam = searchParams?.get("tab");
+    if (tabParam) {
+      const matchingItem = tabItems.find((item) => item.id === tabParam);
+      if (matchingItem?.type === "panel" && activeTab !== matchingItem.id) {
+        selectPanelTab(matchingItem.id, { skipUrl: true });
+        setMenuOpenId(null);
+      }
+    } else if (activeTab === "store") {
+      selectPanelTab(defaultPanelId, { skipUrl: true });
     }
-  }, [activeTab, defaultPanelId, pathname]);
+  }, [
+    activeTab,
+    defaultPanelId,
+    pathname,
+    searchParams,
+    selectPanelTab,
+    tabItems,
+  ]);
 
   const modalConfigs = {
     node: {
@@ -413,21 +488,23 @@ const Sidebar = ({ onLoadDiagram }) => {
       if (pathname !== item.path) {
         router.push(item.path);
       }
-      setActiveTab(item.id);
+      setActiveTab(item.id, { skipUrl: true });
       setMenuOpenId(null);
       return;
     }
 
     if (pathname === "/store" && item.id !== "store") {
-      router.push("/");
+      selectPanelTab(item.id, { method: "push" });
+      setMenuOpenId(null);
+      return;
     }
 
     if (activeTab === item.id) {
-      setActiveTab(null);
-      setMenuOpenId(null);
+      selectPanelTab(null);
     } else {
-      setActiveTab(item.id);
+      selectPanelTab(item.id);
     }
+    setMenuOpenId(null);
   };
 
   const popupAction = (mode = "node") => {
@@ -782,19 +859,19 @@ const Sidebar = ({ onLoadDiagram }) => {
 
     if (popupMode === "edge") {
       handleSaveCustomEdge(code, name);
-      setActiveTab("edges"); // switch to Edges tab
+      selectPanelTab("edges"); // switch to Edges tab
     } else if (popupMode === "prompt") {
       handleSaveCustomPrompt(code, name);
-      setActiveTab("prompts"); // switch to Prompts tab
+      selectPanelTab("prompts"); // switch to Prompts tab
     } else if (popupMode === "chain") {
       handleSaveCustomChain(code, name);
-      setActiveTab("chains"); // switch to Chains tab
+      selectPanelTab("chains"); // switch to Chains tab
     } else if (popupMode === "tool") {
       handleSaveCustomTool(code, name);
-      setActiveTab("tools"); // switch to Tools tab
+      selectPanelTab("tools"); // switch to Tools tab
     } else {
       handleSaveCustomNode(code, name);
-      setActiveTab("nodes"); // switch to Nodes tab
+      selectPanelTab("nodes"); // switch to Nodes tab
     }
     return true;
   };
@@ -1008,9 +1085,7 @@ const Sidebar = ({ onLoadDiagram }) => {
       }
 
       await res.json();
-      setCustomTools((prev) =>
-        prev.filter((tool) => tool.name !== toolName)
-      );
+      setCustomTools((prev) => prev.filter((tool) => tool.name !== toolName));
     } catch (err) {
       console.error("Error al eliminar tool:", err);
       alert(`No se pudo eliminar la tool: ${err.message}`);
@@ -1046,7 +1121,7 @@ const Sidebar = ({ onLoadDiagram }) => {
           new CustomEvent("load-diagram", { detail: diagramContent })
         );
       }
-      setActiveTab("diagrams");
+      selectPanelTab("diagrams");
     } catch (err) {
       console.error("Error al cargar el diagrama:", err);
     }
