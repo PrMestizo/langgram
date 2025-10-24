@@ -4,6 +4,7 @@ import GoogleProvider from "next-auth/providers/google";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { sanitizeInlineText } from "./app/api/utils/schemas";
 
 // Prisma singleton (evita múltiples conexiones en dev)
 const globalForPrisma = globalThis;
@@ -31,18 +32,24 @@ export const authOptions = {
         password: { label: "Password", type: "password" },
       },
       authorize: async (credentials) => {
-        if (!credentials?.email || !credentials?.password) {
+        const email = sanitizeInlineText(credentials?.email ?? "").toLowerCase();
+        const password = credentials?.password ?? "";
+
+        if (!email || !password) {
           throw new Error("Debes proporcionar un correo y una contraseña.");
         }
+        if (password.length > 128) {
+          throw new Error("La contraseña proporcionada es demasiado larga.");
+        }
         const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
+          where: { email },
         });
         if (!user || !user.password) {
           throw new Error(
             "No se encontró una cuenta con ese correo electrónico."
           );
         }
-        const ok = await bcrypt.compare(credentials.password, user.password);
+        const ok = await bcrypt.compare(password, user.password);
         if (!ok) {
           throw new Error("La contraseña es incorrecta.");
         }

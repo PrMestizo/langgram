@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import prisma from "@/app/lib/db";
 import { auth } from "@/auth";
+import {
+  validateEdgeTemplateCreate,
+  validateEdgeTemplateUpdate,
+  validateDeleteByIdOrName,
+} from "../utils/schemas";
+import { handleRouteError, parseJsonBody } from "../utils/http";
 
 export async function GET() {
   try {
@@ -25,18 +31,10 @@ export async function GET() {
     });
     return NextResponse.json(edges);
   } catch (error) {
-    console.error("Error in /api/edges:", {
-      message: error.message,
-      name: error.name,
-      stack: error.stack,
-      prismaError: error.code,
-    });
-    return NextResponse.json(
-      {
-        error: "Failed to fetch edges",
-        details: error.message,
-      },
-      { status: 500 }
+    return handleRouteError(
+      error,
+      "Error in GET /api/edges",
+      "No se pudieron obtener los edges"
     );
   }
 }
@@ -50,28 +48,19 @@ export async function POST(request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { ownerId, ...data } = body;
+    const payload = await parseJsonBody(request, validateEdgeTemplateCreate);
     const edge = await prisma.edgeTemplate.create({
       data: {
-        ...data,
+        ...payload,
         ownerId: userId,
       },
     });
-    return NextResponse.json(edge);
+    return NextResponse.json(edge, { status: 201 });
   } catch (error) {
-    console.error("Error in /api/edges:", {
-      message: error.message,
-      name: error.name,
-      stack: error.stack,
-      prismaError: error.code,
-    });
-    return NextResponse.json(
-      {
-        error: "Failed to create edge",
-        details: error.message,
-      },
-      { status: 500 }
+    return handleRouteError(
+      error,
+      "Error in POST /api/edges",
+      "No se pudo crear el edge"
     );
   }
 }
@@ -85,13 +74,11 @@ export async function DELETE(request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json();
-    console.log("DELETE request body:", body); // Debug log
+    const identifier = await parseJsonBody(request, validateDeleteByIdOrName);
 
-    // Opción 1: Si tu modelo tiene un campo 'id', usa esto:
-    if (body.id) {
+    if (identifier.id) {
       const existingEdge = await prisma.edgeTemplate.findFirst({
-        where: { id: body.id, ownerId: userId },
+        where: { id: identifier.id, ownerId: userId },
       });
 
       if (!existingEdge) {
@@ -101,50 +88,28 @@ export async function DELETE(request) {
       await prisma.edgeTemplate.deleteMany({
         where: { id: existingEdge.id, ownerId: userId },
       });
+
       return NextResponse.json(existingEdge);
     }
 
-    // Opción 2: Si 'name' es único, primero busca el edge y luego elimínalo
-    if (body.name) {
-      // Primero verificar si el edge existe
-      const existingEdge = await prisma.edgeTemplate.findFirst({
-        where: { name: body.name, ownerId: userId },
-      });
-
-      if (!existingEdge) {
-        console.error("Edge not found with name:", body.name);
-        return NextResponse.json({ error: "Edge not found" }, { status: 404 });
-      }
-
-      // Eliminar usando el id del edge encontrado
-      await prisma.edgeTemplate.deleteMany({
-        where: { id: existingEdge.id, ownerId: userId },
-      });
-
-      console.log("Edge deleted successfully:", existingEdge);
-      return NextResponse.json(existingEdge);
-    }
-
-    // Si no hay ni id ni name en el body
-    return NextResponse.json(
-      { error: "Missing identifier (id or name)" },
-      { status: 400 }
-    );
-  } catch (error) {
-    console.error("Error in DELETE /api/edges:", {
-      message: error.message,
-      name: error.name,
-      stack: error.stack,
-      prismaError: error.code,
-      prismaMetadata: error.meta,
+    const existingEdge = await prisma.edgeTemplate.findFirst({
+      where: { name: identifier.name, ownerId: userId },
     });
-    return NextResponse.json(
-      {
-        error: "Failed to delete edge",
-        details: error.message,
-        code: error.code,
-      },
-      { status: 500 }
+
+    if (!existingEdge) {
+      return NextResponse.json({ error: "Edge not found" }, { status: 404 });
+    }
+
+    await prisma.edgeTemplate.deleteMany({
+      where: { id: existingEdge.id, ownerId: userId },
+    });
+
+    return NextResponse.json(existingEdge);
+  } catch (error) {
+    return handleRouteError(
+      error,
+      "Error in DELETE /api/edges",
+      "No se pudo eliminar el edge"
     );
   }
 }
@@ -158,15 +123,8 @@ export async function PUT(request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { id, ...data } = body;
-
-    if (!id) {
-      return NextResponse.json(
-        { error: "Missing edge identifier" },
-        { status: 400 }
-      );
-    }
+    const payload = await parseJsonBody(request, validateEdgeTemplateUpdate);
+    const { id, ...data } = payload;
 
     const updateResult = await prisma.edgeTemplate.updateMany({
       where: { id, ownerId: userId },
@@ -180,20 +138,10 @@ export async function PUT(request) {
     const edge = await prisma.edgeTemplate.findUnique({ where: { id } });
     return NextResponse.json(edge);
   } catch (error) {
-    console.error("Error in PUT /api/edges:", {
-      message: error.message,
-      name: error.name,
-      stack: error.stack,
-      prismaError: error.code,
-      prismaMetadata: error.meta,
-    });
-    return NextResponse.json(
-      {
-        error: "Failed to update edge",
-        details: error.message,
-        code: error.code,
-      },
-      { status: 500 }
+    return handleRouteError(
+      error,
+      "Error in PUT /api/edges",
+      "No se pudo actualizar el edge"
     );
   }
 }

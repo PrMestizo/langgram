@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import prisma from "@/app/lib/db";
 import { auth } from "@/auth";
+import {
+  validateChainTemplateCreate,
+  validateChainTemplateUpdate,
+  validateDeleteByIdOrName,
+} from "../utils/schemas";
+import { handleRouteError, parseJsonBody } from "../utils/http";
 
 export async function GET() {
   try {
@@ -25,18 +31,10 @@ export async function GET() {
     });
     return NextResponse.json(chains);
   } catch (error) {
-    console.error("Error in /api/chains:", {
-      message: error.message,
-      name: error.name,
-      stack: error.stack,
-      prismaError: error.code,
-    });
-    return NextResponse.json(
-      {
-        error: "Failed to fetch chains",
-        details: error.message,
-      },
-      { status: 500 }
+    return handleRouteError(
+      error,
+      "Error in GET /api/chains",
+      "No se pudieron obtener las chains"
     );
   }
 }
@@ -50,28 +48,19 @@ export async function POST(request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { ownerId, ...data } = body;
+    const payload = await parseJsonBody(request, validateChainTemplateCreate);
     const chain = await prisma.chainTemplate.create({
       data: {
-        ...data,
+        ...payload,
         ownerId: userId,
       },
     });
-    return NextResponse.json(chain);
+    return NextResponse.json(chain, { status: 201 });
   } catch (error) {
-    console.error("Error in POST /api/chains:", {
-      message: error.message,
-      name: error.name,
-      stack: error.stack,
-      prismaError: error.code,
-    });
-    return NextResponse.json(
-      {
-        error: "Failed to create chain",
-        details: error.message,
-      },
-      { status: 500 }
+    return handleRouteError(
+      error,
+      "Error in POST /api/chains",
+      "No se pudo crear la chain"
     );
   }
 }
@@ -85,26 +74,11 @@ export async function DELETE(request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json();
+    const identifier = await parseJsonBody(request, validateDeleteByIdOrName);
 
-    if (body.id) {
+    if (identifier.id) {
       const existingChain = await prisma.chainTemplate.findFirst({
-        where: { id: body.id, ownerId: userId },
-      });
-
-      if (!existingChain) {
-        return NextResponse.json({ error: "Chain not found" }, { status: 404 });
-      }
-
-      await prisma.chainTemplate.deleteMany({
-        where: { id: existingChain.id, ownerId: userId },
-      });
-      return NextResponse.json(existingChain);
-    }
-
-    if (body.name) {
-      const existingChain = await prisma.chainTemplate.findFirst({
-        where: { name: body.name, ownerId: userId },
+        where: { id: identifier.id, ownerId: userId },
       });
 
       if (!existingChain) {
@@ -118,25 +92,24 @@ export async function DELETE(request) {
       return NextResponse.json(existingChain);
     }
 
-    return NextResponse.json(
-      { error: "Missing identifier (id or name)" },
-      { status: 400 }
-    );
-  } catch (error) {
-    console.error("Error in DELETE /api/chains:", {
-      message: error.message,
-      name: error.name,
-      stack: error.stack,
-      prismaError: error.code,
-      prismaMetadata: error.meta,
+    const existingChain = await prisma.chainTemplate.findFirst({
+      where: { name: identifier.name, ownerId: userId },
     });
-    return NextResponse.json(
-      {
-        error: "Failed to delete chain",
-        details: error.message,
-        code: error.code,
-      },
-      { status: 500 }
+
+    if (!existingChain) {
+      return NextResponse.json({ error: "Chain not found" }, { status: 404 });
+    }
+
+    await prisma.chainTemplate.deleteMany({
+      where: { id: existingChain.id, ownerId: userId },
+    });
+
+    return NextResponse.json(existingChain);
+  } catch (error) {
+    return handleRouteError(
+      error,
+      "Error in DELETE /api/chains",
+      "No se pudo eliminar la chain"
     );
   }
 }
@@ -150,15 +123,8 @@ export async function PUT(request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { id, ...data } = body;
-
-    if (!id) {
-      return NextResponse.json(
-        { error: "Missing chain identifier" },
-        { status: 400 }
-      );
-    }
+    const payload = await parseJsonBody(request, validateChainTemplateUpdate);
+    const { id, ...data } = payload;
 
     const updateResult = await prisma.chainTemplate.updateMany({
       where: { id, ownerId: userId },
@@ -172,20 +138,10 @@ export async function PUT(request) {
     const chain = await prisma.chainTemplate.findUnique({ where: { id } });
     return NextResponse.json(chain);
   } catch (error) {
-    console.error("Error in PUT /api/chains:", {
-      message: error.message,
-      name: error.name,
-      stack: error.stack,
-      prismaError: error.code,
-      prismaMetadata: error.meta,
-    });
-    return NextResponse.json(
-      {
-        error: "Failed to update chain",
-        details: error.message,
-        code: error.code,
-      },
-      { status: 500 }
+    return handleRouteError(
+      error,
+      "Error in PUT /api/chains",
+      "No se pudo actualizar la chain"
     );
   }
 }
