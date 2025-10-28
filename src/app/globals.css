@@ -169,6 +169,11 @@ body {
   outline: none;
 }
 
+.button-stategraph--open {
+  transform: translate(50%, -50%)
+    translateX(calc(-1.35 * var(--resource-sidebar-width)));
+}
+
 .diagram-resource-tab {
   position: fixed;
   top: 20%;
@@ -206,16 +211,16 @@ body {
 
 .diagram-resource-tab--open {
   transform: translate(50%, -50%)
-    translateX(calc(-1.14 * var(--resource-sidebar-width)));
+    translateX(calc(-1.35 * var(--resource-sidebar-width)));
 }
 
 .diagram-resource-sidebar {
   position: fixed;
   overflow-y: auto;
   height: 60vh;
-  top: 17%;
+  top: 10.3%;
   right: 0;
-  border-radius: 12px 0 0 12px;
+  border-radius: 0px 0 0 12px;
   transform: translateY(-50%) translateX(100%);
   width: var(--resource-sidebar-width);
   transform: translateX(100%);

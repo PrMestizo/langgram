@@ -69,7 +69,15 @@ export default function DiagramResourcePanel({
 }) {
   return (
     <>
-      <button type="button" className="button-stategraph">
+      <button
+        type="button"
+        className={
+          "button-stategraph" + (isOpen ? " button-stategraph--open" : "")
+        }
+        onClick={onToggle}
+        aria-expanded={isOpen}
+        aria-controls="diagram-resource-sidebar"
+      >
         Stategraph
       </button>
       <button
