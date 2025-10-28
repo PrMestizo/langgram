@@ -274,19 +274,19 @@ export function validateNodeTemplateUpdate(payload) {
 }
 
 export function validateEdgeTemplateCreate(payload) {
-  return sanitizeTemplateCreate(payload);
+  return sanitizeTemplateCreate(payload, { allowPublic: true });
 }
 
 export function validateEdgeTemplateUpdate(payload) {
-  return sanitizeTemplateUpdate(payload);
+  return sanitizeTemplateUpdate(payload, { allowPublic: true });
 }
 
 export function validateChainTemplateCreate(payload) {
-  return sanitizeTemplateCreate(payload);
+  return sanitizeTemplateCreate(payload, { allowPublic: true });
 }
 
 export function validateChainTemplateUpdate(payload) {
-  return sanitizeTemplateUpdate(payload);
+  return sanitizeTemplateUpdate(payload, { allowPublic: true });
 }
 
 export function validateToolTemplateCreate(payload) {
@@ -304,6 +304,7 @@ export function validatePromptTemplateCreate(payload) {
     description: sanitizeDescription(data.description),
     content: sanitizeCode(data.content, { required: true }),
     metadata: sanitizeJson(data.metadata, "metadata"),
+    isPublic: sanitizeBoolean(data.isPublic, "isPublic"),
   });
 }
 
@@ -315,8 +316,15 @@ export function validatePromptTemplateUpdate(payload) {
     description: sanitizeDescription(data.description),
     content: sanitizeCode(data.content),
     metadata: sanitizeJson(data.metadata, "metadata"),
+    isPublic: sanitizeBoolean(data.isPublic, "isPublic"),
   };
-  enforceUpdateFields(sanitized, ["name", "description", "content", "metadata"]);
+  enforceUpdateFields(sanitized, [
+    "name",
+    "description",
+    "content",
+    "metadata",
+    "isPublic",
+  ]);
   return dropUndefinedKeys(sanitized);
 }
 
