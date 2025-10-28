@@ -27,13 +27,14 @@ import { generateCodeFromGraph } from "../lib/codeGenerator";
 import FilterEdge from "./FilterEdge";
 import CustomModal from "./Modal";
 import NodeWithAttachments from "./NodeWithAttachments";
+import DiagramResourcePanel from "./DiagramResourcePanel";
+import SaveDiagramModal from "./SaveDiagramModal";
 import {
   Alert,
   Stack,
   Modal,
   Box,
   Typography,
-  TextField,
   Button,
   IconButton,
   Tabs,
@@ -42,16 +43,11 @@ import {
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { FiMenu } from "react-icons/fi";
-import { TbPrompt } from "react-icons/tb";
-import { GiCrossedChains } from "react-icons/gi";
-import { FaTools } from "react-icons/fa";
 import {
   loadPersistedDiagram,
   savePersistedDiagram,
 } from "../lib/diagramStorage";
 import ProfileMenu from "./ProfileMenu";
-import Tooltip from "@mui/material/Tooltip";
-import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 
 let id = 0;
 const getId = () => `dndnode_${id++}`;
@@ -667,6 +663,10 @@ function Diagram() {
     setIsSaveDialogOpen(true);
   };
 
+  const handleDiagramNameChange = useCallback((event) => {
+    setDiagramName(event.target.value);
+  }, []);
+
   const handleGenerateButtonClick = useCallback(() => {
     closeTopNavMenu();
     generateCodeWithAI();
@@ -1112,182 +1112,17 @@ function Diagram() {
         </div>
       </div>
 
-      <button
-        type="button"
-        className={`diagram-resource-tab${
-          isResourcePanelOpen ? " diagram-resource-tab--open" : ""
-        }`}
-        onClick={toggleResourcePanel}
-        aria-expanded={isResourcePanelOpen}
-        aria-controls="diagram-resource-sidebar"
-      >
-        Recursos
-      </button>
-      <aside
-        id="diagram-resource-sidebar"
-        className={`diagram-resource-sidebar${
-          isResourcePanelOpen ? " diagram-resource-sidebar--open" : ""
-        }${
-          isResourcePanelOpen && isResourceDrag
-            ? " diagram-resource-sidebar--active-drop"
-            : ""
-        }`}
-        aria-hidden={!isResourcePanelOpen}
-        aria-labelledby="diagram-resource-sidebar-title"
+      <DiagramResourcePanel
+        isOpen={isResourcePanelOpen}
+        isResourceDrag={isResourceDrag}
+        resourcePrompts={resourcePrompts}
+        resourceChains={resourceChains}
+        resourceTools={resourceTools}
+        onToggle={toggleResourcePanel}
         onDragOver={handleResourceDragOver}
         onDrop={handleResourceDrop}
-      >
-        <div className="diagram-resource-sidebar__header">
-          <h2
-            id="diagram-resource-sidebar-title"
-            className="diagram-resource-sidebar__title"
-          >
-            Recursos del diagrama
-          </h2>
-          <Tooltip
-            title="Arrastra prompts, chains y tools desde la barra izquierda para
-            incluirlos en el diagrama sin asociarlos a un nodo."
-            arrow
-          >
-            <IconButton>
-              <InfoOutlinedIcon className="diagram-resource-sidebar__tooltip" />
-            </IconButton>
-          </Tooltip>
-        </div>
-
-        <div className="diagram-resource-sidebar__section">
-          <h3 className="diagram-resource-sidebar__section-title">
-            <TbPrompt aria-hidden="true" />
-            <span>Prompts</span>
-            <span className="diagram-resource-sidebar__count">
-              {resourcePrompts.length}
-            </span>
-          </h3>
-          {resourcePrompts.length === 0 ? (
-            <p className="diagram-resource-sidebar__empty">
-              Aún no hay prompts en el diagrama.
-            </p>
-          ) : (
-            <ul className="diagram-resource-sidebar__list">
-              {resourcePrompts.map((prompt) => (
-                <li
-                  key={`prompt-${prompt.name}`}
-                  className="diagram-resource-sidebar__item diagram-resource-sidebar__item--prompt"
-                >
-                  <div
-                    className="diagram-resource-sidebar__item-icon"
-                    aria-hidden="true"
-                  >
-                    <TbPrompt />
-                  </div>
-                  <div className="diagram-resource-sidebar__item-body">
-                    <span className="diagram-resource-sidebar__item-title">
-                      {prompt.name}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    className="diagram-resource-sidebar__remove"
-                    onClick={() => handleRemoveResource("prompt", prompt.name)}
-                    aria-label={`Quitar prompt ${prompt.name}`}
-                  >
-                    ×
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        <div className="diagram-resource-sidebar__section">
-          <h3 className="diagram-resource-sidebar__section-title">
-            <GiCrossedChains aria-hidden="true" />
-            <span>Chains</span>
-            <span className="diagram-resource-sidebar__count">
-              {resourceChains.length}
-            </span>
-          </h3>
-          {resourceChains.length === 0 ? (
-            <p className="diagram-resource-sidebar__empty">
-              Aún no hay chains en el diagrama.
-            </p>
-          ) : (
-            <ul className="diagram-resource-sidebar__list">
-              {resourceChains.map((chain) => (
-                <li
-                  key={`chain-${chain.name}`}
-                  className="diagram-resource-sidebar__item diagram-resource-sidebar__item--chain"
-                >
-                  <div
-                    className="diagram-resource-sidebar__item-icon"
-                    aria-hidden="true"
-                  >
-                    <GiCrossedChains />
-                  </div>
-                  <div className="diagram-resource-sidebar__item-body">
-                    <span className="diagram-resource-sidebar__item-title">
-                      {chain.name}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    className="diagram-resource-sidebar__remove"
-                    onClick={() => handleRemoveResource("chain", chain.name)}
-                    aria-label={`Quitar chain ${chain.name}`}
-                  >
-                    ×
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        <div className="diagram-resource-sidebar__section">
-          <h3 className="diagram-resource-sidebar__section-title">
-            <FaTools aria-hidden="true" />
-            <span>Tools</span>
-            <span className="diagram-resource-sidebar__count">
-              {resourceTools.length}
-            </span>
-          </h3>
-          {resourceTools.length === 0 ? (
-            <p className="diagram-resource-sidebar__empty">
-              Aún no hay tools en el diagrama.
-            </p>
-          ) : (
-            <ul className="diagram-resource-sidebar__list">
-              {resourceTools.map((tool) => (
-                <li
-                  key={`tool-${tool.name}`}
-                  className="diagram-resource-sidebar__item diagram-resource-sidebar__item--tool"
-                >
-                  <div
-                    className="diagram-resource-sidebar__item-icon"
-                    aria-hidden="true"
-                  >
-                    <FaTools />
-                  </div>
-                  <div className="diagram-resource-sidebar__item-body">
-                    <span className="diagram-resource-sidebar__item-title">
-                      {tool.name}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    className="diagram-resource-sidebar__remove"
-                    onClick={() => handleRemoveResource("tool", tool.name)}
-                    aria-label={`Quitar tool ${tool.name}`}
-                  >
-                    ×
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </aside>
-
+        onRemoveResource={handleRemoveResource}
+      />
       {contextMenu.open && (
         <div
           className="filter-context-menu"
@@ -1457,84 +1292,14 @@ function Diagram() {
       </Modal>
 
       {/* Save Diagram Name Dialog */}
-      <Modal
+      <SaveDiagramModal
         open={isSaveDialogOpen}
+        diagramName={diagramName}
+        onDiagramNameChange={handleDiagramNameChange}
+        onSave={saveDiagram}
         onClose={() => setIsSaveDialogOpen(false)}
-        aria-labelledby="save-diagram-modal"
-        aria-describedby="save-diagram-modal-description"
-      >
-        <Box
-          sx={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            width: 500,
-            bgcolor: "background.paper",
-            boxShadow: 24,
-            borderRadius: 2,
-            p: 4,
-            outline: "none",
-          }}
-        >
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              mb: 3,
-            }}
-          >
-            <Typography id="save-diagram-modal" variant="h6" component="h2">
-              Guardar Diagrama
-            </Typography>
-            <IconButton
-              edge="end"
-              color="inherit"
-              onClick={() => setIsSaveDialogOpen(false)}
-              aria-label="close"
-              sx={{ ml: 2 }}
-            >
-              <CloseIcon />
-            </IconButton>
-          </Box>
+      />
 
-          <Box sx={{ mb: 3 }}>
-            <TextField
-              fullWidth
-              id="diagram-name"
-              label="Nombre del diagrama"
-              variant="outlined"
-              value={diagramName}
-              onChange={(e) => setDiagramName(e.target.value)}
-              placeholder="Mi diagrama"
-              margin="normal"
-              autoFocus
-              sx={{ mb: 2 }}
-            />
-          </Box>
-
-          <Box
-            sx={{ display: "flex", justifyContent: "center", gap: 2, mt: 3 }}
-          >
-            <Button
-              variant="contained"
-              onClick={saveDiagram}
-              disabled={!diagramName.trim()}
-              sx={{ textTransform: "none" }}
-            >
-              Guardar
-            </Button>
-            <Button
-              variant="outlined"
-              onClick={() => setIsSaveDialogOpen(false)}
-              sx={{ textTransform: "none" }}
-            >
-              Cancelar
-            </Button>
-          </Box>
-        </Box>
-      </Modal>
       <CustomModal
         isVisible={filterEditor.open}
         onClose={closeFilterEditor}
