@@ -50,6 +50,8 @@ import {
   savePersistedDiagram,
 } from "../lib/diagramStorage";
 import ProfileMenu from "./ProfileMenu";
+import Tooltip from "@mui/material/Tooltip";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 
 let id = 0;
 const getId = () => `dndnode_${id++}`;
@@ -1142,10 +1144,15 @@ function Diagram() {
           >
             Recursos del diagrama
           </h2>
-          <p className="diagram-resource-sidebar__subtitle">
-            Arrastra prompts, chains y tools desde la barra izquierda para
-            incluirlos en el diagrama sin asociarlos a un nodo.
-          </p>
+          <Tooltip
+            title="Arrastra prompts, chains y tools desde la barra izquierda para
+            incluirlos en el diagrama sin asociarlos a un nodo."
+            arrow
+          >
+            <IconButton>
+              <InfoOutlinedIcon className="diagram-resource-sidebar__tooltip" />
+            </IconButton>
+          </Tooltip>
         </div>
 
         <div className="diagram-resource-sidebar__section">

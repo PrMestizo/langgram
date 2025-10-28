@@ -223,14 +223,24 @@ body {
 
 .diagram-resource-sidebar__header {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: center;
   gap: 0.5rem;
+  margin-bottom: 0.5rem;
 }
 
 .diagram-resource-sidebar__title {
   margin: 0;
   font-size: 1.2rem;
   font-weight: 600;
+  line-height: 1.5;
+}
+
+.diagram-resource-sidebar__tooltip {
+  color: white;
+  width: 20px;
+  height: 20px;
+  padding: 2px;
 }
 
 .diagram-resource-sidebar__subtitle {
