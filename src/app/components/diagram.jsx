@@ -10,16 +10,12 @@ import {
   addEdge,
   Background,
   Controls,
-  MiniMap,
   useReactFlow,
 } from "reactflow";
-
-// Importación dinámica del Monaco Editor para SSR
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
   ssr: false,
   loading: () => <Box sx={{ p: 2 }}>Cargando editor...</Box>,
 });
-
 import "reactflow/dist/style.css";
 import Sidebar from "./Sidebar";
 import { DnDProvider, useDnD } from "./DnDContext";
@@ -140,6 +136,8 @@ function Diagram() {
   }));
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
+  const [activeResourcePanelTab, setActiveResourcePanelTab] =
+    useState("resources");
   const [isResourcePanelOpen, setIsResourcePanelOpen] = useState(false);
   const resourcePrompts = useMemo(
     () =>
@@ -564,9 +562,19 @@ function Diagram() {
     });
   }, []);
 
-  const toggleResourcePanel = useCallback(() => {
-    setIsResourcePanelOpen((prev) => !prev);
-  }, []);
+  const handleResourcePanelTab = useCallback(
+    (tab) => {
+      setIsResourcePanelOpen((prevOpen) => {
+        if (prevOpen && activeResourcePanelTab === tab) {
+          return false;
+        }
+
+        return true;
+      });
+      setActiveResourcePanelTab(tab);
+    },
+    [activeResourcePanelTab]
+  );
 
   const GraphJSON = useCallback(() => {
     const nodeData = nodes.map((n) => ({
@@ -1115,10 +1123,11 @@ function Diagram() {
       <DiagramResourcePanel
         isOpen={isResourcePanelOpen}
         isResourceDrag={isResourceDrag}
+        activeTab={activeResourcePanelTab}
+        onSelectTab={handleResourcePanelTab}
         resourcePrompts={resourcePrompts}
         resourceChains={resourceChains}
         resourceTools={resourceTools}
-        onToggle={toggleResourcePanel}
         onDragOver={handleResourceDragOver}
         onDrop={handleResourceDrop}
         onRemoveResource={handleRemoveResource}

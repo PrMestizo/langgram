@@ -142,12 +142,109 @@ body {
   height: calc(100vh - var(--top-nav-height));
 }
 
+.diagram-resource-tabs {
+  position: fixed;
+  top: 18%;
+  right: 0px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  transform: translateY(-50%);
+  transition: transform 0.3s ease;
+  z-index: 1100;
+}
+
+.diagram-resource-tabs--open {
+  transform: translateY(-50%)
+    translateX(calc(-1.1479 * var(--resource-sidebar-width)));
+}
+
+.diagram-resource-tab-button {
+  width: 140px;
+  height: 42px;
+  background: #1b1b1b;
+  color: #f8fafc;
+  border: 3px solid red;
+  border-right: none;
+  padding: 0;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  clip-path: polygon(15px 0, 100% 0, 100% 100%, 0 100%, 0 43px);
+  cursor: pointer;
+  font-weight: 600;
+  box-shadow: -6px 12px 24px rgba(15, 23, 42, 0.35);
+  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.diagram-resource-tab-button:hover,
+.diagram-resource-tab-button:focus-visible {
+  background: linear-gradient(135deg, #334155, #1e293b);
+  box-shadow: -10px 16px 28px rgba(15, 23, 42, 0.45);
+  outline: none;
+}
+
+.diagram-resource-tab-button--active {
+  background: linear-gradient(135deg, #1f2937, #0f172a);
+  box-shadow: -10px 18px 32px rgba(15, 23, 42, 0.5);
+}
+
+.diagram-resource-sidebar__stategraph {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  color: rgba(226, 232, 240, 0.85);
+}
+
+.diagram-resource-sidebar__stategraph-intro p {
+  margin: 0;
+  line-height: 1.6;
+}
+
+.diagram-resource-sidebar__stategraph-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem;
+}
+
+.diagram-resource-sidebar__stategraph-metric {
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 12px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.35);
+}
+
+.diagram-resource-sidebar__stategraph-metric-label {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(148, 163, 184, 0.85);
+}
+
+.diagram-resource-sidebar__stategraph-metric-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.diagram-resource-sidebar__stategraph-hint p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: rgba(148, 163, 184, 0.9);
+}
+
 .button-stategraph {
   position: fixed;
   top: 13%;
   right: 0px;
   width: 130px;
-  height: 40px;
+  height: 41.5px;
   z-index: 1100;
   background: #1b1b1b;
   color: #f8fafc;
@@ -160,6 +257,7 @@ body {
   clip-path: polygon(15px 0, 100% 0, 100% 100%, 0 100%, 0 43px);
   border: 3px solid red;
   border-right: none;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease;
 }
 
 .button-stategraph:hover,
@@ -171,7 +269,7 @@ body {
 
 .button-stategraph--open {
   transform: translate(50%, -50%)
-    translateX(calc(-1.35 * var(--resource-sidebar-width)));
+    translateX(calc(-1.339 * var(--resource-sidebar-width)));
 }
 
 .diagram-resource-tab {
@@ -179,7 +277,7 @@ body {
   top: 20%;
   right: 0px;
   width: 130px;
-  height: 40px;
+  height: 41.5px;
   background: #1b1b1b;
   color: #f8fafc;
   border: none;
@@ -195,6 +293,7 @@ body {
   z-index: 1100;
   border: 3px solid red;
   border-right: none;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease;
 }
 
 .diagram-resource-tab:hover,
@@ -211,7 +310,7 @@ body {
 
 .diagram-resource-tab--open {
   transform: translate(50%, -50%)
-    translateX(calc(-1.35 * var(--resource-sidebar-width)));
+    translateX(calc(-1.339 * var(--resource-sidebar-width)));
 }
 
 .diagram-resource-sidebar {
@@ -235,6 +334,7 @@ body {
   pointer-events: none;
   opacity: 0;
   z-index: 1050;
+  border: 3px solid red;
 }
 
 .diagram-resource-sidebar--open {

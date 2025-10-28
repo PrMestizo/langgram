@@ -6,6 +6,12 @@ import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import { TbPrompt } from "react-icons/tb";
 import { GiCrossedChains } from "react-icons/gi";
 import { FaTools } from "react-icons/fa";
+import dynamic from "next/dynamic";
+import { Box } from "@mui/material";
+const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
+  ssr: false,
+  loading: () => <Box sx={{ p: 2 }}>Cargando editor...</Box>,
+});
 
 const ResourceSection = ({
   icon: Icon,
@@ -56,41 +62,107 @@ const ResourceSection = ({
   </div>
 );
 
+const StategraphSummary = () => {
+  return (
+    <Box
+      sx={{
+        flex: 1,
+        minHeight: "60vh",
+        maxHeight: "calc(90vh - 200px)",
+        border: "1px solid",
+        borderColor: "divider",
+        borderRadius: 1,
+        overflow: "hidden",
+        "& .monaco-editor": {
+          "--vscode-editor-background": "#1E1E1E",
+          "--vscode-editor-foreground": "#D4D4D4",
+          "--vscode-editor-lineHighlightBackground": "#2A2D2E",
+        },
+        "& .monaco-scrollable-element > .scrollbar > .slider": {
+          background: "rgba(121, 121, 121, 0.4) !important",
+          "&:hover": {
+            background: "rgba(100, 100, 100, 0.7) !important",
+          },
+          "&:active": {
+            background: "rgba(191, 191, 191, 0.4) !important",
+          },
+        },
+      }}
+    >
+      <MonacoEditor
+        height="100%"
+        defaultLanguage="python"
+        theme="vs-dark"
+        options={{
+          automaticLayout: true,
+          fontSize: 14,
+          lineNumbers: "on",
+          wordWrap: "on",
+          minimap: { enabled: true },
+          scrollBeyondLastLine: false,
+          fontFamily: 'Menlo, Monaco, "Courier New", monospace',
+          tabSize: 2,
+          scrollbar: {
+            vertical: "auto",
+            horizontal: "auto",
+            useShadows: true,
+          },
+        }}
+      />
+    </Box>
+  );
+};
+
 export default function DiagramResourcePanel({
   isOpen,
   isResourceDrag,
+  activeTab,
+  onSelectTab,
   resourcePrompts,
   resourceChains,
   resourceTools,
-  onToggle,
   onDragOver,
   onDrop,
   onRemoveResource,
 }) {
   return (
     <>
-      <button
-        type="button"
-        className={
-          "button-stategraph" + (isOpen ? " button-stategraph--open" : "")
-        }
-        onClick={onToggle}
-        aria-expanded={isOpen}
-        aria-controls="diagram-resource-sidebar"
-      >
-        Stategraph
-      </button>
-      <button
-        type="button"
-        className={`diagram-resource-tab${
-          isOpen ? " diagram-resource-tab--open" : ""
+      <div
+        className={`diagram-resource-tabs${
+          isOpen ? " diagram-resource-tabs--open" : ""
         }`}
-        onClick={onToggle}
-        aria-expanded={isOpen}
-        aria-controls="diagram-resource-sidebar"
+        role="tablist"
+        aria-orientation="vertical"
       >
-        Recursos
-      </button>
+        <button
+          type="button"
+          className={`diagram-resource-tab-button${
+            activeTab === "stategraph"
+              ? " diagram-resource-tab-button--active"
+              : ""
+          }`}
+          onClick={() => onSelectTab("stategraph")}
+          aria-controls="diagram-resource-sidebar"
+          aria-selected={activeTab === "stategraph"}
+          role="tab"
+        >
+          Stategraph
+        </button>
+        <button
+          type="button"
+          className={`diagram-resource-tab-button${
+            activeTab === "resources"
+              ? " diagram-resource-tab-button--active"
+              : ""
+          }`}
+          onClick={() => onSelectTab("resources")}
+          aria-controls="diagram-resource-sidebar"
+          aria-selected={activeTab === "resources"}
+          role="tab"
+        >
+          Recursos
+        </button>
+      </div>
       <aside
         id="diagram-resource-sidebar"
         className={`diagram-resource-sidebar${
@@ -105,49 +177,77 @@ export default function DiagramResourcePanel({
         onDragOver={onDragOver}
         onDrop={onDrop}
       >
-        <div className="diagram-resource-sidebar__header">
-          <h2
-            id="diagram-resource-sidebar-title"
-            className="diagram-resource-sidebar__title"
-          >
-            Recursos del diagrama
-          </h2>
-          <Tooltip
-            title="Arrastra prompts, chains y tools desde la barra izquierda para incluirlos en el diagrama sin asociarlos a un nodo."
-            arrow
-          >
-            <IconButton>
-              <InfoOutlinedIcon className="diagram-resource-sidebar__tooltip" />
-            </IconButton>
-          </Tooltip>
-        </div>
+        {activeTab === "stategraph" ? (
+          <>
+            <div className="diagram-resource-sidebar__header">
+              <h2
+                id="diagram-resource-sidebar-title"
+                className="diagram-resource-sidebar__title"
+              >
+                Vista Stategraph
+              </h2>
+              <Tooltip
+                title="Arrastra prompts, chains y tools desde la barra izquierda para incluirlos en el diagrama sin asociarlos a un nodo."
+                arrow
+              >
+                <IconButton>
+                  <InfoOutlinedIcon className="diagram-resource-sidebar__tooltip" />
+                </IconButton>
+              </Tooltip>
+            </div>
+            <StategraphSummary
+              promptsCount={resourcePrompts.length}
+              chainsCount={resourceChains.length}
+              toolsCount={resourceTools.length}
+            />
+          </>
+        ) : (
+          <>
+            <div className="diagram-resource-sidebar__header">
+              <h2
+                id="diagram-resource-sidebar-title"
+                className="diagram-resource-sidebar__title"
+              >
+                Recursos del diagrama
+              </h2>
+              <Tooltip
+                title="Arrastra prompts, chains y tools desde la barra izquierda para incluirlos en el diagrama sin asociarlos a un nodo."
+                arrow
+              >
+                <IconButton>
+                  <InfoOutlinedIcon className="diagram-resource-sidebar__tooltip" />
+                </IconButton>
+              </Tooltip>
+            </div>
 
-        <ResourceSection
-          icon={TbPrompt}
-          label="Prompts"
-          kind="prompt"
-          items={resourcePrompts}
-          emptyMessage="Aún no hay prompts en el diagrama."
-          onRemove={onRemoveResource}
-        />
+            <ResourceSection
+              icon={TbPrompt}
+              label="Prompts"
+              kind="prompt"
+              items={resourcePrompts}
+              emptyMessage="Aún no hay prompts en el diagrama."
+              onRemove={onRemoveResource}
+            />
 
-        <ResourceSection
-          icon={GiCrossedChains}
-          label="Chains"
-          kind="chain"
-          items={resourceChains}
-          emptyMessage="Aún no hay chains en el diagrama."
-          onRemove={onRemoveResource}
-        />
+            <ResourceSection
+              icon={GiCrossedChains}
+              label="Chains"
+              kind="chain"
+              items={resourceChains}
+              emptyMessage="Aún no hay chains en el diagrama."
+              onRemove={onRemoveResource}
+            />
 
-        <ResourceSection
-          icon={FaTools}
-          label="Tools"
-          kind="tool"
-          items={resourceTools}
-          emptyMessage="Aún no hay tools en el diagrama."
-          onRemove={onRemoveResource}
-        />
+            <ResourceSection
+              icon={FaTools}
+              label="Tools"
+              kind="tool"
+              items={resourceTools}
+              emptyMessage="Aún no hay tools en el diagrama."
+              onRemove={onRemoveResource}
+            />
+          </>
+        )}
       </aside>
     </>
   );
