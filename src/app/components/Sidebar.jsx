@@ -230,7 +230,7 @@ const Sidebar = ({ onLoadDiagram }) => {
       return;
     }
     try {
-      const res = await fetch("/api/diagrams");
+      const res = await fetch("/api/diagrams?visibility=mine");
       if (!res.ok) {
         throw new Error(`Error ${res.status}: ${res.statusText}`);
       }
@@ -263,7 +263,7 @@ const Sidebar = ({ onLoadDiagram }) => {
     }
     const fetchNodes = async () => {
       try {
-        const res = await fetch("/api/nodes");
+        const res = await fetch("/api/nodes?visibility=mine");
         if (!res.ok) {
           throw new Error(`Error ${res.status}: ${res.statusText}`);
         }
@@ -283,7 +283,7 @@ const Sidebar = ({ onLoadDiagram }) => {
         return;
       }
       try {
-        const res = await fetch("/api/edges");
+        const res = await fetch("/api/edges?visibility=mine");
         if (!res.ok) {
           throw new Error(`Error ${res.status}: ${res.statusText}`);
         }
@@ -303,7 +303,7 @@ const Sidebar = ({ onLoadDiagram }) => {
     }
     const fetchPrompts = async () => {
       try {
-        const res = await fetch("/api/prompts");
+        const res = await fetch("/api/prompts?visibility=mine");
         if (!res.ok) {
           throw new Error(`Error ${res.status}: ${res.statusText}`);
         }
@@ -323,7 +323,7 @@ const Sidebar = ({ onLoadDiagram }) => {
     }
     const fetchChains = async () => {
       try {
-        const res = await fetch("/api/chains");
+        const res = await fetch("/api/chains?visibility=mine");
         if (!res.ok) {
           throw new Error(`Error ${res.status}: ${res.statusText}`);
         }
@@ -343,7 +343,7 @@ const Sidebar = ({ onLoadDiagram }) => {
     }
     const fetchTools = async () => {
       try {
-        const res = await fetch("/api/tools");
+        const res = await fetch("/api/tools?visibility=mine");
         if (!res.ok) {
           throw new Error(`Error ${res.status}: ${res.statusText}`);
         }
@@ -624,6 +624,135 @@ const Sidebar = ({ onLoadDiagram }) => {
       console.error("Error al guardar tool:", err);
     }
   };
+
+  const updateResourceVisibility = useCallback(
+    async ({
+      endpoint,
+      item,
+      nextValue,
+      setState,
+      resourceLabel,
+      eventName,
+    }) => {
+      try {
+        const res = await fetch(endpoint, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: item.id, isPublic: nextValue }),
+        });
+
+        if (!res.ok) {
+          const error = await res.json().catch(() => null);
+          throw new Error(
+            error?.details || `Error al actualizar ${resourceLabel}`
+          );
+        }
+
+        const updated = await res.json();
+
+        setState((prev) => {
+          if (!Array.isArray(prev)) {
+            return prev;
+          }
+
+          const exists = prev.some((entry) => entry.id === updated.id);
+          if (!exists) {
+            return prev;
+          }
+
+          return prev.map((entry) =>
+            entry.id === updated.id ? { ...entry, ...updated } : entry
+          );
+        });
+
+        if (eventName) {
+          window.dispatchEvent(new CustomEvent(eventName, { detail: updated }));
+        }
+      } catch (err) {
+        console.error(
+          `Error al actualizar visibilidad de ${resourceLabel}:`,
+          err
+        );
+        alert(
+          `No se pudo actualizar la visibilidad del ${resourceLabel}. Inténtalo nuevamente.`
+        );
+      }
+    },
+    []
+  );
+
+  const handleToggleDiagramVisibility = useCallback(
+    (diagram, nextValue) =>
+      updateResourceVisibility({
+        endpoint: "/api/diagrams",
+        item: diagram,
+        nextValue,
+        setState: setCustomDiagrams,
+        resourceLabel: "diagrama",
+        eventName: "diagrams-updated",
+      }),
+    [updateResourceVisibility]
+  );
+
+  const handleToggleNodeVisibility = useCallback(
+    (node, nextValue) =>
+      updateResourceVisibility({
+        endpoint: "/api/nodes",
+        item: node,
+        nextValue,
+        setState: setCustomNodes,
+        resourceLabel: "nodo",
+      }),
+    [updateResourceVisibility]
+  );
+
+  const handleToggleEdgeVisibility = useCallback(
+    (edge, nextValue) =>
+      updateResourceVisibility({
+        endpoint: "/api/edges",
+        item: edge,
+        nextValue,
+        setState: setCustomEdges,
+        resourceLabel: "edge",
+      }),
+    [updateResourceVisibility]
+  );
+
+  const handleTogglePromptVisibility = useCallback(
+    (prompt, nextValue) =>
+      updateResourceVisibility({
+        endpoint: "/api/prompts",
+        item: prompt,
+        nextValue,
+        setState: setCustomPrompts,
+        resourceLabel: "prompt",
+      }),
+    [updateResourceVisibility]
+  );
+
+  const handleToggleChainVisibility = useCallback(
+    (chain, nextValue) =>
+      updateResourceVisibility({
+        endpoint: "/api/chains",
+        item: chain,
+        nextValue,
+        setState: setCustomChains,
+        resourceLabel: "chain",
+      }),
+    [updateResourceVisibility]
+  );
+
+  const handleToggleToolVisibility = useCallback(
+    (tool, nextValue) =>
+      updateResourceVisibility({
+        endpoint: "/api/tools",
+        item: tool,
+        nextValue,
+        setState: setCustomTools,
+        resourceLabel: "tool",
+      }),
+    [updateResourceVisibility]
+  );
 
   const handleUpdateCustomDiagram = async (diagram, code, diagramName) => {
     try {
@@ -1187,6 +1316,10 @@ const Sidebar = ({ onLoadDiagram }) => {
                       }
                       onEdit={() => handleEditCustomDiagram(d)}
                       onDelete={() => handleDeleteCustomDiagram(d.name)}
+                      isPublic={Boolean(d.isPublic)}
+                      onToggleVisibility={(nextValue) =>
+                        handleToggleDiagramVisibility(d, nextValue)
+                      }
                     />
                   </div>
                 ))}
@@ -1266,6 +1399,10 @@ const Sidebar = ({ onLoadDiagram }) => {
                       }
                       onEdit={() => handleEditCustomNode(n)}
                       onDelete={() => handleDeleteCustomNode(n.name)}
+                      isPublic={Boolean(n.isPublic)}
+                      onToggleVisibility={(nextValue) =>
+                        handleToggleNodeVisibility(n, nextValue)
+                      }
                     />
                   </div>
                 ))}
@@ -1348,6 +1485,10 @@ const Sidebar = ({ onLoadDiagram }) => {
                       }
                       onEdit={() => handleEditCustomEdge(item)}
                       onDelete={() => handleDeleteCustomEdge(item.name)}
+                      isPublic={Boolean(item.isPublic)}
+                      onToggleVisibility={(nextValue) =>
+                        handleToggleEdgeVisibility(item, nextValue)
+                      }
                     />
                   </div>
                 ))}
@@ -1391,6 +1532,10 @@ const Sidebar = ({ onLoadDiagram }) => {
                       }
                       onEdit={() => handleEditCustomPrompt(p)}
                       onDelete={() => handleDeleteCustomPrompt(p.name)}
+                      isPublic={Boolean(p.isPublic)}
+                      onToggleVisibility={(nextValue) =>
+                        handleTogglePromptVisibility(p, nextValue)
+                      }
                     />
                   </div>
                 ))}
@@ -1434,6 +1579,10 @@ const Sidebar = ({ onLoadDiagram }) => {
                       }
                       onEdit={() => handleEditCustomTool(t)}
                       onDelete={() => handleDeleteCustomTool(t.name)}
+                      isPublic={Boolean(t.isPublic)}
+                      onToggleVisibility={(nextValue) =>
+                        handleToggleToolVisibility(t, nextValue)
+                      }
                     />
                   </div>
                 ))}
@@ -1477,6 +1626,10 @@ const Sidebar = ({ onLoadDiagram }) => {
                       }
                       onEdit={() => handleEditCustomChain(c)}
                       onDelete={() => handleDeleteCustomChain(c.name)}
+                      isPublic={Boolean(c.isPublic)}
+                      onToggleVisibility={(nextValue) =>
+                        handleToggleChainVisibility(c, nextValue)
+                      }
                     />
                   </div>
                 ))}

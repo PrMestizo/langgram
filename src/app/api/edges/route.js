@@ -8,26 +8,42 @@ import {
 } from "../utils/schemas";
 import { handleRouteError, parseJsonBody } from "../utils/http";
 
-export async function GET() {
+export async function GET(request) {
   try {
     const session = await auth();
-    const userId = session?.user?.id;
+    const userId = session?.user?.id ?? null;
+
+    const visibilityParam =
+      request?.nextUrl?.searchParams?.get("visibility")?.toLowerCase() ??
+      "mine";
+    const visibility = ["public", "all", "mine"].includes(visibilityParam)
+      ? visibilityParam
+      : "mine";
+
+    const commonInclude = {
+      owner: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+    };
 
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const whereClause =
+      visibility === "all"
+        ? {
+            OR: [{ ownerId: userId }, { isPublic: true }],
+          }
+        : { ownerId: userId };
+
     const edges = await prisma.edgeTemplate.findMany({
-      where: { ownerId: userId },
-      include: {
-        owner: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-      },
+      where: whereClause,
+      include: commonInclude,
     });
     return NextResponse.json(edges);
   } catch (error) {

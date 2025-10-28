@@ -3,6 +3,8 @@ import IconButton from "@mui/material/IconButton";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
+import ListItemText from "@mui/material/ListItemText";
+import Switch from "@mui/material/Switch";
 
 const ITEM_HEIGHT = 48;
 
@@ -11,6 +13,8 @@ export default function LongMenu({
   onOpenChange,
   onDelete,
   onEdit,
+  isPublic,
+  onToggleVisibility,
 }) {
   const [anchorEl, setAnchorEl] = React.useState(null);
   const open = Boolean(anchorEl);
@@ -25,14 +29,23 @@ export default function LongMenu({
 
   const options = React.useMemo(() => {
     const list = [];
+    if (typeof isPublic === "boolean" && onToggleVisibility) {
+      list.push({
+        key: "visibility",
+        type: "toggle",
+        label: "Visibilidad",
+        checked: isPublic,
+        onToggle: onToggleVisibility,
+      });
+    }
     if (onEdit) {
-      list.push({ label: "Edit", action: onEdit });
+      list.push({ key: "edit", label: "Edit", action: onEdit });
     }
     if (onDelete) {
-      list.push({ label: "Delete", action: onDelete });
+      list.push({ key: "delete", label: "Delete", action: onDelete });
     }
     return list;
-  }, [onDelete, onEdit]);
+  }, [onDelete, onEdit, isPublic, onToggleVisibility]);
 
   if (!options.length) {
     return null;
@@ -81,14 +94,47 @@ export default function LongMenu({
           },
         }}
       >
-        {options.map((option) => (
-          <MenuItem
-            key={option.label}
-            onClick={() => handleSelect(option.action)}
-          >
-            {option.label}
-          </MenuItem>
-        ))}
+        {options.map((option) => {
+          if (option.type === "toggle") {
+            return (
+              <MenuItem
+                key={option.key}
+                disableRipple
+                disableTouchRipple
+                onClick={(event) => event.preventDefault()}
+                sx={{ display: "flex", gap: 1, alignItems: "center" }}
+              >
+                <ListItemText
+                  primary={option.label}
+                  secondary={option.checked ? "Público" : "Privado"}
+                  primaryTypographyProps={{ variant: "body2" }}
+                  secondaryTypographyProps={{
+                    variant: "caption",
+                    sx: { color: "text.secondary" },
+                  }}
+                />
+                <Switch
+                  edge="end"
+                  checked={option.checked}
+                  onChange={(event) => {
+                    option.onToggle?.(event.target.checked);
+                    handleClose();
+                  }}
+                  inputProps={{ "aria-label": option.label }}
+                />
+              </MenuItem>
+            );
+          }
+
+          return (
+            <MenuItem
+              key={option.key}
+              onClick={() => handleSelect(option.action)}
+            >
+              {option.label}
+            </MenuItem>
+          );
+        })}
       </Menu>
     </div>
   );
