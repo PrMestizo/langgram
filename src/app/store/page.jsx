@@ -25,37 +25,37 @@ const SECTION_CONFIG = {
     title: "Diagrams",
     blurb: "Blueprints ready to plug into your workflows.",
     accents: ["#6366F1", "#0EA5E9", "#F97316", "#38BDF8"],
-    endpoint: "/api/diagrams",
+    endpoint: "/api/diagrams?visibility=public",
   },
   nodes: {
     title: "Nodes",
     blurb: "Reusable building blocks for your diagram canvas.",
     accents: ["#10B981", "#EC4899", "#6366F1", "#FB7185"],
-    endpoint: "/api/nodes",
+    endpoint: "/api/nodes?visibility=public",
   },
   edges: {
     title: "Edges",
     blurb: "Smart connectors with programmable logic.",
     accents: ["#14B8A6", "#F43F5E", "#F59E0B", "#8B5CF6"],
-    endpoint: "/api/edges",
+    endpoint: "/api/edges?visibility=public",
   },
   prompts: {
     title: "Prompts",
     blurb: "Expert-crafted prompts for specialised tasks.",
     accents: ["#A855F7", "#3B82F6", "#6366F1", "#F97316"],
-    endpoint: "/api/prompts",
+    endpoint: "/api/prompts?visibility=public",
   },
   tools: {
     title: "Tools",
     blurb: "Utilities ready to empower your graph workflows.",
     accents: ["#60A5FA", "#7C3AED", "#22D3EE", "#F97316"],
-    endpoint: "/api/tools",
+    endpoint: "/api/tools?visibility=public",
   },
   chains: {
     title: "Chains",
     blurb: "Opinionated orchestrations for end-to-end use cases.",
     accents: ["#F59E0B", "#8B5CF6", "#0EA5E9", "#10B981"],
-    endpoint: "/api/chains",
+    endpoint: "/api/chains?visibility=public",
   },
 };
 
