@@ -101,7 +101,7 @@ export default function LongMenu({
                 key={option.key}
                 disableRipple
                 disableTouchRipple
-                onClick={(event) => event.preventDefault()}
+                onClick={(event) => event.stopPropagation()}
                 sx={{ display: "flex", gap: 1, alignItems: "center" }}
               >
                 <ListItemText
@@ -118,7 +118,6 @@ export default function LongMenu({
                   checked={option.checked}
                   onChange={(event) => {
                     option.onToggle?.(event.target.checked);
-                    handleClose();
                   }}
                   inputProps={{ "aria-label": option.label }}
                 />

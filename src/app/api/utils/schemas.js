@@ -1,7 +1,8 @@
 import { HttpError } from "./errors";
 
 const INLINE_CONTROL_REGEX = /[\u0000-\u001F\u007F-\u009F]/g;
-const MULTILINE_CONTROL_REGEX = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/g;
+const MULTILINE_CONTROL_REGEX =
+  /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/g;
 const MAX_CODE_LENGTH = 20000;
 const MAX_DESCRIPTION_LENGTH = 2000;
 const MAX_NAME_LENGTH = 120;
@@ -22,10 +23,7 @@ export function sanitizeMultilineText(value) {
 
 function ensurePlainObject(value, fieldName) {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    throw new HttpError(
-      400,
-      `${fieldName} debe ser un objeto JSON válido`
-    );
+    throw new HttpError(400, `${fieldName} debe ser un objeto JSON válido`);
   }
   return value;
 }
@@ -57,7 +55,10 @@ function sanitizeId(value, { required = true } = {}) {
     return undefined;
   }
   if (sanitized.length > 128) {
-    throw new HttpError(400, "El identificador no puede superar los 128 caracteres");
+    throw new HttpError(
+      400,
+      "El identificador no puede superar los 128 caracteres"
+    );
   }
   if (!/^[A-Za-z0-9_-]+$/.test(sanitized)) {
     throw new HttpError(
@@ -223,7 +224,10 @@ function sanitizeVersion(value) {
 function enforceUpdateFields(data, fieldNames) {
   const hasField = fieldNames.some((field) => data[field] !== undefined);
   if (!hasField) {
-    throw new HttpError(400, "Debe proporcionar al menos un campo para actualizar");
+    throw new HttpError(
+      400,
+      "Debe proporcionar al menos un campo para actualizar"
+    );
   }
 }
 
@@ -261,7 +265,14 @@ function sanitizeTemplateUpdate(payload, { allowPublic = false } = {}) {
       sanitized.isPublic = isPublic;
     }
   }
-  enforceUpdateFields(sanitized, ["name", "description", "code", "language", "metadata", "isPublic"]);
+  enforceUpdateFields(sanitized, [
+    "name",
+    "description",
+    "code",
+    "language",
+    "metadata",
+    "isPublic",
+  ]);
   return dropUndefinedKeys(sanitized);
 }
 
@@ -274,19 +285,19 @@ export function validateNodeTemplateUpdate(payload) {
 }
 
 export function validateEdgeTemplateCreate(payload) {
-  return sanitizeTemplateCreate(payload);
+  return sanitizeTemplateCreate(payload, { allowPublic: true });
 }
 
 export function validateEdgeTemplateUpdate(payload) {
-  return sanitizeTemplateUpdate(payload);
+  return sanitizeTemplateUpdate(payload, { allowPublic: true });
 }
 
 export function validateChainTemplateCreate(payload) {
-  return sanitizeTemplateCreate(payload);
+  return sanitizeTemplateCreate(payload, { allowPublic: true });
 }
 
 export function validateChainTemplateUpdate(payload) {
-  return sanitizeTemplateUpdate(payload);
+  return sanitizeTemplateUpdate(payload, { allowPublic: true });
 }
 
 export function validateToolTemplateCreate(payload) {
@@ -304,6 +315,7 @@ export function validatePromptTemplateCreate(payload) {
     description: sanitizeDescription(data.description),
     content: sanitizeCode(data.content, { required: true }),
     metadata: sanitizeJson(data.metadata, "metadata"),
+    isPublic: sanitizeBoolean(data.isPublic, "isPublic"),
   });
 }
 
@@ -315,8 +327,15 @@ export function validatePromptTemplateUpdate(payload) {
     description: sanitizeDescription(data.description),
     content: sanitizeCode(data.content),
     metadata: sanitizeJson(data.metadata, "metadata"),
+    isPublic: sanitizeBoolean(data.isPublic, "isPublic"),
   };
-  enforceUpdateFields(sanitized, ["name", "description", "content", "metadata"]);
+  enforceUpdateFields(sanitized, [
+    "name",
+    "description",
+    "content",
+    "metadata",
+    "isPublic",
+  ]);
   return dropUndefinedKeys(sanitized);
 }
 
@@ -349,12 +368,21 @@ export function validateDiagramUpdate(payload) {
   const sanitized = {
     id: sanitizeId(data.id),
     name: sanitizeName(data.name),
-    content: data.content === undefined ? undefined : sanitizeDiagramContent(data.content),
+    content:
+      data.content === undefined
+        ? undefined
+        : sanitizeDiagramContent(data.content),
     isPublic: sanitizeBoolean(data.isPublic, "isPublic"),
     version: sanitizeVersion(data.version),
     tags: sanitizeTags(data.tags),
   };
-  enforceUpdateFields(sanitized, ["name", "content", "isPublic", "version", "tags"]);
+  enforceUpdateFields(sanitized, [
+    "name",
+    "content",
+    "isPublic",
+    "version",
+    "tags",
+  ]);
   return dropUndefinedKeys(sanitized);
 }
 
@@ -449,10 +477,16 @@ function sanitizePassword(value) {
     throw new HttpError(400, "La contraseña debe tener al menos 8 caracteres");
   }
   if (value.length > 128) {
-    throw new HttpError(400, "La contraseña no puede superar los 128 caracteres");
+    throw new HttpError(
+      400,
+      "La contraseña no puede superar los 128 caracteres"
+    );
   }
   if (value !== value.trim()) {
-    throw new HttpError(400, "La contraseña no puede iniciar ni terminar con espacios");
+    throw new HttpError(
+      400,
+      "La contraseña no puede iniciar ni terminar con espacios"
+    );
   }
   if (!/[A-Za-z]/.test(value) || !/\d/.test(value)) {
     throw new HttpError(400, "La contraseña debe incluir letras y números");

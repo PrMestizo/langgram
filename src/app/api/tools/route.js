@@ -30,6 +30,14 @@ export async function GET(request) {
       },
     };
 
+    if (visibility === "public") {
+      const tools = await prisma.toolTemplate.findMany({
+        where: { isPublic: true },
+        include: commonInclude,
+      });
+      return NextResponse.json(tools);
+    }
+
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
