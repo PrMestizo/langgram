@@ -30,7 +30,10 @@ const ResourceSection = ({
             key={`${kind}-${item.name}`}
             className={`diagram-resource-sidebar__item diagram-resource-sidebar__item--${kind}`}
           >
-            <div className="diagram-resource-sidebar__item-icon" aria-hidden="true">
+            <div
+              className="diagram-resource-sidebar__item-icon"
+              aria-hidden="true"
+            >
               <Icon />
             </div>
             <div className="diagram-resource-sidebar__item-body">
@@ -66,9 +69,14 @@ export default function DiagramResourcePanel({
 }) {
   return (
     <>
+      <button type="button" className="button-stategraph">
+        Stategraph
+      </button>
       <button
         type="button"
-        className={`diagram-resource-tab${isOpen ? " diagram-resource-tab--open" : ""}`}
+        className={`diagram-resource-tab${
+          isOpen ? " diagram-resource-tab--open" : ""
+        }`}
         onClick={onToggle}
         aria-expanded={isOpen}
         aria-controls="diagram-resource-sidebar"
@@ -79,14 +87,21 @@ export default function DiagramResourcePanel({
         id="diagram-resource-sidebar"
         className={`diagram-resource-sidebar${
           isOpen ? " diagram-resource-sidebar--open" : ""
-        }${isOpen && isResourceDrag ? " diagram-resource-sidebar--active-drop" : ""}`}
+        }${
+          isOpen && isResourceDrag
+            ? " diagram-resource-sidebar--active-drop"
+            : ""
+        }`}
         aria-hidden={!isOpen}
         aria-labelledby="diagram-resource-sidebar-title"
         onDragOver={onDragOver}
         onDrop={onDrop}
       >
         <div className="diagram-resource-sidebar__header">
-          <h2 id="diagram-resource-sidebar-title" className="diagram-resource-sidebar__title">
+          <h2
+            id="diagram-resource-sidebar-title"
+            className="diagram-resource-sidebar__title"
+          >
             Recursos del diagrama
           </h2>
           <Tooltip
