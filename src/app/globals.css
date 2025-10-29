@@ -18,6 +18,26 @@ body {
   height: 100vh;
 }
 
+::-webkit-scrollbar {
+  width: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0f0f11; /* color de fondo */
+}
+
+/* Color del thumb (barra móvil) */
+::-webkit-scrollbar-thumb {
+  background-color: #757576; /* color del scrollbar */
+  border-radius: 10px;
+  border: 2px solid #0f0f11; /* opcional: genera borde visual */
+}
+
+/* Hover */
+::-webkit-scrollbar-thumb:hover {
+  background-color: #a1a1a1;
+}
+
 .dndflow {
   height: 100vh;
   background-color: #f0f2f5;

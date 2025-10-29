@@ -134,6 +134,7 @@ function Diagram() {
   const [diagramResources, setDiagramResources] = useState(() => ({
     ...initialResources,
   }));
+  const [stategraphCode, setStategraphCode] = useState("");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
   const [activeResourcePanelTab, setActiveResourcePanelTab] =
@@ -609,6 +610,10 @@ function Diagram() {
       : [];
 
     const graphJSON = {
+      StateGraph: {
+        label: "StateGraph",
+        code: stategraphCode ?? "",
+      },
       nodes: nodeData,
       edges: edgeData,
       resources: {
@@ -618,7 +623,7 @@ function Diagram() {
       },
     };
     return graphJSON;
-  }, [diagramResources, edges, nodes]);
+  }, [diagramResources, edges, nodes, stategraphCode]);
 
   const generateCodeWithAI = useCallback(async () => {
     const graphJSON = GraphJSON();
@@ -773,6 +778,22 @@ function Diagram() {
           const storedTools = Array.isArray(storedResources.tools)
             ? storedResources.tools.map((tool) => ({ ...tool }))
             : [];
+          const storedStateGraph = storedGraph.StateGraph || {};
+          setStategraphCode(() => {
+            if (
+              storedStateGraph &&
+              typeof storedStateGraph === "object" &&
+              typeof storedStateGraph.code === "string"
+            ) {
+              return storedStateGraph.code;
+            }
+
+            if (typeof storedStateGraph === "string") {
+              return storedStateGraph;
+            }
+
+            return "";
+          });
           setDiagramResources({
             prompts: storedPrompts,
             chains: storedChains,
@@ -786,6 +807,7 @@ function Diagram() {
         }
       } else {
         setDiagramResources(() => ({ ...initialResources }));
+        setStategraphCode("");
       }
 
       if (!cancelled) {
@@ -820,6 +842,7 @@ function Diagram() {
       setDiagramResources(() => ({ ...initialResources }));
       setAlert({ message: "", severity: "success", open: false });
       setIsMenuOpen(false);
+      setStategraphCode("");
       setIsSaveDialogOpen(false);
       setDiagramName("");
       closeFilterEditor();
@@ -1125,6 +1148,8 @@ function Diagram() {
         isResourceDrag={isResourceDrag}
         activeTab={activeResourcePanelTab}
         onSelectTab={handleResourcePanelTab}
+        stategraphCode={stategraphCode}
+        onStategraphChange={setStategraphCode}
         resourcePrompts={resourcePrompts}
         resourceChains={resourceChains}
         resourceTools={resourceTools}

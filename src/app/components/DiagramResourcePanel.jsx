@@ -62,15 +62,13 @@ const ResourceSection = ({
   </div>
 );
 
-const StategraphSummary = () => {
+const StategraphSummary = ({ value, onChange }) => {
   return (
     <Box
       sx={{
         flex: 1,
-        minHeight: "60vh",
-        maxHeight: "calc(90vh - 200px)",
-        border: "1px solid",
-        borderColor: "divider",
+        Height: "60vh",
+        border: "1px solid #eeededff",
         borderRadius: 1,
         overflow: "hidden",
         "& .monaco-editor": {
@@ -93,6 +91,12 @@ const StategraphSummary = () => {
         height="100%"
         defaultLanguage="python"
         theme="vs-dark"
+        value={value ?? ""}
+        onChange={(nextValue) => {
+          if (typeof onChange === "function") {
+            onChange(nextValue ?? "");
+          }
+        }}
         options={{
           automaticLayout: true,
           fontSize: 14,
@@ -118,6 +122,8 @@ export default function DiagramResourcePanel({
   isResourceDrag,
   activeTab,
   onSelectTab,
+  stategraphCode,
+  onStategraphChange,
   resourcePrompts,
   resourceChains,
   resourceTools,
@@ -187,7 +193,7 @@ export default function DiagramResourcePanel({
                 Vista Stategraph
               </h2>
               <Tooltip
-                title="Arrastra prompts, chains y tools desde la barra izquierda para incluirlos en el diagrama sin asociarlos a un nodo."
+                title="Aquí puedes ver y editar el código del Stategraph asociado a tu diagrama."
                 arrow
               >
                 <IconButton>
@@ -196,9 +202,8 @@ export default function DiagramResourcePanel({
               </Tooltip>
             </div>
             <StategraphSummary
-              promptsCount={resourcePrompts.length}
-              chainsCount={resourceChains.length}
-              toolsCount={resourceTools.length}
+              value={stategraphCode}
+              onChange={onStategraphChange}
             />
           </>
         ) : (
