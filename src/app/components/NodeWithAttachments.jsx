@@ -43,26 +43,81 @@ const NodeWithAttachments = ({ id, data }) => {
   const chains = normalizeAttachmentList(data?.chains);
   const tools = normalizeAttachmentList(data?.tools);
   const { dragPayload, resetDrag } = useDnD();
-  const { setNodes } = useReactFlow();
+  const { setNodes, setEdges, getEdges } = useReactFlow();
 
   const isAttachmentDrag =
     dragPayload?.kind === "prompt" ||
     dragPayload?.kind === "chain" ||
     dragPayload?.kind === "tool";
+  const isConditionalEdgeDrag =
+    dragPayload?.kind === "edge" && dragPayload?.type === "conditionalEdge";
 
   const handleDragOver = useCallback(
     (event) => {
-      if (!isAttachmentDrag) {
+      if (!isAttachmentDrag && !isConditionalEdgeDrag) {
         return;
       }
       event.preventDefault();
       event.dataTransfer.dropEffect = "copy";
     },
-    [isAttachmentDrag]
+    [isAttachmentDrag, isConditionalEdgeDrag]
   );
 
   const handleDrop = useCallback(
     (event) => {
+      if (isConditionalEdgeDrag) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const currentEdges = typeof getEdges === "function" ? getEdges() : [];
+        const outgoingEdges = currentEdges.filter(
+          (edge) => edge.source === id
+        );
+
+        if (outgoingEdges.length < 2) {
+          resetDrag();
+          return;
+        }
+
+        const existingGroupId = outgoingEdges[0]?.data?.conditionalGroupId;
+        const groupId = existingGroupId || `conditional-${id}`;
+
+        if (typeof setEdges === "function") {
+          setEdges((edgesState) => {
+            let hasChanges = false;
+            const nextEdges = edgesState.map((edge) => {
+              if (edge.source !== id) {
+                return edge;
+              }
+
+              const nextData = {
+                ...(edge.data ?? {}),
+                conditionalGroupId: groupId,
+              };
+
+              if (
+                edge.type !== "conditionalEdge" ||
+                edge.data?.conditionalGroupId !== groupId
+              ) {
+                hasChanges = true;
+                return {
+                  ...edge,
+                  type: "conditionalEdge",
+                  data: nextData,
+                };
+              }
+
+              return edge;
+            });
+
+            return hasChanges ? nextEdges : edgesState;
+          });
+        }
+
+        resetDrag();
+        return;
+      }
+
       if (!isAttachmentDrag) {
         return;
       }
@@ -106,7 +161,16 @@ const NodeWithAttachments = ({ id, data }) => {
 
       resetDrag();
     },
-    [dragPayload, id, isAttachmentDrag, resetDrag, setNodes]
+    [
+      dragPayload,
+      getEdges,
+      id,
+      isAttachmentDrag,
+      isConditionalEdgeDrag,
+      resetDrag,
+      setEdges,
+      setNodes,
+    ]
   );
 
   const attachments = useMemo(
