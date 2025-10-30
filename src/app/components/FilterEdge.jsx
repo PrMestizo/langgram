@@ -52,8 +52,7 @@ const FilterEdge = ({
   const conditionalBranchDistance = data?.conditionalBranchDistance ?? 48;
 
   const isConditionalVariant =
-    variant === "conditional" ||
-    (conditionalGroupId && conditionalCount >= 2);
+    variant === "conditional" || (conditionalGroupId && conditionalCount >= 2);
 
   let branchPoint = null;
 
@@ -132,7 +131,11 @@ const FilterEdge = ({
 
   const className = useMemo(() => {
     const isVisible =
-      hasFilter || selected || isNear || isDraggingFilter || isConditionalVariant;
+      hasFilter ||
+      selected ||
+      isNear ||
+      isDraggingFilter ||
+      isConditionalVariant;
     return [
       "filter-edge-circle",
       hasFilter ? "has-filter" : "",
@@ -233,33 +236,35 @@ const FilterEdge = ({
           onMouseLeave={handlePointerLeave}
         >
           <div className="filter-edge-content">
-            <button
-              type="button"
-              className={className}
-              onClick={handleClick}
-              onContextMenu={handleContextMenu}
-              onFocus={handleFocus}
-              onBlur={handleBlur}
-              onDragOver={handleDragOver}
-              onDrop={handleDrop}
-              onDragLeave={handleDragLeave}
-              title={
-                hasFilter
-                  ? filterName
-                    ? `Editar filtro condicional: ${filterName}`
-                    : "Editar filtro condicional"
-                  : "Añadir filtro condicional"
-              }
-              aria-label={
-                hasFilter
-                  ? filterName
-                    ? `Editar filtro condicional ${filterName}`
-                    : "Editar filtro condicional"
-                  : "Añadir filtro condicional"
-              }
-            >
-              {hasFilter ? "ƒ" : isConditionalVariant ? "" : "+"}
-            </button>
+            {(!isConditionalVariant || hasFilter) && (
+              <button
+                type="button"
+                className={className}
+                onClick={handleClick}
+                onContextMenu={handleContextMenu}
+                onFocus={handleFocus}
+                onBlur={handleBlur}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+                onDragLeave={handleDragLeave}
+                title={
+                  hasFilter
+                    ? filterName
+                      ? `Editar filtro condicional: ${filterName}`
+                      : "Editar filtro condicional"
+                    : "Añadir filtro condicional"
+                }
+                aria-label={
+                  hasFilter
+                    ? filterName
+                      ? `Editar filtro condicional ${filterName}`
+                      : "Editar filtro condicional"
+                    : "Añadir filtro condicional"
+                }
+              >
+                {hasFilter ? "ƒ" : "+"}
+              </button>
+            )}
             {hasFilter && filterName ? (
               <span className="filter-edge-label" aria-hidden="true">
                 {filterName}
