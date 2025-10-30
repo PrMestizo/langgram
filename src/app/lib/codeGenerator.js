@@ -3,7 +3,7 @@
 /**
  * Genera código Python a partir del JSON de nodos y edges llamando a /api/generate
  * @param {Object} graphJSON - { nodes: [...], edges: [...] }
- * @returns {Promise<string>} - Código Python ensamblado
+ * @returns {Promise<Record<string, string>>} - Mapa filename→contenido
  */
 export async function generateCodeFromGraph(graphJSON) {
   try {
@@ -44,7 +44,21 @@ export async function generateCodeFromGraph(graphJSON) {
     }
 
     const data = await res.json();
-    return data.code || "";
+    if (!data || typeof data !== "object") {
+      throw new Error("Respuesta inesperada del generador de código");
+    }
+
+    const files = data.files;
+    if (!files || typeof files !== "object") {
+      throw new Error("La respuesta no contiene archivos generados");
+    }
+
+    return Object.fromEntries(
+      Object.entries(files).map(([filename, content]) => [
+        filename,
+        typeof content === "string" ? content : "",
+      ])
+    );
   } catch (err) {
     console.error("Error generando código:", err);
     if (err instanceof Error) {

@@ -175,7 +175,8 @@ function Diagram() {
   const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
   const [diagramName, setDiagramName] = useState("");
   const [isCodeDialogOpen, setIsCodeDialogOpen] = useState(false);
-  const [generatedCode, setGeneratedCode] = useState("");
+  const [generatedFiles, setGeneratedFiles] = useState(null);
+  const [activeGeneratedTab, setActiveGeneratedTab] = useState("agent.py");
   const [isGeneratingCode, setIsGeneratingCode] = useState(false);
   const [showJsonModal, setShowJsonModal] = useState(false);
   const [filterEditor, setFilterEditor] = useState({
@@ -216,6 +217,34 @@ function Diagram() {
   const closeFilterEditor = useCallback(() => {
     setFilterEditor({ open: false, edgeId: null, name: "", code: "" });
   }, []);
+
+  const generatedFileEntries = useMemo(
+    () => (generatedFiles ? Object.entries(generatedFiles) : []),
+    [generatedFiles]
+  );
+
+  const activeFileContent = useMemo(() => {
+    if (!generatedFiles || !activeGeneratedTab) {
+      return "";
+    }
+    return generatedFiles[activeGeneratedTab] ?? "";
+  }, [activeGeneratedTab, generatedFiles]);
+
+  const activeFileLanguage = useMemo(() => {
+    if (!activeGeneratedTab) {
+      return "plaintext";
+    }
+    if (activeGeneratedTab.endsWith(".py")) {
+      return "python";
+    }
+    if (activeGeneratedTab.endsWith(".json")) {
+      return "json";
+    }
+    if (activeGeneratedTab.endsWith(".txt")) {
+      return "plaintext";
+    }
+    return "plaintext";
+  }, [activeGeneratedTab]);
 
   const handleFilterSave = useCallback(
     async (updatedCode, updatedName) => {
@@ -628,8 +657,12 @@ function Diagram() {
   const generateCodeWithAI = useCallback(async () => {
     const graphJSON = GraphJSON();
     try {
-      const code = await generateCodeFromGraph(graphJSON);
-      setGeneratedCode(code ?? "");
+      const files = await generateCodeFromGraph(graphJSON);
+      setGeneratedFiles(files);
+      const firstFile = Object.keys(files ?? {})[0];
+      if (firstFile) {
+        setActiveGeneratedTab(firstFile);
+      }
     } catch {
       setAlert({
         message: "Error al generar el código con IA",
@@ -647,13 +680,32 @@ function Diagram() {
   }, []);
 
   const handleDownloadCode = useCallback(() => {
-    const blob = new Blob([generatedCode], {
-      type: "text/x-python;charset=utf-8",
+    if (!generatedFiles || !activeGeneratedTab) {
+      return;
+    }
+
+    const content = generatedFiles[activeGeneratedTab] ?? "";
+    if (!content.trim()) {
+      return;
+    }
+
+    const getMimeType = (filename) => {
+      if (filename.endsWith(".py")) {
+        return "text/x-python;charset=utf-8";
+      }
+      if (filename.endsWith(".json")) {
+        return "application/json;charset=utf-8";
+      }
+      return "text/plain;charset=utf-8";
+    };
+
+    const blob = new Blob([content], {
+      type: getMimeType(activeGeneratedTab),
     });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = "implemented.py";
+    link.download = activeGeneratedTab;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -661,15 +713,40 @@ function Diagram() {
 
     // Mostrar confirmación
     setAlert({
-      message: "Archivo Python descargado correctamente",
+      message: `Archivo ${activeGeneratedTab} descargado correctamente`,
       severity: "success",
       open: true,
     });
-  }, [generatedCode]);
+  }, [generatedFiles, activeGeneratedTab]);
 
-  const handleGeneratedCodeChange = useCallback((value) => {
-    setGeneratedCode(value || "");
+  const handleGeneratedFileChange = useCallback((filename, value) => {
+    setGeneratedFiles((prev) => {
+      if (!prev) {
+        return prev;
+      }
+      return {
+        ...prev,
+        [filename]: value || "",
+      };
+    });
   }, []);
+
+  const handleGeneratedTabChange = useCallback((_, value) => {
+    setActiveGeneratedTab(value);
+  }, []);
+
+  useEffect(() => {
+    if (!generatedFiles) {
+      return;
+    }
+
+    if (!activeGeneratedTab || !(activeGeneratedTab in generatedFiles)) {
+      const [firstFile] = Object.keys(generatedFiles);
+      if (firstFile) {
+        setActiveGeneratedTab(firstFile);
+      }
+    }
+  }, [activeGeneratedTab, generatedFiles]);
 
   const openSaveDialog = () => {
     setDiagramName("");
@@ -682,9 +759,11 @@ function Diagram() {
 
   const handleGenerateButtonClick = useCallback(() => {
     closeTopNavMenu();
-    generateCodeWithAI();
+    setGeneratedFiles(null);
+    setActiveGeneratedTab("agent.py");
     setIsCodeDialogOpen(true);
     setIsGeneratingCode(true);
+    generateCodeWithAI();
   }, [closeTopNavMenu, generateCodeWithAI]);
 
   const handleSaveButtonClick = useCallback(() => {
@@ -1254,70 +1333,93 @@ function Diagram() {
           ) : (
             <>
               <Tabs
-                value="implementation"
+                value={
+                  generatedFileEntries.length > 0 ? activeGeneratedTab : false
+                }
+                onChange={handleGeneratedTabChange}
                 aria-label="Tabs del código generado"
                 sx={{ borderBottom: 1, borderColor: "divider", mb: 2 }}
               >
-                <Tab label="Implementation" value="implementation" />
+                {generatedFileEntries.map(([filename]) => (
+                  <Tab key={filename} label={filename} value={filename} />
+                ))}
               </Tabs>
 
-              <Box
-                sx={{
-                  flex: 1,
-                  minHeight: "60vh",
-                  maxHeight: "calc(90vh - 200px)",
-                  border: "1px solid",
-                  borderColor: "divider",
-                  borderRadius: 1,
-                  overflow: "hidden",
-                  "& .monaco-editor": {
-                    "--vscode-editor-background": "#1E1E1E",
-                    "--vscode-editor-foreground": "#D4D4D4",
-                    "--vscode-editor-lineHighlightBackground": "#2A2D2E",
-                  },
-                  "& .monaco-scrollable-element > .scrollbar > .slider": {
-                    background: "rgba(121, 121, 121, 0.4) !important",
-                    "&:hover": {
-                      background: "rgba(100, 100, 100, 0.7) !important",
+              {generatedFileEntries.length === 0 ? (
+                <Box
+                  sx={{
+                    flex: 1,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    minHeight: "60vh",
+                  }}
+                >
+                  <Typography variant="body2" color="text.secondary">
+                    No se generaron archivos.
+                  </Typography>
+                </Box>
+              ) : (
+                <Box
+                  sx={{
+                    flex: 1,
+                    minHeight: "60vh",
+                    maxHeight: "calc(90vh - 200px)",
+                    border: "1px solid",
+                    borderColor: "divider",
+                    borderRadius: 1,
+                    overflow: "hidden",
+                    "& .monaco-editor": {
+                      "--vscode-editor-background": "#1E1E1E",
+                      "--vscode-editor-foreground": "#D4D4D4",
+                      "--vscode-editor-lineHighlightBackground": "#2A2D2E",
                     },
-                    "&:active": {
-                      background: "rgba(191, 191, 191, 0.4) !important",
-                    },
-                  },
-                }}
-              >
-                <MonacoEditor
-                  height="100%"
-                  defaultLanguage="python"
-                  value={generatedCode}
-                  onChange={setGeneratedCode}
-                  theme="vs-dark"
-                  options={{
-                    automaticLayout: true,
-                    fontSize: 14,
-                    lineNumbers: "on",
-                    wordWrap: "on",
-                    minimap: { enabled: true },
-                    scrollBeyondLastLine: false,
-                    fontFamily: 'Menlo, Monaco, "Courier New", monospace',
-                    tabSize: 2,
-                    scrollbar: {
-                      vertical: "auto",
-                      horizontal: "auto",
-                      useShadows: true,
+                    "& .monaco-scrollable-element > .scrollbar > .slider": {
+                      background: "rgba(121, 121, 121, 0.4) !important",
+                      "&:hover": {
+                        background: "rgba(100, 100, 100, 0.7) !important",
+                      },
+                      "&:active": {
+                        background: "rgba(191, 191, 191, 0.4) !important",
+                      },
                     },
                   }}
-                />
-              </Box>
+                >
+                  <MonacoEditor
+                    height="100%"
+                    language={activeFileLanguage}
+                    value={activeFileContent}
+                    onChange={(value) =>
+                      handleGeneratedFileChange(activeGeneratedTab, value ?? "")
+                    }
+                    theme="vs-dark"
+                    options={{
+                      automaticLayout: true,
+                      fontSize: 14,
+                      lineNumbers: "on",
+                      wordWrap: "on",
+                      minimap: { enabled: true },
+                      scrollBeyondLastLine: false,
+                      fontFamily: 'Menlo, Monaco, "Courier New", monospace',
+                      tabSize: 2,
+                      scrollbar: {
+                        vertical: "auto",
+                        horizontal: "auto",
+                        useShadows: true,
+                      },
+                    }}
+                  />
+                </Box>
+              )}
 
               <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 3 }}>
                 <Button
                   variant="contained"
                   onClick={handleDownloadCode}
-                  disabled={!generatedCode.trim()}
+                  disabled={!activeFileContent.trim()}
                   sx={{ textTransform: "none" }}
                 >
-                  Descargar código
+                  Descargar archivo
                 </Button>
               </Box>
             </>
