@@ -394,12 +394,17 @@ const Sidebar = ({ onLoadDiagram }) => {
     event.dataTransfer.effectAllowed = "move";
   };
 
-  const onEdgeDragStart = (event, edgeName, edgeCode) => {
+  const onEdgeDragStart = (
+    event,
+    edgeName,
+    edgeCode,
+    edgeType = "filterEdge"
+  ) => {
     setType(null);
     setCode(null);
     const payload = {
       kind: "edge",
-      type: "filterEdge",
+      type: edgeType,
       code: edgeCode || "",
       name: edgeName,
     };
@@ -1446,7 +1451,12 @@ const Sidebar = ({ onLoadDiagram }) => {
               <div
                 className="node-item edge-item"
                 onDragStart={(event) =>
-                  onEdgeDragStart(event, "Conditional Flow")
+                  onEdgeDragStart(
+                    event,
+                    "Conditional Flow",
+                    undefined,
+                    "conditionalEdge"
+                  )
                 }
                 onDragEnd={handleDragEnd}
                 draggable
