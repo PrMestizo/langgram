@@ -22,6 +22,7 @@ const FilterEdge = ({
   onEditFilter,
   onOpenContextMenu,
   onApplyFilter,
+  onSelectEdge,
   variant = "default",
 }) => {
   const { dragPayload, resetDrag } = useDnD();
@@ -90,14 +91,16 @@ const FilterEdge = ({
   }, []);
 
   const handleFocus = useCallback(() => {
+    onSelectEdge?.(id);
     setIsNear(true);
-  }, []);
+  }, [id, onSelectEdge]);
 
   const handleBlur = useCallback(() => {
     setIsNear(false);
   }, []);
 
   const handleClick = (event) => {
+    onSelectEdge?.(id);
     event.stopPropagation();
     if (hasFilter) {
       return;
@@ -108,6 +111,7 @@ const FilterEdge = ({
   const handleContextMenu = (event) => {
     event.preventDefault();
     event.stopPropagation();
+    onSelectEdge?.(id);
     if (hasFilter) {
       onOpenContextMenu?.(id, { x: event.clientX, y: event.clientY });
       return;
@@ -167,14 +171,16 @@ const FilterEdge = ({
       }
       event.preventDefault();
       event.stopPropagation();
+      onSelectEdge?.(id);
       onApplyFilter?.(id, {
         code: dragPayload.code ?? "",
         name: dragPayload.name ?? "",
+        templateId: dragPayload.templateId ?? null,
       });
       resetDrag?.();
       setIsNear(false);
     },
-    [dragPayload, id, isDraggingFilter, onApplyFilter, resetDrag]
+    [dragPayload, id, isDraggingFilter, onApplyFilter, onSelectEdge, resetDrag]
   );
 
   const handleDragLeave = useCallback(() => {
@@ -242,6 +248,11 @@ const FilterEdge = ({
                 className={className}
                 onClick={handleClick}
                 onContextMenu={handleContextMenu}
+                onDoubleClick={(event) => {
+                  onSelectEdge?.(id);
+                  event.stopPropagation();
+                  onEditFilter?.(id);
+                }}
                 onFocus={handleFocus}
                 onBlur={handleBlur}
                 onDragOver={handleDragOver}

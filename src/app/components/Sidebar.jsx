@@ -398,7 +398,8 @@ const Sidebar = ({ onLoadDiagram }) => {
     event,
     edgeName,
     edgeCode,
-    edgeType = "filterEdge"
+    edgeType = "filterEdge",
+    templateId = null
   ) => {
     setType(null);
     setCode(null);
@@ -407,6 +408,7 @@ const Sidebar = ({ onLoadDiagram }) => {
       type: edgeType,
       code: edgeCode || "",
       name: edgeName,
+      templateId,
     };
     setDragPayload(payload);
     event.dataTransfer.setData("application/edge-name", edgeName ?? "");
@@ -862,6 +864,11 @@ const Sidebar = ({ onLoadDiagram }) => {
       const saved = await res.json();
       setCustomEdges((prev) =>
         prev.map((item) => (item.id === saved.id ? saved : item))
+      );
+      window.dispatchEvent(
+        new CustomEvent("edge-template-updated", {
+          detail: { previousName: edge.name, edge: saved },
+        })
       );
       return true;
     } catch (err) {
@@ -1481,7 +1488,13 @@ const Sidebar = ({ onLoadDiagram }) => {
                       menuOpenId === `custom-${item.name}` ? "active" : ""
                     }`}
                     onDragStart={(event) =>
-                      onEdgeDragStart(event, item.name, item.code)
+                      onEdgeDragStart(
+                        event,
+                        item.name,
+                        item.code,
+                        "filterEdge",
+                        item.id ?? null
+                      )
                     }
                     onDragEnd={handleDragEnd}
                     draggable

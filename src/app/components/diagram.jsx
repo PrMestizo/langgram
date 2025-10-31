@@ -1,5 +1,5 @@
 "use client";
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useSession } from "next-auth/react";
 import dynamic from "next/dynamic";
 import {
@@ -75,7 +75,7 @@ const initialEdges = [
     source: "n1",
     target: "n2",
     type: "filterEdge",
-    data: { filterCode: "", filterName: "" },
+    data: { filterCode: "", filterName: "", filterTemplateId: null },
   },
 ];
 
@@ -111,6 +111,8 @@ const hydrateEdge = (edge) => ({
     ...(edge.data || {}),
     filterCode: edge.filterCode ?? edge.data?.filterCode ?? "",
     filterName: edge.filterName ?? edge.data?.filterName ?? "",
+    filterTemplateId:
+      edge.data?.filterTemplateId ?? edge.filterTemplateId ?? null,
   },
 });
 
@@ -131,6 +133,8 @@ function Diagram() {
   const user = session?.user ?? null;
   const [nodes, setNodes] = useState(initialNodes);
   const [edges, setEdges] = useState(initialEdges);
+  const nodesRef = useRef(nodes);
+  const edgesRef = useRef(edges);
   const [diagramResources, setDiagramResources] = useState(() => ({
     ...initialResources,
   }));
@@ -184,6 +188,7 @@ function Diagram() {
     edgeId: null,
     name: "",
     code: "",
+    templateId: null,
   });
 
   const [contextMenu, setContextMenu] = useState({
@@ -192,6 +197,14 @@ function Diagram() {
     x: 0,
     y: 0,
   });
+
+  useEffect(() => {
+    nodesRef.current = nodes;
+  }, [nodes]);
+
+  useEffect(() => {
+    edgesRef.current = edges;
+  }, [edges]);
 
   const openFilterContextMenu = useCallback((edgeId, position) => {
     setContextMenu({ open: true, edgeId, x: position.x, y: position.y });
@@ -209,13 +222,20 @@ function Diagram() {
         edgeId,
         name: targetEdge?.data?.filterName ?? "",
         code: targetEdge?.data?.filterCode ?? "",
+        templateId: targetEdge?.data?.filterTemplateId ?? null,
       });
     },
     [edges]
   );
 
   const closeFilterEditor = useCallback(() => {
-    setFilterEditor({ open: false, edgeId: null, name: "", code: "" });
+    setFilterEditor({
+      open: false,
+      edgeId: null,
+      name: "",
+      code: "",
+      templateId: null,
+    });
   }, []);
 
   const generatedFileEntries = useMemo(
@@ -271,6 +291,7 @@ function Diagram() {
           throw new Error(errorData.error || "Error al guardar el filtro");
         }
         const saved = await res.json();
+        const savedTemplateId = saved?.id ?? null;
         setEdges((prevEdges) =>
           prevEdges.map((edge) =>
             edge.id === filterEditor.edgeId
@@ -280,10 +301,24 @@ function Diagram() {
                     ...edge.data,
                     filterCode: updatedCode,
                     filterName: finalName,
+                    filterTemplateId:
+                      savedTemplateId ?? edge.data?.filterTemplateId ?? null,
                   },
                 }
               : edge
           )
+        );
+
+        setFilterEditor((prev) =>
+          prev.edgeId === filterEditor.edgeId
+            ? {
+                ...prev,
+                name: finalName,
+                code: updatedCode,
+                templateId:
+                  savedTemplateId ?? prev.templateId ?? null,
+              }
+            : prev
         );
 
         window.dispatchEvent(
@@ -324,15 +359,6 @@ function Diagram() {
       return;
     }
 
-    useEffect(() => {
-      if (alert.open) {
-        const timer = setTimeout(() => {
-          setAlert({ ...alert, open: false });
-        }, 3000);
-        return () => clearTimeout(timer);
-      }
-    }, [alert.open]);
-
     const handleGlobalClick = () => closeFilterContextMenu();
     const handleKeyDown = (event) => {
       if (event.key === "Escape") {
@@ -348,6 +374,97 @@ function Diagram() {
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [contextMenu.open, closeFilterContextMenu]);
+
+  useEffect(() => {
+    if (!alert.open) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setAlert((prev) => ({ ...prev, open: false }));
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [alert.open]);
+
+  useEffect(() => {
+    const handleTemplateUpdate = (event) => {
+      const detail = event?.detail;
+      const updatedTemplate = detail?.edge ?? null;
+      if (!updatedTemplate) {
+        return;
+      }
+
+      const previousName = detail?.previousName ?? null;
+      const templateId = updatedTemplate.id ?? null;
+
+      setEdges((prevEdges) => {
+        let hasChanges = false;
+        const nextEdges = prevEdges.map((edge) => {
+          const matchesById =
+            templateId && edge.data?.filterTemplateId === templateId;
+          const matchesByName =
+            !templateId &&
+            previousName &&
+            (edge.data?.filterTemplateId === undefined ||
+              edge.data?.filterTemplateId === null) &&
+            edge.data?.filterName === previousName;
+
+          if (!matchesById && !matchesByName) {
+            return edge;
+          }
+
+          hasChanges = true;
+
+          return {
+            ...edge,
+            data: {
+              ...edge.data,
+              filterName:
+                updatedTemplate.name ?? edge.data?.filterName ?? "",
+              filterCode:
+                updatedTemplate.code ?? edge.data?.filterCode ?? "",
+              filterTemplateId:
+                templateId ?? edge.data?.filterTemplateId ?? null,
+            },
+          };
+        });
+
+        return hasChanges ? nextEdges : prevEdges;
+      });
+
+      setFilterEditor((prev) => {
+        if (!prev.open) {
+          return prev;
+        }
+
+        const matchesById =
+          templateId && prev.templateId
+            ? prev.templateId === templateId
+            : false;
+        const matchesByName =
+          !templateId && previousName && prev.name === previousName;
+
+        if (!matchesById && !matchesByName) {
+          return prev;
+        }
+
+        return {
+          ...prev,
+          name: updatedTemplate.name ?? prev.name,
+          code: updatedTemplate.code ?? prev.code,
+          templateId: templateId ?? prev.templateId ?? null,
+        };
+      });
+    };
+
+    window.addEventListener("edge-template-updated", handleTemplateUpdate);
+    return () =>
+      window.removeEventListener(
+        "edge-template-updated",
+        handleTemplateUpdate
+      );
+  }, [setEdges, setFilterEditor]);
 
   useEffect(() => {
     if (!Array.isArray(edges) || edges.length === 0) {
@@ -471,6 +588,10 @@ function Diagram() {
                   ...edge.data,
                   filterCode: filter.code ?? edge.data?.filterCode ?? "",
                   filterName: filter.name ?? edge.data?.filterName ?? "",
+                  filterTemplateId:
+                    filter.templateId !== undefined
+                      ? filter.templateId
+                      : edge.data?.filterTemplateId ?? null,
                 },
               }
             : edge
@@ -482,12 +603,181 @@ function Diagram() {
               ...prev,
               name: filter.name ?? "",
               code: filter.code ?? "",
+              templateId:
+                filter.templateId !== undefined
+                  ? filter.templateId
+                  : prev.templateId ?? null,
             }
           : prev
       );
     },
     [setEdges, setFilterEditor]
   );
+
+  const selectEdge = useCallback(
+    (edgeId) => {
+      if (!edgeId) {
+        return;
+      }
+      setEdges((prevEdges) =>
+        prevEdges.map((edge) => ({
+          ...edge,
+          selected: edge.id === edgeId,
+        }))
+      );
+      setNodes((prevNodes) =>
+        prevNodes.map((node) => ({ ...node, selected: false }))
+      );
+    },
+    [setEdges, setNodes]
+  );
+
+  const selectNode = useCallback(
+    (nodeId) => {
+      if (!nodeId) {
+        return;
+      }
+      setNodes((prevNodes) =>
+        prevNodes.map((node) => ({
+          ...node,
+          selected: node.id === nodeId,
+        }))
+      );
+      setEdges((prevEdges) =>
+        prevEdges.map((edge) => ({ ...edge, selected: false }))
+      );
+    },
+    [setEdges, setNodes]
+  );
+
+  const clearSelection = useCallback(() => {
+    setNodes((prevNodes) =>
+      prevNodes.map((node) => ({ ...node, selected: false }))
+    );
+    setEdges((prevEdges) =>
+      prevEdges.map((edge) => ({ ...edge, selected: false }))
+    );
+  }, [setEdges, setNodes]);
+
+  const handleEdgeClick = useCallback(
+    (event, edge) => {
+      if (event?.defaultPrevented) {
+        return;
+      }
+      selectEdge(edge?.id);
+    },
+    [selectEdge]
+  );
+
+  const handleEdgeDoubleClick = useCallback(
+    (event, edge) => {
+      event?.preventDefault?.();
+      const edgeId = edge?.id;
+      if (!edgeId) {
+        return;
+      }
+      selectEdge(edgeId);
+      handleFilterClick(edgeId);
+    },
+    [handleFilterClick, selectEdge]
+  );
+
+  const handleNodeClick = useCallback(
+    (event, node) => {
+      if (event?.defaultPrevented) {
+        return;
+      }
+      selectNode(node?.id);
+    },
+    [selectNode]
+  );
+
+  const handlePaneClick = useCallback(() => {
+    clearSelection();
+    closeFilterContextMenu();
+  }, [clearSelection, closeFilterContextMenu]);
+
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key !== "Delete" && event.key !== "Backspace") {
+        return;
+      }
+
+      const currentNodes = nodesRef.current || [];
+      const currentEdges = edgesRef.current || [];
+
+      const selectedNodeIds = new Set(
+        currentNodes
+          .filter((node) => node?.selected)
+          .map((node) => node.id)
+      );
+      const selectedEdgeIds = new Set(
+        currentEdges
+          .filter((edge) => edge?.selected)
+          .map((edge) => edge.id)
+      );
+
+      if (selectedNodeIds.size === 0 && selectedEdgeIds.size === 0) {
+        return;
+      }
+
+      event.preventDefault();
+
+      setNodes((prevNodes) =>
+        prevNodes
+          .filter((node) => !selectedNodeIds.has(node.id))
+          .map((node) => ({ ...node, selected: false }))
+      );
+
+      let shouldCloseFilterEditor = false;
+      let shouldCloseContextMenu = false;
+
+      setEdges((prevEdges) => {
+        const nextEdges = prevEdges.filter(
+          (edge) =>
+            !selectedEdgeIds.has(edge.id) &&
+            !selectedNodeIds.has(edge.source) &&
+            !selectedNodeIds.has(edge.target)
+        );
+
+        if (
+          filterEditor.edgeId &&
+          !nextEdges.some((edge) => edge.id === filterEditor.edgeId)
+        ) {
+          shouldCloseFilterEditor = true;
+        }
+
+        if (
+          contextMenu.edgeId &&
+          !nextEdges.some((edge) => edge.id === contextMenu.edgeId)
+        ) {
+          shouldCloseContextMenu = true;
+        }
+
+        return nextEdges.map((edge) => ({ ...edge, selected: false }));
+      });
+
+      if (shouldCloseFilterEditor) {
+        closeFilterEditor();
+      }
+
+      if (shouldCloseContextMenu) {
+        closeFilterContextMenu();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [
+    closeFilterContextMenu,
+    closeFilterEditor,
+    contextMenu.edgeId,
+    edgesRef,
+    filterEditor.edgeId,
+    nodesRef,
+    setEdges,
+    setNodes,
+  ]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -516,6 +806,7 @@ function Diagram() {
           onEditFilter={handleFilterClick}
           onOpenContextMenu={openFilterContextMenu}
           onApplyFilter={handleApplyFilterFromDrag}
+          onSelectEdge={selectEdge}
         />
       ),
       conditionalEdge: (edgeProps) => (
@@ -525,10 +816,16 @@ function Diagram() {
           onEditFilter={handleFilterClick}
           onOpenContextMenu={openFilterContextMenu}
           onApplyFilter={handleApplyFilterFromDrag}
+          onSelectEdge={selectEdge}
         />
       ),
     }),
-    [handleApplyFilterFromDrag, handleFilterClick, openFilterContextMenu]
+    [
+      handleApplyFilterFromDrag,
+      handleFilterClick,
+      openFilterContextMenu,
+      selectEdge,
+    ]
   );
 
   const onNodesChange = useCallback(
@@ -742,6 +1039,10 @@ function Diagram() {
       type: e.type,
       filterCode: e.data?.filterCode || "",
       filterName: e.data?.filterName || "",
+      filterTemplateId:
+        e.data?.filterTemplateId !== undefined
+          ? e.data.filterTemplateId
+          : null,
     }));
 
     const resourcePrompts = Array.isArray(diagramResources.prompts)
@@ -1063,6 +1364,7 @@ function Diagram() {
                   ...edge.data,
                   filterCode: "",
                   filterName: "",
+                  filterTemplateId: null,
                 },
               }
             : edge
@@ -1328,6 +1630,10 @@ function Diagram() {
             onDrop={onDrop}
             onDragStart={onDragStart}
             onDragOver={onDragOver}
+            onNodeClick={handleNodeClick}
+            onEdgeClick={handleEdgeClick}
+            onEdgeDoubleClick={handleEdgeDoubleClick}
+            onPaneClick={handlePaneClick}
             edgeTypes={edgeTypes}
             nodeTypes={nodeTypes}
             fitView
