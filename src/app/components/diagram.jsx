@@ -539,6 +539,7 @@ function Diagram() {
           onEditFilter={handleFilterClick}
           onOpenContextMenu={openFilterContextMenu}
           onApplyFilter={handleApplyFilterFromDrag}
+          onSelectEdge={selectEdge}
         />
       ),
       conditionalEdge: (edgeProps) => (
@@ -548,10 +549,16 @@ function Diagram() {
           onEditFilter={handleFilterClick}
           onOpenContextMenu={openFilterContextMenu}
           onApplyFilter={handleApplyFilterFromDrag}
+          onSelectEdge={selectEdge}
         />
       ),
     }),
-    [handleApplyFilterFromDrag, handleFilterClick, openFilterContextMenu]
+    [
+      handleApplyFilterFromDrag,
+      handleFilterClick,
+      openFilterContextMenu,
+      selectEdge,
+    ]
   );
 
   const onNodesChange = useCallback(
