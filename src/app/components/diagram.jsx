@@ -324,15 +324,6 @@ function Diagram() {
       return;
     }
 
-    useEffect(() => {
-      if (alert.open) {
-        const timer = setTimeout(() => {
-          setAlert({ ...alert, open: false });
-        }, 3000);
-        return () => clearTimeout(timer);
-      }
-    }, [alert.open]);
-
     const handleGlobalClick = () => closeFilterContextMenu();
     const handleKeyDown = (event) => {
       if (event.key === "Escape") {
@@ -359,7 +350,8 @@ function Diagram() {
       if (edge?.type !== "conditionalEdge") {
         return;
       }
-      const groupId = edge.data?.conditionalGroupId || `conditional-${edge.source}`;
+      const groupId =
+        edge.data?.conditionalGroupId || `conditional-${edge.source}`;
       if (!groups.has(groupId)) {
         groups.set(groupId, []);
       }
@@ -388,7 +380,10 @@ function Diagram() {
           delete cleanRestData.conditionalOffset;
           delete cleanRestData.conditionalBranchDistance;
 
-          if (edge.type === "conditionalEdge" || edge.data?.conditionalGroupId) {
+          if (
+            edge.type === "conditionalEdge" ||
+            edge.data?.conditionalGroupId
+          ) {
             nextEdges[index] = {
               ...edge,
               type: "filterEdge",
