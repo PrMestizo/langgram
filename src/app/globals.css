@@ -701,7 +701,9 @@ body {
 
 .filter-edge-label {
   position: absolute;
-  right: -20px;
+  left: calc(100% + 3px);
+  top: 50%;
+  transform: translateY(-50%);
   font-size: 10px;
   font-weight: 600;
   color: #0d9488;
