@@ -484,6 +484,34 @@ function Diagram() {
     [setEdges, setFilterEditor]
   );
 
+  const selectEdge = useCallback(
+    (edgeId) => {
+      if (!edgeId) {
+        return;
+      }
+      setEdges((prevEdges) =>
+        prevEdges.map((edge) => ({
+          ...edge,
+          selected: edge.id === edgeId,
+        }))
+      );
+      setNodes((prevNodes) =>
+        prevNodes.map((node) => ({ ...node, selected: false }))
+      );
+    },
+    [setEdges, setNodes]
+  );
+
+  const handleEdgeClick = useCallback(
+    (event, edge) => {
+      if (event?.defaultPrevented) {
+        return;
+      }
+      selectEdge(edge?.id);
+    },
+    [selectEdge]
+  );
+
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth > 900) {
@@ -1323,6 +1351,7 @@ function Diagram() {
             onDrop={onDrop}
             onDragStart={onDragStart}
             onDragOver={onDragOver}
+            onEdgeClick={handleEdgeClick}
             edgeTypes={edgeTypes}
             nodeTypes={nodeTypes}
             fitView
