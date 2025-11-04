@@ -91,18 +91,20 @@ const FilterEdge = ({
   }, []);
 
   const handleFocus = useCallback(() => {
-    onSelectEdge?.(id);
+    if (hasFilter) {
+      onSelectEdge?.(id);
+    }
     setIsNear(true);
-  }, [id, onSelectEdge]);
+  }, [hasFilter, id, onSelectEdge]);
 
   const handleBlur = useCallback(() => {
     setIsNear(false);
   }, []);
 
   const handleClick = (event) => {
-    onSelectEdge?.(id);
     event.stopPropagation();
     if (hasFilter) {
+      onSelectEdge?.(id);
       return;
     }
     onEditFilter?.(id);
