@@ -175,7 +175,7 @@ const FilterEdge = ({
       onApplyFilter?.(id, {
         code: dragPayload.code ?? "",
         name: dragPayload.name ?? "",
-        id: dragPayload.name ?? null,
+        id: dragPayload.id ?? null,
       });
       resetDrag?.();
       setIsNear(false);
