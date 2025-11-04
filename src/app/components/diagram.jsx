@@ -75,7 +75,7 @@ const initialEdges = [
     source: "n1",
     target: "n2",
     type: "filterEdge",
-    data: { filterCode: "", filterName: "" },
+    data: { filterCode: "", filterName: "", filterTemplateId: null },
   },
 ];
 
@@ -102,6 +102,46 @@ const cloneInitialEdges = () =>
     data: edge.data ? { ...edge.data } : undefined,
   }));
 
+const TEMPLATE_ID_PATTERN = /^[A-Za-z0-9_-]+$/;
+
+const coerceTemplateId = (rawValue) => {
+  if (rawValue === undefined || rawValue === null) {
+    return null;
+  }
+
+  if (typeof rawValue === "string") {
+    const trimmed = rawValue.trim();
+    if (!trimmed) {
+      return null;
+    }
+    if (TEMPLATE_ID_PATTERN.test(trimmed)) {
+      return trimmed;
+    }
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (typeof parsed === "string") {
+        return coerceTemplateId(parsed);
+      }
+    } catch (error) {
+      // Ignore JSON parse errors and continue coercion attempts below.
+    }
+    return null;
+  }
+
+  if (typeof rawValue === "object") {
+    if (typeof rawValue.id === "string") {
+      return coerceTemplateId(rawValue.id);
+    }
+    return null;
+  }
+
+  const coerced = String(rawValue).trim();
+  if (!coerced) {
+    return null;
+  }
+  return TEMPLATE_ID_PATTERN.test(coerced) ? coerced : null;
+};
+
 const hydrateEdge = (edge) => ({
   id: edge.id || `${edge.source}-${edge.target}`,
   source: edge.source,
@@ -111,6 +151,12 @@ const hydrateEdge = (edge) => ({
     ...(edge.data || {}),
     filterCode: edge.filterCode ?? edge.data?.filterCode ?? "",
     filterName: edge.filterName ?? edge.data?.filterName ?? "",
+    filterTemplateId:
+      edge.filterTemplateId ??
+      edge.data?.filterTemplateId ??
+      edge.templateId ??
+      edge.data?.templateId ??
+      null,
   },
 });
 
@@ -184,6 +230,7 @@ function Diagram() {
     edgeId: null,
     name: "",
     code: "",
+    templateId: null,
   });
 
   const [contextMenu, setContextMenu] = useState({
@@ -209,13 +256,23 @@ function Diagram() {
         edgeId,
         name: targetEdge?.data?.filterName ?? "",
         code: targetEdge?.data?.filterCode ?? "",
+        templateId:
+          targetEdge?.data?.filterTemplateId ??
+          targetEdge?.data?.templateId ??
+          null,
       });
     },
     [edges]
   );
 
   const closeFilterEditor = useCallback(() => {
-    setFilterEditor({ open: false, edgeId: null, name: "", code: "" });
+    setFilterEditor({
+      open: false,
+      edgeId: null,
+      name: "",
+      code: "",
+      templateId: null,
+    });
   }, []);
 
   const generatedFileEntries = useMemo(
@@ -255,14 +312,23 @@ function Diagram() {
       const trimmedName = (updatedName || "").trim();
       const finalName = trimmedName || "Filtro sin nombre";
 
+      const targetEdge = edges.find((edge) => edge.id === filterEditor.edgeId);
+      const resolvedTemplateId = coerceTemplateId(
+        filterEditor.templateId ??
+          targetEdge?.data?.filterTemplateId ??
+          targetEdge?.data?.templateId ??
+          null
+      );
+      const isUpdate = Boolean(resolvedTemplateId);
       const payload = {
         name: finalName,
         code: updatedCode,
+        ...(isUpdate ? { id: resolvedTemplateId } : {}),
       };
 
       try {
         const res = await fetch("/api/edges", {
-          method: "POST",
+          method: isUpdate ? "PUT" : "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
@@ -271,6 +337,12 @@ function Diagram() {
           throw new Error(errorData.error || "Error al guardar el filtro");
         }
         const saved = await res.json();
+        const nextTemplateId = coerceTemplateId(
+          saved?.id ??
+            resolvedTemplateId ??
+            targetEdge?.data?.filterTemplateId ??
+            null
+        );
         setEdges((prevEdges) =>
           prevEdges.map((edge) =>
             edge.id === filterEditor.edgeId
@@ -280,14 +352,28 @@ function Diagram() {
                     ...edge.data,
                     filterCode: updatedCode,
                     filterName: finalName,
+                    filterTemplateId: nextTemplateId,
                   },
                 }
               : edge
           )
         );
 
+        setFilterEditor((prev) =>
+          prev.edgeId === filterEditor.edgeId
+            ? {
+                ...prev,
+                name: finalName,
+                code: updatedCode,
+                templateId: nextTemplateId,
+              }
+            : prev
+        );
+
+        const eventDetail = saved ?? { ...payload, id: nextTemplateId };
+
         window.dispatchEvent(
-          new CustomEvent("edges-updated", { detail: saved })
+          new CustomEvent("edges-updated", { detail: eventDetail })
         );
         setAlert({
           message: `Filtro "${finalName}" guardado correctamente.`,
@@ -303,7 +389,13 @@ function Diagram() {
         });
       }
     },
-    [filterEditor.edgeId, setEdges, setAlert]
+    [
+      filterEditor.edgeId,
+      filterEditor.templateId,
+      setEdges,
+      setAlert,
+      setFilterEditor,
+    ]
   );
 
   useEffect(() => {
@@ -466,6 +558,9 @@ function Diagram() {
                   ...edge.data,
                   filterCode: filter.code ?? edge.data?.filterCode ?? "",
                   filterName: filter.name ?? edge.data?.filterName ?? "",
+                  filterTemplateId: coerceTemplateId(
+                    filter.id ?? edge.data?.filterTemplateId ?? null
+                  ),
                 },
               }
             : edge
@@ -477,6 +572,9 @@ function Diagram() {
               ...prev,
               name: filter.name ?? "",
               code: filter.code ?? "",
+              templateId: coerceTemplateId(
+                filter.id ?? prev.templateId ?? null
+              ),
             }
           : prev
       );
@@ -578,7 +676,7 @@ function Diagram() {
           {
             ...params,
             type: "filterEdge",
-            data: { filterCode: "", filterName: "" },
+            data: { filterCode: "", filterName: "", filterTemplateId: null },
           },
           edgesSnapshot
         )
@@ -772,6 +870,7 @@ function Diagram() {
       type: e.type,
       filterCode: e.data?.filterCode || "",
       filterName: e.data?.filterName || "",
+      filterTemplateId: coerceTemplateId(e.data?.filterTemplateId),
     }));
 
     const resourcePrompts = Array.isArray(diagramResources.prompts)
@@ -1093,6 +1192,7 @@ function Diagram() {
                   ...edge.data,
                   filterCode: "",
                   filterName: "",
+                  filterTemplateId: null,
                 },
               }
             : edge

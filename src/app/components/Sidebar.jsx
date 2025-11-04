@@ -398,7 +398,8 @@ const Sidebar = ({ onLoadDiagram }) => {
     event,
     edgeName,
     edgeCode,
-    edgeType = "filterEdge"
+    edgeType = "filterEdge",
+    edgeId = null
   ) => {
     setType(null);
     setCode(null);
@@ -407,10 +408,12 @@ const Sidebar = ({ onLoadDiagram }) => {
       type: edgeType,
       code: edgeCode || "",
       name: edgeName,
+      id: edgeId,
     };
     setDragPayload(payload);
     event.dataTransfer.setData("application/edge-name", edgeName ?? "");
     event.dataTransfer.setData("application/edge-code", edgeCode ?? "");
+    event.dataTransfer.setData("application/edge-id", edgeId);
     event.dataTransfer.effectAllowed = "copy";
 
     const preview = document.createElement("div");
@@ -1476,12 +1479,18 @@ const Sidebar = ({ onLoadDiagram }) => {
                 <div className="section-title">Custom Edges</div>
                 {customEdges.map((item) => (
                   <div
-                    key={item.name}
+                    key={item.id}
                     className={`node-item edge-item edge-item--custom ${
-                      menuOpenId === `custom-${item.name}` ? "active" : ""
+                      menuOpenId === `custom-${item.id}` ? "active" : ""
                     }`}
                     onDragStart={(event) =>
-                      onEdgeDragStart(event, item.name, item.code)
+                      onEdgeDragStart(
+                        event,
+                        item.name,
+                        item.code,
+                        "filterEdge",
+                        item.id
+                      )
                     }
                     onDragEnd={handleDragEnd}
                     draggable
@@ -1491,7 +1500,7 @@ const Sidebar = ({ onLoadDiagram }) => {
                     <LongMenu
                       className="kebab-menu"
                       onOpenChange={(open) =>
-                        setMenuOpenId(open ? `custom-${item.name}` : null)
+                        setMenuOpenId(open ? `custom-${item.id}` : null)
                       }
                       onEdit={() => handleEditCustomEdge(item)}
                       onDelete={() => handleDeleteCustomEdge(item.name)}
