@@ -432,117 +432,6 @@ function Diagram() {
     };
   }, [contextMenu.open, closeFilterContextMenu]);
 
-  useEffect(() => {
-    if (!Array.isArray(edges) || edges.length === 0) {
-      return;
-    }
-
-    const groups = new Map();
-    edges.forEach((edge, index) => {
-      if (edge?.type !== "conditionalEdge") {
-        return;
-      }
-      const groupId =
-        edge.data?.conditionalGroupId || `conditional-${edge.source}`;
-      if (!groups.has(groupId)) {
-        groups.set(groupId, []);
-      }
-      groups.get(groupId).push({ edge, index, groupId });
-    });
-
-    if (groups.size === 0) {
-      return;
-    }
-
-    const nodePositions = new Map(
-      nodes.map((node) => [node.id, node?.position?.x ?? 0])
-    );
-
-    const nextEdges = [...edges];
-    let hasChanges = false;
-
-    groups.forEach((entries) => {
-      if (entries.length < 2) {
-        entries.forEach(({ edge, index }) => {
-          const cleanRestData = { ...(edge.data ?? {}) };
-          delete cleanRestData.conditionalGroupId;
-          delete cleanRestData.conditionalCount;
-          delete cleanRestData.conditionalIndex;
-          delete cleanRestData.conditionalPrimary;
-          delete cleanRestData.conditionalOffset;
-          delete cleanRestData.conditionalBranchDistance;
-
-          if (
-            edge.type === "conditionalEdge" ||
-            edge.data?.conditionalGroupId
-          ) {
-            nextEdges[index] = {
-              ...edge,
-              type: "filterEdge",
-              data: cleanRestData,
-            };
-            hasChanges = true;
-          }
-        });
-        return;
-      }
-
-      const sortedEntries = [...entries];
-      sortedEntries.sort((a, b) => {
-        const posA = nodePositions.get(a.edge.target) ?? 0;
-        const posB = nodePositions.get(b.edge.target) ?? 0;
-        if (posA === posB) {
-          return a.index - b.index;
-        }
-        return posA - posB;
-      });
-
-      sortedEntries.forEach(({ edge, index, groupId }, idx) => {
-        const baseData = edge.data ?? {};
-        const nextData = {
-          ...baseData,
-          conditionalGroupId: groupId,
-          conditionalCount: sortedEntries.length,
-          conditionalIndex: idx,
-          conditionalPrimary: idx === 0,
-        };
-
-        let updatedEdge = edge;
-        let shouldReplace = false;
-
-        if (
-          baseData.conditionalGroupId !== nextData.conditionalGroupId ||
-          baseData.conditionalCount !== nextData.conditionalCount ||
-          baseData.conditionalIndex !== nextData.conditionalIndex ||
-          baseData.conditionalPrimary !== nextData.conditionalPrimary
-        ) {
-          updatedEdge = {
-            ...updatedEdge,
-            data: nextData,
-          };
-          shouldReplace = true;
-        }
-
-        if (edge.type !== "conditionalEdge") {
-          updatedEdge = {
-            ...updatedEdge,
-            type: "conditionalEdge",
-          };
-          shouldReplace = true;
-        }
-
-        if (shouldReplace) {
-          nextEdges[index] = updatedEdge;
-          hasChanges = true;
-        }
-      });
-    });
-
-    if (hasChanges) {
-      setEdges(nextEdges);
-    }
-  }, [edges, nodes, setEdges]);
-
   const handleApplyFilterFromDrag = useCallback(
     (edgeId, filter) => {
       if (!edgeId || !filter) {
@@ -634,16 +523,6 @@ function Diagram() {
       filterEdge: (edgeProps) => (
         <FilterEdge
           {...edgeProps}
-          onEditFilter={handleFilterClick}
-          onOpenContextMenu={openFilterContextMenu}
-          onApplyFilter={handleApplyFilterFromDrag}
-          onSelectEdge={selectEdge}
-        />
-      ),
-      conditionalEdge: (edgeProps) => (
-        <FilterEdge
-          {...edgeProps}
-          variant="conditional"
           onEditFilter={handleFilterClick}
           onOpenContextMenu={openFilterContextMenu}
           onApplyFilter={handleApplyFilterFromDrag}
@@ -1689,7 +1568,7 @@ function Diagram() {
         onSave={handleFilterSave}
         initialCode={filterEditor.code}
         initialName={filterEditor.name}
-        title="Configurar filtro condicional"
+        title="Configurar filtro"
         nameLabel="Nombre del filtro"
         saveLabel="Guardar filtro"
         cancelLabel="Cancelar"

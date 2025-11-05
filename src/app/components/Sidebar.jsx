@@ -1451,28 +1451,6 @@ const Sidebar = ({ onLoadDiagram }) => {
                   }
                 />
               </div>
-              <div
-                className="node-item edge-item"
-                onDragStart={(event) =>
-                  onEdgeDragStart(
-                    event,
-                    "Conditional Flow",
-                    undefined,
-                    "conditionalEdge"
-                  )
-                }
-                onDragEnd={handleDragEnd}
-                draggable
-              >
-                <div className="edge-item__circle">⤴</div>
-                Conditional Flow
-                <LongMenu
-                  className="kebab-menu"
-                  onOpenChange={(open) =>
-                    setMenuOpenId(open ? "node-Base" : null)
-                  }
-                />
-              </div>
             </div>
             {customEdges.length > 0 && (
               <div className="node-section">
