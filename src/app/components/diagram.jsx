@@ -21,6 +21,7 @@ import Sidebar from "./Sidebar";
 import { DnDProvider, useDnD } from "./DnDContext";
 import { generateCodeFromGraph } from "../lib/codeGenerator";
 import FilterEdge from "./FilterEdge";
+import FilterNode from "./FilterNode";
 import CustomModal from "./Modal";
 import NodeWithAttachments from "./NodeWithAttachments";
 import DiagramResourcePanel from "./DiagramResourcePanel";
@@ -102,6 +103,9 @@ const cloneInitialEdges = () =>
     data: edge.data ? { ...edge.data } : undefined,
   }));
 
+const FILTER_DEFAULT_CONDITIONAL_SPREAD = 70;
+const FILTER_MIN_BRANCH_DISTANCE = 32;
+
 const TEMPLATE_ID_PATTERN = /^[A-Za-z0-9_-]+$/;
 
 const coerceTemplateId = (rawValue) => {
@@ -175,7 +179,7 @@ const truncateText = (value, maxLength = 80) => {
 function Diagram() {
   const { data: session } = useSession();
   const user = session?.user ?? null;
-  const [nodes, setNodes] = useState(initialNodes);
+  const [diagramNodes, setDiagramNodes] = useState(initialNodes);
   const [edges, setEdges] = useState(initialEdges);
   const [diagramResources, setDiagramResources] = useState(() => ({
     ...initialResources,
@@ -210,6 +214,7 @@ function Diagram() {
   const nodeTypes = useMemo(
     () => ({
       langgramNode: NodeWithAttachments,
+      filterNode: FilterNode,
     }),
     []
   );
@@ -455,7 +460,7 @@ function Diagram() {
     }
 
     const nodePositions = new Map(
-      nodes.map((node) => [node.id, node?.position?.x ?? 0])
+      diagramNodes.map((node) => [node.id, node?.position?.x ?? 0])
     );
 
     const nextEdges = [...edges];
@@ -541,7 +546,7 @@ function Diagram() {
     if (hasChanges) {
       setEdges(nextEdges);
     }
-  }, [edges, nodes, setEdges]);
+  }, [diagramNodes, edges, setEdges]);
 
   const handleApplyFilterFromDrag = useCallback(
     (edgeId, filter) => {
@@ -593,11 +598,164 @@ function Diagram() {
           selected: edge.id === edgeId,
         }))
       );
-      setNodes((prevNodes) =>
+      setDiagramNodes((prevNodes) =>
         prevNodes.map((node) => ({ ...node, selected: false }))
       );
     },
-    [setEdges, setNodes]
+    [setEdges, setDiagramNodes]
+  );
+
+  const filterNodes = useMemo(() => {
+    if (!Array.isArray(edges)) {
+      return [];
+    }
+
+    const baseNodeMap = new Map(
+      diagramNodes.map((node) => [node.id, node])
+    );
+
+    const getNodeCenter = (node) => {
+      if (!node) {
+        return { x: 0, y: 0 };
+      }
+      const position =
+        node.positionAbsolute ?? node.position ?? { x: 0, y: 0 };
+      const width = node.width ?? node?.measured?.width ?? 0;
+      const height = node.height ?? node?.measured?.height ?? 0;
+      return {
+        x: position.x + width / 2,
+        y: position.y + height / 2,
+      };
+    };
+
+    const computedNodes = [];
+
+    edges.forEach((edge) => {
+      if (edge.type !== "filterEdge" && edge.type !== "conditionalEdge") {
+        return;
+      }
+
+      const sourceNode = baseNodeMap.get(edge.source);
+      const targetNode = baseNodeMap.get(edge.target);
+
+      if (!sourceNode || !targetNode) {
+        return;
+      }
+
+      const sourcePoint = getNodeCenter(sourceNode);
+      const targetPoint = getNodeCenter(targetNode);
+      const edgeData = edge.data ?? {};
+      const variant =
+        edge.type === "conditionalEdge" ||
+        (edgeData.conditionalGroupId && edgeData.conditionalCount >= 2)
+          ? "conditional"
+          : "default";
+
+      let position;
+
+      if (variant === "conditional") {
+        const conditionalCount = edgeData.conditionalCount ?? 0;
+        const conditionalIndex = edgeData.conditionalIndex ?? 0;
+        const conditionalOffset = edgeData.conditionalOffset;
+        const conditionalBranchDistance =
+          edgeData.conditionalBranchDistance ?? 48;
+
+        const verticalDirection = targetPoint.y >= sourcePoint.y ? 1 : -1;
+        const travelDistance = Math.abs(targetPoint.y - sourcePoint.y);
+        const dynamicBranchDistance = Math.min(
+          Math.max(conditionalBranchDistance, FILTER_MIN_BRANCH_DISTANCE),
+          Math.max(
+            Math.min(travelDistance * 0.4, 140),
+            FILTER_MIN_BRANCH_DISTANCE
+          )
+        );
+        const branchPoint = {
+          x: sourcePoint.x,
+          y: sourcePoint.y + verticalDirection * dynamicBranchDistance,
+        };
+
+        const spreadValue =
+          conditionalOffset !== undefined && conditionalOffset !== null
+            ? conditionalOffset
+            : (conditionalIndex - (conditionalCount - 1) / 2) *
+              FILTER_DEFAULT_CONDITIONAL_SPREAD;
+
+        position = {
+          x: branchPoint.x + (targetPoint.x - branchPoint.x) * 0.55,
+          y: branchPoint.y + (targetPoint.y - branchPoint.y) * 0.55,
+        };
+      } else {
+        position = {
+          x: sourcePoint.x + (targetPoint.x - sourcePoint.x) * 0.5,
+          y: sourcePoint.y + (targetPoint.y - sourcePoint.y) * 0.5,
+        };
+      }
+
+      computedNodes.push({
+        id: `filter-${edge.id}`,
+        type: "filterNode",
+        position,
+        data: {
+          edgeId: edge.id,
+          filterName: edgeData.filterName ?? "",
+          filterCode: edgeData.filterCode ?? "",
+          filterTemplateId: edgeData.filterTemplateId ?? null,
+          variant,
+          onEditFilter: handleFilterClick,
+          onOpenContextMenu: openFilterContextMenu,
+          onApplyFilter: handleApplyFilterFromDrag,
+          onSelectEdge: selectEdge,
+        },
+        draggable: false,
+        selectable: false,
+        connectable: false,
+        deletable: false,
+        dragHandle: null,
+        style: {
+          background: "transparent",
+          border: "none",
+          padding: 0,
+        },
+        selected: Boolean(edge.selected),
+      });
+    });
+
+    return computedNodes;
+  }, [
+    diagramNodes,
+    edges,
+    handleApplyFilterFromDrag,
+    handleFilterClick,
+    openFilterContextMenu,
+    selectEdge,
+  ]);
+
+  const filterNodeIds = useMemo(
+    () => new Set(filterNodes.map((node) => node.id)),
+    [filterNodes]
+  );
+
+  const allNodes = useMemo(
+    () => [...diagramNodes, ...filterNodes],
+    [diagramNodes, filterNodes]
+  );
+
+  const onNodesChange = useCallback(
+    (changes) => {
+      if (!changes?.length) {
+        return;
+      }
+      const relevantChanges = changes.filter(
+        (change) => !filterNodeIds.has(change.id)
+      );
+      if (!relevantChanges.length) {
+        return;
+      }
+      setDiagramNodes((nodesSnapshot) =>
+        applyNodeChanges(relevantChanges, nodesSnapshot)
+      );
+    },
+    [filterNodeIds, setDiagramNodes]
   );
 
   const handleEdgeClick = useCallback(
@@ -631,37 +789,11 @@ function Diagram() {
 
   const edgeTypes = useMemo(
     () => ({
-      filterEdge: (edgeProps) => (
-        <FilterEdge
-          {...edgeProps}
-          onEditFilter={handleFilterClick}
-          onOpenContextMenu={openFilterContextMenu}
-          onApplyFilter={handleApplyFilterFromDrag}
-          onSelectEdge={selectEdge}
-        />
-      ),
+      filterEdge: FilterEdge,
       conditionalEdge: (edgeProps) => (
-        <FilterEdge
-          {...edgeProps}
-          variant="conditional"
-          onEditFilter={handleFilterClick}
-          onOpenContextMenu={openFilterContextMenu}
-          onApplyFilter={handleApplyFilterFromDrag}
-          onSelectEdge={selectEdge}
-        />
+        <FilterEdge {...edgeProps} variant="conditional" />
       ),
     }),
-    [
-      handleApplyFilterFromDrag,
-      handleFilterClick,
-      openFilterContextMenu,
-      selectEdge,
-    ]
-  );
-
-  const onNodesChange = useCallback(
-    (changes) =>
-      setNodes((nodesSnapshot) => applyNodeChanges(changes, nodesSnapshot)),
     []
   );
   const onEdgesChange = useCallback(
@@ -726,10 +858,10 @@ function Diagram() {
         code: dragPayload?.code ?? "",
       };
 
-      setNodes((nds) => nds.concat(newNode));
+      setDiagramNodes((nds) => nds.concat(newNode));
       resetDrag();
     },
-    [dragPayload, resetDrag, screenToFlowPosition, setNodes]
+    [dragPayload, resetDrag, screenToFlowPosition, setDiagramNodes]
   );
 
   const onDragStart = (event, nodeType, nodeCode) => {
@@ -851,7 +983,7 @@ function Diagram() {
   );
 
   const GraphJSON = useCallback(() => {
-    const nodeData = nodes.map((n) => ({
+    const nodeData = diagramNodes.map((n) => ({
       id: n.id,
       type: n.data?.nodeType ?? n.type,
       componentType: n.type,
@@ -897,7 +1029,7 @@ function Diagram() {
       },
     };
     return graphJSON;
-  }, [diagramResources, edges, nodes, stategraphCode]);
+  }, [diagramNodes, diagramResources, edges, stategraphCode]);
 
   const generateCodeWithAI = useCallback(async () => {
     const graphJSON = GraphJSON();
@@ -1090,7 +1222,7 @@ function Diagram() {
             };
           });
           const nextEdges = (storedGraph.edges || []).map(hydrateEdge);
-          setNodes(nextNodes);
+          setDiagramNodes(nextNodes);
           setEdges(nextEdges);
           const storedResources = storedGraph.resources || {};
           const storedPrompts = Array.isArray(storedResources.prompts)
@@ -1161,7 +1293,7 @@ function Diagram() {
 
   useEffect(() => {
     const handleResetDiagram = () => {
-      setNodes(cloneInitialNodes());
+      setDiagramNodes(cloneInitialNodes());
       setEdges(cloneInitialEdges());
       setDiagramResources(() => ({ ...initialResources }));
       setAlert({ message: "", severity: "success", open: false });
@@ -1255,7 +1387,7 @@ function Diagram() {
           };
         });
         const nextEdges = (graph.edges || []).map(hydrateEdge);
-        setNodes(nextNodes);
+        setDiagramNodes(nextNodes);
         setEdges(nextEdges);
         const resources = graph.resources || {};
         const graphPrompts = Array.isArray(resources.prompts)
@@ -1276,7 +1408,7 @@ function Diagram() {
     };
     window.addEventListener("load-diagram", handler);
     return () => window.removeEventListener("load-diagram", handler);
-  }, [setNodes, setEdges]);
+  }, [setDiagramNodes, setEdges]);
 
   return (
     <div className="dndflow">
@@ -1304,7 +1436,7 @@ function Diagram() {
               };
             });
             const nextEdges = (graph.edges || []).map(hydrateEdge);
-            setNodes(nextNodes);
+            setDiagramNodes(nextNodes);
             setEdges(nextEdges);
             const resources = graph.resources || {};
             const graphPrompts = Array.isArray(resources.prompts)
@@ -1450,7 +1582,7 @@ function Diagram() {
 
         <div className="canvas-wrapper">
           <ReactFlow
-            nodes={nodes}
+            nodes={allNodes}
             edges={edges}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
