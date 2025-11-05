@@ -270,7 +270,13 @@ const FilterEdge = ({
                     : "Añadir filtro condicional"
                 }
               >
-                {hasFilter ? "ƒ" : "+"}
+                {hasFilter ? (
+                  <span className="filter-edge-node-icon" aria-hidden="true">
+                    <span className="filter-edge-node-icon__glow" />
+                  </span>
+                ) : (
+                  "+"
+                )}
               </button>
             )}
             {hasFilter && filterName ? (
