@@ -738,6 +738,62 @@ body {
   box-shadow: 0 2px 6px rgba(15, 23, 42, 0.25);
 }
 
+.filter-slot {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: scale(0.85);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.filter-slot.is-visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.filter-slot__trigger {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 2px solid #0d9488;
+  background: rgba(13, 148, 136, 0.12);
+  color: #0f172a;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease, background 0.15s ease,
+    box-shadow 0.15s ease;
+  box-shadow: 0 2px 6px rgba(13, 148, 136, 0.25);
+  position: relative;
+}
+
+.filter-slot__trigger:hover,
+.filter-slot__trigger:focus-visible {
+  transform: scale(1.05);
+  background: rgba(13, 148, 136, 0.2);
+  outline: none;
+}
+
+.filter-slot__ring {
+  position: absolute;
+  inset: 4px;
+  border-radius: 9999px;
+  border: 2px solid rgba(13, 148, 136, 0.35);
+  background: rgba(236, 254, 255, 0.35);
+}
+
+.filter-slot__plus {
+  font-size: 18px;
+  line-height: 1;
+  transform: translateY(-1px);
+  position: relative;
+}
+
 .conditional-branch-node {
   pointer-events: none;
 }
