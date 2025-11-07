@@ -629,12 +629,21 @@ body {
   font-size: 14px;
 }
 
-.filter-edge-circle {
-  width: 28px;
-  height: 28px;
+.filter-node-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  pointer-events: auto;
+}
+
+.filter-node {
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   border: 2px solid #0d9488;
-  background: rgba(13, 148, 136, 0.1);
+  background: rgba(13, 148, 136, 0.12);
   color: #0f172a;
   font-weight: 600;
   cursor: pointer;
@@ -644,63 +653,63 @@ body {
   transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease,
     opacity 0.15s ease;
   box-shadow: 0 2px 6px rgba(13, 148, 136, 0.25);
-  opacity: 0;
-  transform: scale(0.85);
-  pointer-events: none;
+  opacity: 0.9;
+  position: relative;
 }
 
-.filter-edge-circle.is-visible {
+.filter-node.is-visible {
   opacity: 1;
-  transform: scale(1);
-  pointer-events: auto;
 }
 
-.filter-edge-circle--conditional {
-  border-style: dashed;
-  background: #f8fafc;
-  color: transparent;
-}
-
-.filter-edge-circle--conditional.has-filter {
-  color: #ecfeff;
-  background: #0d9488;
-  border-style: solid;
-}
-
-.filter-edge-circle:hover,
-.filter-edge-circle:focus-visible {
+.filter-node:hover,
+.filter-node:focus-visible {
   transform: scale(1.05);
   background: rgba(13, 148, 136, 0.2);
   outline: none;
 }
 
-.filter-edge-circle.has-filter {
+.filter-node.has-filter {
   background: #0d9488;
   color: #ecfeff;
 }
 
-.filter-edge-circle.selected {
-  border: solid #0d9488;
+.filter-node.selected {
+  border-color: #0d9488;
   transform: scale(1.1);
 }
 
-.filter-edge-circle.is-droppable {
+.filter-node.is-droppable {
   box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.35);
   border-color: #0ea5e9;
 }
 
-.filter-edge-circle.is-droppable.selected {
+.filter-node.is-droppable.selected {
   box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.45);
 }
 
-.filter-edge-content {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+.filter-node__ring {
+  position: absolute;
+  inset: 4px;
+  border-radius: 9999px;
+  border: 2px solid rgba(13, 148, 136, 0.35);
+  background: rgba(236, 254, 255, 0.35);
+  transition: opacity 0.15s ease;
+  opacity: 0;
 }
 
-.filter-edge-node-icon {
+.filter-node.has-filter .filter-node__ring {
+  opacity: 1;
+  border-color: rgba(236, 254, 255, 0.55);
+  background: rgba(13, 148, 136, 0.25);
+}
+
+.filter-node__plus {
+  font-size: 18px;
+  line-height: 1;
+  transform: translateY(-1px);
+}
+
+.filter-node-icon {
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -709,7 +718,7 @@ body {
   height: 16px;
 }
 
-.filter-edge-node-icon__glow {
+.filter-node-icon__glow {
   position: absolute;
   inset: -2px;
   border-radius: 8px;
@@ -718,25 +727,15 @@ body {
   opacity: 0.75;
 }
 
-.filter-edge-node-icon__body {
-  width: 12px;
-  height: 12px;
-  border-radius: 5px;
-  background: linear-gradient(135deg, #f8fafc, #e0f2fe);
-  border: 1px solid rgba(148, 163, 184, 0.45);
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.35);
-}
-
-.filter-edge-label {
-  position: absolute;
-  left: calc(100% + 3px);
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 10px;
+.filter-node-label {
+  font-size: 11px;
   font-weight: 600;
   color: #0d9488;
   white-space: nowrap;
-  pointer-events: none;
+  background: rgba(236, 254, 255, 0.85);
+  padding: 2px 6px;
+  border-radius: 999px;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.25);
 }
 
 .conditional-branch-node {

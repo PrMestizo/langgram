@@ -7,7 +7,6 @@ import {
   ReactFlowProvider,
   applyNodeChanges,
   applyEdgeChanges,
-  addEdge,
   Background,
   Controls,
   useReactFlow,
@@ -20,7 +19,8 @@ import "reactflow/dist/style.css";
 import Sidebar from "./Sidebar";
 import { DnDProvider, useDnD } from "./DnDContext";
 import { generateCodeFromGraph } from "../lib/codeGenerator";
-import FilterEdge from "./FilterEdge";
+import FilterNode from "./FilterNode";
+import FilterNodeActionsContext from "./FilterNodeActionsContext";
 import CustomModal from "./Modal";
 import NodeWithAttachments from "./NodeWithAttachments";
 import DiagramResourcePanel from "./DiagramResourcePanel";
@@ -47,61 +47,6 @@ import ProfileMenu from "./ProfileMenu";
 
 let id = 0;
 const getId = () => `dndnode_${id++}`;
-
-const initialNodes = [
-  {
-    id: "n1",
-    type: "langgramNode",
-    position: { x: 0, y: 0 },
-    data: {
-      label: "START",
-      nodeType: "START",
-      prompts: [],
-      chains: [],
-      tools: [],
-    },
-  },
-  {
-    id: "n2",
-    type: "langgramNode",
-    position: { x: 0, y: 100 },
-    data: { label: "END", nodeType: "END", prompts: [], chains: [], tools: [] },
-  },
-];
-
-const initialEdges = [
-  {
-    id: "n1-n2",
-    source: "n1",
-    target: "n2",
-    type: "filterEdge",
-    data: { filterCode: "", filterName: "", filterTemplateId: null },
-  },
-];
-
-const initialResources = {
-  prompts: [],
-  chains: [],
-  tools: [],
-};
-
-const cloneInitialNodes = () =>
-  initialNodes.map((node) => ({
-    ...node,
-    data: {
-      ...node.data,
-      prompts: Array.isArray(node.data?.prompts) ? [...node.data.prompts] : [],
-      chains: Array.isArray(node.data?.chains) ? [...node.data.chains] : [],
-      tools: Array.isArray(node.data?.tools) ? [...node.data.tools] : [],
-    },
-  }));
-
-const cloneInitialEdges = () =>
-  initialEdges.map((edge) => ({
-    ...edge,
-    data: edge.data ? { ...edge.data } : undefined,
-  }));
-
 const TEMPLATE_ID_PATTERN = /^[A-Za-z0-9_-]+$/;
 
 const coerceTemplateId = (rawValue) => {
@@ -142,23 +87,250 @@ const coerceTemplateId = (rawValue) => {
   return TEMPLATE_ID_PATTERN.test(coerced) ? coerced : null;
 };
 
-const hydrateEdge = (edge) => ({
+let filterNodeId = 0;
+const getFilterNodeId = () => `filter_${filterNodeId++}`;
+
+const FILTER_NODE_TYPE = "filterNode";
+const FILTER_NODE_KIND = "FILTER";
+const FILTER_NODE_DEFAULT_LABEL = "Filtro";
+
+const buildFilterNode = ({
+  id: nodeId = getFilterNodeId(),
+  position = { x: 0, y: 0 },
+  filterCode = "",
+  filterName = "",
+  filterTemplateId = null,
+  label,
+  draggable = true,
+} = {}) => ({
+  id: nodeId,
+  type: FILTER_NODE_TYPE,
+  position,
+  draggable,
+  data: {
+    nodeType: FILTER_NODE_KIND,
+    label: label ?? filterName || FILTER_NODE_DEFAULT_LABEL,
+    filterCode,
+    filterName,
+    filterTemplateId: coerceTemplateId(filterTemplateId),
+  },
+});
+
+const isFilterNode = (node) =>
+  node?.type === FILTER_NODE_TYPE || node?.data?.nodeType === FILTER_NODE_KIND;
+
+const initialNodes = [
+  {
+    id: "n1",
+    type: "langgramNode",
+    position: { x: 0, y: 0 },
+    data: {
+      label: "START",
+      nodeType: "START",
+      prompts: [],
+      chains: [],
+      tools: [],
+    },
+  },
+  buildFilterNode({
+    id: "filter_n1_n2",
+    position: { x: 0, y: 50 },
+    filterCode: "",
+    filterName: "",
+    filterTemplateId: null,
+    draggable: false,
+  }),
+  {
+    id: "n2",
+    type: "langgramNode",
+    position: { x: 0, y: 100 },
+    data: { label: "END", nodeType: "END", prompts: [], chains: [], tools: [] },
+  },
+];
+
+const initialEdges = [
+  {
+    id: "n1-filter_n1_n2",
+    source: "n1",
+    target: "filter_n1_n2",
+    type: "smoothstep",
+  },
+  {
+    id: "filter_n1_n2-n2",
+    source: "filter_n1_n2",
+    target: "n2",
+    type: "smoothstep",
+  },
+];
+
+const initialResources = {
+  prompts: [],
+  chains: [],
+  tools: [],
+};
+
+const cloneInitialNodes = () =>
+  initialNodes.map((node) => {
+    if (isFilterNode(node)) {
+      return buildFilterNode({
+        id: node.id,
+        position: { ...node.position },
+        filterCode: node.data?.filterCode ?? "",
+        filterName: node.data?.filterName ?? "",
+        filterTemplateId: node.data?.filterTemplateId ?? null,
+        label: node.data?.label ?? FILTER_NODE_DEFAULT_LABEL,
+        draggable: node.draggable ?? true,
+      });
+    }
+
+    return {
+      ...node,
+      data: {
+        ...node.data,
+        prompts: Array.isArray(node.data?.prompts) ? [...node.data.prompts] : [],
+        chains: Array.isArray(node.data?.chains) ? [...node.data.chains] : [],
+        tools: Array.isArray(node.data?.tools) ? [...node.data.tools] : [],
+      },
+      code: node.code ?? "",
+    };
+  });
+
+const cloneInitialEdges = () => initialEdges.map((edge) => ({ ...edge }));
+
+const hydrateConnectionEdge = (edge) => ({
   id: edge.id || `${edge.source}-${edge.target}`,
   source: edge.source,
   target: edge.target,
-  type: edge.type || "filterEdge",
-  data: {
-    ...(edge.data || {}),
-    filterCode: edge.filterCode ?? edge.data?.filterCode ?? "",
-    filterName: edge.filterName ?? edge.data?.filterName ?? "",
-    filterTemplateId:
-      edge.filterTemplateId ??
-      edge.data?.filterTemplateId ??
-      edge.templateId ??
-      edge.data?.templateId ??
-      null,
-  },
+  type: edge.type || "smoothstep",
 });
+
+const deserializeGraphNodes = (graphNodes = []) =>
+  graphNodes.map((n) => {
+    const nodeType = n.nodeType ?? n.type ?? n.componentType;
+    if (nodeType === FILTER_NODE_KIND || n.componentType === FILTER_NODE_TYPE) {
+      return buildFilterNode({
+        id: n.id,
+        position: n.position || { x: 0, y: 0 },
+        filterCode: n.filterCode ?? n.data?.filterCode ?? "",
+        filterName: n.filterName ?? n.data?.filterName ?? "",
+        filterTemplateId:
+          n.filterTemplateId ?? n.data?.filterTemplateId ?? null,
+        draggable: n.draggable ?? true,
+      });
+    }
+
+    const label = n.label ?? nodeType ?? "";
+    const prompts = Array.isArray(n.prompts) ? n.prompts : [];
+    const chains = Array.isArray(n.chains) ? n.chains : [];
+    const tools = Array.isArray(n.tools) ? n.tools : [];
+
+    return {
+      id: n.id,
+      type: "langgramNode",
+      position: n.position || { x: 0, y: 0 },
+      data: {
+        label,
+        nodeType,
+        prompts,
+        chains,
+        tools,
+      },
+      code: n.code ?? "",
+    };
+  });
+
+const deserializeGraph = (graph) => {
+  const baseNodes = deserializeGraphNodes(graph?.nodes || []);
+  const nodeMap = new Map(baseNodes.map((node) => [node.id, node]));
+  const filterNodeIds = new Set(
+    baseNodes.filter(isFilterNode).map((node) => node.id)
+  );
+
+  const edgesResult = [];
+  const filterNodes = [];
+  const edgeEntries = Array.isArray(graph?.edges) ? graph.edges : [];
+
+  edgeEntries.forEach((edge, index) => {
+    if (!edge || !edge.source || !edge.target) {
+      return;
+    }
+
+    const hasFilterPayload =
+      edge.type === "filterEdge" ||
+      Boolean(
+        edge.filterCode ||
+          edge.filterName ||
+          edge.filterTemplateId ||
+          edge?.data?.filterCode ||
+          edge?.data?.filterName ||
+          edge?.data?.filterTemplateId
+      );
+
+    if (hasFilterPayload) {
+      const baseId = edge.id ? String(edge.id) : null;
+      let filterNodeId = baseId && baseId.trim() ? baseId : null;
+      if (!filterNodeId || filterNodeIds.has(filterNodeId)) {
+        const fallbackId = `filter_${edge.source}_${edge.target}_${index}`;
+        filterNodeId = filterNodeIds.has(fallbackId) ? fallbackId : filterNodeId || fallbackId;
+      }
+
+      if (!filterNodeIds.has(filterNodeId)) {
+        const sourceNode = nodeMap.get(edge.source);
+        const targetNode = nodeMap.get(edge.target);
+        const sourcePosition = sourceNode?.position ?? { x: 0, y: 0 };
+        const targetPosition = targetNode?.position ?? { x: 0, y: 0 };
+        const position = {
+          x: (sourcePosition.x + targetPosition.x) / 2,
+          y: (sourcePosition.y + targetPosition.y) / 2,
+        };
+        const filterNode = buildFilterNode({
+          id: filterNodeId,
+          position,
+          filterCode: edge.filterCode ?? edge.data?.filterCode ?? "",
+          filterName: edge.filterName ?? edge.data?.filterName ?? "",
+          filterTemplateId:
+            edge.filterTemplateId ?? edge.data?.filterTemplateId ?? null,
+        });
+        filterNodes.push(filterNode);
+        nodeMap.set(filterNode.id, filterNode);
+        filterNodeIds.add(filterNode.id);
+      }
+
+      const edgeType = edge.connectionType ?? edge.type ?? "smoothstep";
+      edgesResult.push(
+        hydrateConnectionEdge({
+          id: `${edge.source}-${filterNodeId}-${index}-a`,
+          source: edge.source,
+          target: filterNodeId,
+          type: edgeType,
+        })
+      );
+      edgesResult.push(
+        hydrateConnectionEdge({
+          id: `${filterNodeId}-${edge.target}-${index}-b`,
+          source: filterNodeId,
+          target: edge.target,
+          type: edgeType,
+        })
+      );
+      return;
+    }
+
+    edgesResult.push(
+      hydrateConnectionEdge({
+        id: edge.id,
+        source: edge.source,
+        target: edge.target,
+        type: edge.type,
+      })
+    );
+  });
+
+  return {
+    nodes: [...baseNodes, ...filterNodes],
+    edges: edgesResult,
+  };
+};
 
 const topNavActionsId = "top-nav-actions";
 
@@ -175,8 +347,8 @@ const truncateText = (value, maxLength = 80) => {
 function Diagram() {
   const { data: session } = useSession();
   const user = session?.user ?? null;
-  const [nodes, setNodes] = useState(initialNodes);
-  const [edges, setEdges] = useState(initialEdges);
+  const [nodes, setNodes] = useState(() => cloneInitialNodes());
+  const [edges, setEdges] = useState(() => cloneInitialEdges());
   const [diagramResources, setDiagramResources] = useState(() => ({
     ...initialResources,
   }));
@@ -206,10 +378,11 @@ function Diagram() {
     []
   );
   const { setType, setCode, dragPayload, setDragPayload, resetDrag } = useDnD();
-  const { screenToFlowPosition } = useReactFlow();
+  const { screenToFlowPosition, getNode } = useReactFlow();
   const nodeTypes = useMemo(
     () => ({
       langgramNode: NodeWithAttachments,
+      [FILTER_NODE_TYPE]: FilterNode,
     }),
     []
   );
@@ -227,7 +400,7 @@ function Diagram() {
   const [showJsonModal, setShowJsonModal] = useState(false);
   const [filterEditor, setFilterEditor] = useState({
     open: false,
-    edgeId: null,
+    nodeId: null,
     name: "",
     code: "",
     templateId: null,
@@ -235,40 +408,43 @@ function Diagram() {
 
   const [contextMenu, setContextMenu] = useState({
     open: false,
-    edgeId: null,
+    nodeId: null,
     x: 0,
     y: 0,
   });
 
-  const openFilterContextMenu = useCallback((edgeId, position) => {
-    setContextMenu({ open: true, edgeId, x: position.x, y: position.y });
+  const openFilterContextMenu = useCallback((nodeId, position) => {
+    setContextMenu({ open: true, nodeId, x: position.x, y: position.y });
   }, []);
 
   const closeFilterContextMenu = useCallback(() => {
-    setContextMenu({ open: false, edgeId: null, x: 0, y: 0 });
+    setContextMenu({ open: false, nodeId: null, x: 0, y: 0 });
   }, []);
 
   const handleFilterClick = useCallback(
-    (edgeId) => {
-      const targetEdge = edges.find((edge) => edge.id === edgeId);
+    (nodeId) => {
+      const targetNode = nodes.find((node) => node.id === nodeId);
+      if (!targetNode || !isFilterNode(targetNode)) {
+        return;
+      }
       setFilterEditor({
         open: true,
-        edgeId,
-        name: targetEdge?.data?.filterName ?? "",
-        code: targetEdge?.data?.filterCode ?? "",
+        nodeId,
+        name: targetNode.data?.filterName ?? "",
+        code: targetNode.data?.filterCode ?? "",
         templateId:
-          targetEdge?.data?.filterTemplateId ??
-          targetEdge?.data?.templateId ??
+          targetNode.data?.filterTemplateId ??
+          targetNode.data?.templateId ??
           null,
       });
     },
-    [edges]
+    [nodes]
   );
 
   const closeFilterEditor = useCallback(() => {
     setFilterEditor({
       open: false,
-      edgeId: null,
+      nodeId: null,
       name: "",
       code: "",
       templateId: null,
@@ -305,18 +481,22 @@ function Diagram() {
 
   const handleFilterSave = useCallback(
     async (updatedCode, updatedName) => {
-      if (!filterEditor.edgeId) {
+      if (!filterEditor.nodeId) {
         return;
       }
 
       const trimmedName = (updatedName || "").trim();
       const finalName = trimmedName || "Filtro sin nombre";
 
-      const targetEdge = edges.find((edge) => edge.id === filterEditor.edgeId);
+      const targetNode = nodes.find((node) => node.id === filterEditor.nodeId);
+      if (!targetNode || !isFilterNode(targetNode)) {
+        return;
+      }
+
       const resolvedTemplateId = coerceTemplateId(
         filterEditor.templateId ??
-          targetEdge?.data?.filterTemplateId ??
-          targetEdge?.data?.templateId ??
+          targetNode.data?.filterTemplateId ??
+          targetNode.data?.templateId ??
           null
       );
       const isUpdate = Boolean(resolvedTemplateId);
@@ -340,27 +520,28 @@ function Diagram() {
         const nextTemplateId = coerceTemplateId(
           saved?.id ??
             resolvedTemplateId ??
-            targetEdge?.data?.filterTemplateId ??
+            targetNode.data?.filterTemplateId ??
             null
         );
-        setEdges((prevEdges) =>
-          prevEdges.map((edge) =>
-            edge.id === filterEditor.edgeId
-              ? {
-                  ...edge,
-                  data: {
-                    ...edge.data,
-                    filterCode: updatedCode,
-                    filterName: finalName,
-                    filterTemplateId: nextTemplateId,
-                  },
-                }
-              : edge
-          )
+        setNodes((prevNodes) =>
+          prevNodes.map((node) => {
+            if (node.id !== filterEditor.nodeId || !isFilterNode(node)) {
+              return node;
+            }
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                filterCode: updatedCode,
+                filterName: finalName,
+                filterTemplateId: nextTemplateId,
+              },
+            };
+          })
         );
 
         setFilterEditor((prev) =>
-          prev.edgeId === filterEditor.edgeId
+          prev.nodeId === filterEditor.nodeId
             ? {
                 ...prev,
                 name: finalName,
@@ -390,11 +571,12 @@ function Diagram() {
       }
     },
     [
-      filterEditor.edgeId,
+      filterEditor.nodeId,
       filterEditor.templateId,
-      setEdges,
+      nodes,
       setAlert,
       setFilterEditor,
+      setNodes,
     ]
   );
 
@@ -403,13 +585,18 @@ function Diagram() {
       return;
     }
 
-    const edgeStillExists = edges.some(
-      (edge) => edge.id === filterEditor.edgeId
+    const nodeStillExists = nodes.some(
+      (node) => node.id === filterEditor.nodeId && isFilterNode(node)
     );
-    if (!edgeStillExists) {
+    if (!nodeStillExists) {
       closeFilterEditor();
     }
-  }, [closeFilterEditor, edges, filterEditor.edgeId, filterEditor.open]);
+  }, [
+    closeFilterEditor,
+    filterEditor.nodeId,
+    filterEditor.open,
+    nodes,
+  ]);
 
   useEffect(() => {
     if (!contextMenu.open) {
@@ -433,60 +620,78 @@ function Diagram() {
   }, [contextMenu.open, closeFilterContextMenu]);
 
   const handleApplyFilterFromDrag = useCallback(
-    (edgeId, filter) => {
-      if (!edgeId || !filter) {
+    (nodeId, filter) => {
+      if (!nodeId || !filter) {
         return;
       }
 
-      setEdges((prevEdges) =>
-        prevEdges.map((edge) =>
-          edge.id === edgeId
+      setNodes((prevNodes) =>
+        prevNodes.map((node) =>
+          node.id === nodeId && isFilterNode(node)
             ? {
-                ...edge,
+                ...node,
                 data: {
-                  ...edge.data,
-                  filterCode: filter.code ?? edge.data?.filterCode ?? "",
-                  filterName: filter.name ?? edge.data?.filterName ?? "",
+                  ...node.data,
+                  filterCode: filter.code ?? node.data?.filterCode ?? "",
+                  filterName: filter.name ?? node.data?.filterName ?? "",
                   filterTemplateId: coerceTemplateId(
-                    filter.id ?? edge.data?.filterTemplateId ?? null
+                    filter.templateId ??
+                      filter.id ??
+                      node.data?.filterTemplateId ??
+                      null
                   ),
                 },
               }
-            : edge
+            : node
         )
       );
       setFilterEditor((prev) =>
-        prev.edgeId === edgeId
+        prev.nodeId === nodeId
           ? {
               ...prev,
               name: filter.name ?? "",
               code: filter.code ?? "",
               templateId: coerceTemplateId(
-                filter.id ?? prev.templateId ?? null
+                filter.templateId ?? filter.id ?? prev.templateId ?? null
               ),
             }
           : prev
       );
     },
-    [setEdges, setFilterEditor]
+    [setFilterEditor, setNodes]
   );
 
-  const selectEdge = useCallback(
-    (edgeId) => {
-      if (!edgeId) {
+  const selectFilterNode = useCallback(
+    (nodeId) => {
+      if (!nodeId) {
         return;
       }
-      setEdges((prevEdges) =>
-        prevEdges.map((edge) => ({
-          ...edge,
-          selected: edge.id === edgeId,
+      setNodes((prevNodes) =>
+        prevNodes.map((node) => ({
+          ...node,
+          selected: node.id === nodeId && isFilterNode(node),
         }))
       );
-      setNodes((prevNodes) =>
-        prevNodes.map((node) => ({ ...node, selected: false }))
+      setEdges((prevEdges) =>
+        prevEdges.map((edge) => ({ ...edge, selected: false }))
       );
     },
     [setEdges, setNodes]
+  );
+
+  const filterNodeActions = useMemo(
+    () => ({
+      onEditFilter: handleFilterClick,
+      onOpenContextMenu: openFilterContextMenu,
+      onApplyFilter: handleApplyFilterFromDrag,
+      onSelectFilter: selectFilterNode,
+    }),
+    [
+      handleApplyFilterFromDrag,
+      handleFilterClick,
+      openFilterContextMenu,
+      selectFilterNode,
+    ]
   );
 
   const handleEdgeClick = useCallback(
@@ -494,9 +699,17 @@ function Diagram() {
       if (event?.defaultPrevented) {
         return;
       }
-      selectEdge(edge?.id);
+      setEdges((prevEdges) =>
+        prevEdges.map((existingEdge) => ({
+          ...existingEdge,
+          selected: existingEdge.id === edge?.id,
+        }))
+      );
+      setNodes((prevNodes) =>
+        prevNodes.map((node) => ({ ...node, selected: false }))
+      );
     },
-    [selectEdge]
+    [setEdges, setNodes]
   );
 
   useEffect(() => {
@@ -518,26 +731,6 @@ function Diagram() {
     [isMenuOpen]
   );
 
-  const edgeTypes = useMemo(
-    () => ({
-      filterEdge: (edgeProps) => (
-        <FilterEdge
-          {...edgeProps}
-          onEditFilter={handleFilterClick}
-          onOpenContextMenu={openFilterContextMenu}
-          onApplyFilter={handleApplyFilterFromDrag}
-          onSelectEdge={selectEdge}
-        />
-      ),
-    }),
-    [
-      handleApplyFilterFromDrag,
-      handleFilterClick,
-      openFilterContextMenu,
-      selectEdge,
-    ]
-  );
-
   const onNodesChange = useCallback(
     (changes) =>
       setNodes((nodesSnapshot) => applyNodeChanges(changes, nodesSnapshot)),
@@ -549,18 +742,60 @@ function Diagram() {
     []
   );
   const onConnect = useCallback(
-    (params) =>
-      setEdges((edgesSnapshot) =>
-        addEdge(
-          {
-            ...params,
-            type: "filterEdge",
-            data: { filterCode: "", filterName: "", filterTemplateId: null },
-          },
-          edgesSnapshot
-        )
-      ),
-    []
+    (params) => {
+      if (!params?.source || !params?.target) {
+        return;
+      }
+
+      const sourceNode = getNode(params.source);
+      const targetNode = getNode(params.target);
+      const sourcePosition = sourceNode?.position ?? { x: 0, y: 0 };
+      const targetPosition = targetNode?.position ?? { x: 0, y: 0 };
+      const position = {
+        x: (sourcePosition.x + targetPosition.x) / 2,
+        y: (sourcePosition.y + targetPosition.y) / 2,
+      };
+      let filterNodeId = getFilterNodeId();
+      setNodes((prevNodes) => {
+        let candidateId = filterNodeId;
+        while (prevNodes.some((node) => node.id === candidateId)) {
+          candidateId = getFilterNodeId();
+        }
+        filterNodeId = candidateId;
+        return [
+          ...prevNodes,
+          buildFilterNode({
+            id: candidateId,
+            position,
+          }),
+        ];
+      });
+
+      const edgeType = params.type ?? "smoothstep";
+      const firstEdgeId = `${params.source}-${filterNodeId}-${Math.random()
+        .toString(36)
+        .slice(2, 8)}`;
+      const secondEdgeId = `${filterNodeId}-${params.target}-${Math.random()
+        .toString(36)
+        .slice(2, 8)}`;
+
+      setEdges((prevEdges) => [
+        ...prevEdges,
+        hydrateConnectionEdge({
+          id: firstEdgeId,
+          source: params.source,
+          target: filterNodeId,
+          type: edgeType,
+        }),
+        hydrateConnectionEdge({
+          id: secondEdgeId,
+          source: filterNodeId,
+          target: params.target,
+          type: edgeType,
+        }),
+      ]);
+    },
+    [getNode, setEdges, setNodes]
   );
 
   const onDragOver = useCallback(
@@ -730,27 +965,59 @@ function Diagram() {
   );
 
   const GraphJSON = useCallback(() => {
-    const nodeData = nodes.map((n) => ({
-      id: n.id,
-      type: n.data?.nodeType ?? n.type,
-      componentType: n.type,
-      label: n.data?.label ?? n.data?.nodeType ?? "",
-      position: n.position,
-      code: n.code ?? "",
-      prompts: Array.isArray(n.data?.prompts) ? n.data.prompts : [],
-      chains: Array.isArray(n.data?.chains) ? n.data.chains : [],
-      tools: Array.isArray(n.data?.tools) ? n.data.tools : [],
-    }));
+    const filterNodeIds = new Set(
+      nodes.filter(isFilterNode).map((node) => node.id)
+    );
 
-    const edgeData = edges.map((e) => ({
-      source: e.source,
-      target: e.target,
-      id: e.id,
-      type: e.type,
-      filterCode: e.data?.filterCode || "",
-      filterName: e.data?.filterName || "",
-      filterTemplateId: coerceTemplateId(e.data?.filterTemplateId),
-    }));
+    const nodeData = nodes
+      .filter((n) => !filterNodeIds.has(n.id))
+      .map((n) => ({
+        id: n.id,
+        type: n.data?.nodeType ?? n.type,
+        componentType: n.type,
+        label: n.data?.label ?? n.data?.nodeType ?? "",
+        position: n.position,
+        code: n.code ?? "",
+        prompts: Array.isArray(n.data?.prompts) ? n.data.prompts : [],
+        chains: Array.isArray(n.data?.chains) ? n.data.chains : [],
+        tools: Array.isArray(n.data?.tools) ? n.data.tools : [],
+      }));
+
+    const filterEdges = nodes
+      .filter(isFilterNode)
+      .map((filterNode) => {
+        const incoming = edges.find((edge) => edge.target === filterNode.id);
+        const outgoing = edges.find((edge) => edge.source === filterNode.id);
+        if (!incoming || !outgoing) {
+          return null;
+        }
+        return {
+          source: incoming.source,
+          target: outgoing.target,
+          id: filterNode.id,
+          type: "filterEdge",
+          filterCode: filterNode.data?.filterCode || "",
+          filterName: filterNode.data?.filterName || "",
+          filterTemplateId: coerceTemplateId(
+            filterNode.data?.filterTemplateId
+          ),
+        };
+      })
+      .filter(Boolean);
+
+    const structuralEdges = edges
+      .filter(
+        (edge) =>
+          !filterNodeIds.has(edge.source) && !filterNodeIds.has(edge.target)
+      )
+      .map((edge) => ({
+        source: edge.source,
+        target: edge.target,
+        id: edge.id,
+        type: edge.type,
+      }));
+
+    const edgeData = [...filterEdges, ...structuralEdges];
 
     const resourcePrompts = Array.isArray(diagramResources.prompts)
       ? diagramResources.prompts.map((prompt) => ({ ...prompt }))
@@ -948,27 +1215,9 @@ function Diagram() {
 
       if (storedGraph) {
         try {
-          const nextNodes = (storedGraph.nodes || []).map((n) => {
-            const nodeType = n.nodeType ?? n.type ?? n.componentType;
-            const label = n.label ?? nodeType ?? "";
-            const prompts = Array.isArray(n.prompts) ? n.prompts : [];
-            const chains = Array.isArray(n.chains) ? n.chains : [];
-            const tools = Array.isArray(n.tools) ? n.tools : [];
-            return {
-              id: n.id,
-              type: "langgramNode",
-              position: n.position || { x: 0, y: 0 },
-              data: {
-                label,
-                nodeType,
-                prompts,
-                chains,
-                tools,
-              },
-              code: n.code ?? "",
-            };
-          });
-          const nextEdges = (storedGraph.edges || []).map(hydrateEdge);
+          const { nodes: nextNodes, edges: nextEdges } = deserializeGraph(
+            storedGraph
+          );
           setNodes(nextNodes);
           setEdges(nextEdges);
           const storedResources = storedGraph.resources || {};
@@ -1040,6 +1289,8 @@ function Diagram() {
 
   useEffect(() => {
     const handleResetDiagram = () => {
+      filterNodeId = 0;
+      id = 0;
       setNodes(cloneInitialNodes());
       setEdges(cloneInitialEdges());
       setDiagramResources(() => ({ ...initialResources }));
@@ -1060,50 +1311,50 @@ function Diagram() {
     };
   }, [closeFilterContextMenu, closeFilterEditor, resetDrag]);
 
-  const handleClearFilterFromEdge = useCallback(
-    (edgeId) => {
-      setEdges((prevEdges) =>
-        prevEdges.map((edge) =>
-          edge.id === edgeId
+  const handleClearFilterFromNode = useCallback(
+    (nodeId) => {
+      setNodes((prevNodes) =>
+        prevNodes.map((node) =>
+          node.id === nodeId && isFilterNode(node)
             ? {
-                ...edge,
+                ...node,
                 data: {
-                  ...edge.data,
+                  ...node.data,
                   filterCode: "",
                   filterName: "",
                   filterTemplateId: null,
                 },
               }
-            : edge
+            : node
         )
       );
 
-      if (filterEditor.edgeId === edgeId) {
+      if (filterEditor.nodeId === nodeId) {
         closeFilterEditor();
       }
     },
-    [closeFilterEditor, filterEditor.edgeId]
+    [closeFilterEditor, filterEditor.nodeId]
   );
 
   const handleContextMenuEdit = useCallback(() => {
-    if (!contextMenu.edgeId) {
+    if (!contextMenu.nodeId) {
       return;
     }
 
-    const targetEdgeId = contextMenu.edgeId;
+    const targetNodeId = contextMenu.nodeId;
     closeFilterContextMenu();
-    handleFilterClick(targetEdgeId);
-  }, [closeFilterContextMenu, contextMenu.edgeId, handleFilterClick]);
+    handleFilterClick(targetNodeId);
+  }, [closeFilterContextMenu, contextMenu.nodeId, handleFilterClick]);
 
   const handleContextMenuDelete = useCallback(() => {
-    if (!contextMenu.edgeId) {
+    if (!contextMenu.nodeId) {
       return;
     }
 
-    const targetEdgeId = contextMenu.edgeId;
-    handleClearFilterFromEdge(targetEdgeId);
+    const targetNodeId = contextMenu.nodeId;
+    handleClearFilterFromNode(targetNodeId);
     closeFilterContextMenu();
-  }, [closeFilterContextMenu, contextMenu.edgeId, handleClearFilterFromEdge]);
+  }, [closeFilterContextMenu, contextMenu.nodeId, handleClearFilterFromNode]);
 
   // Listen for external load requests from the Sidebar
   // Expected payload: { nodes: [{id,type,label,position,code}], edges: [{id,source,target}] }
@@ -1113,27 +1364,7 @@ function Diagram() {
       const graph = ev?.detail;
       if (!graph) return;
       try {
-        const nextNodes = (graph.nodes || []).map((n) => {
-          const nodeType = n.nodeType ?? n.type ?? n.componentType;
-          const label = n.label ?? nodeType ?? "";
-          const prompts = Array.isArray(n.prompts) ? n.prompts : [];
-          const chains = Array.isArray(n.chains) ? n.chains : [];
-          const tools = Array.isArray(n.tools) ? n.tools : [];
-          return {
-            id: n.id,
-            type: "langgramNode",
-            position: n.position || { x: 0, y: 0 },
-            data: {
-              label,
-              nodeType,
-              prompts,
-              chains,
-              tools,
-            },
-            code: n.code ?? "",
-          };
-        });
-        const nextEdges = (graph.edges || []).map(hydrateEdge);
+        const { nodes: nextNodes, edges: nextEdges } = deserializeGraph(graph);
         setNodes(nextNodes);
         setEdges(nextEdges);
         const resources = graph.resources || {};
@@ -1162,27 +1393,8 @@ function Diagram() {
       <Sidebar
         onLoadDiagram={(graph) => {
           try {
-            const nextNodes = (graph.nodes || []).map((n) => {
-              const nodeType = n.nodeType ?? n.type ?? n.componentType;
-              const label = n.label ?? nodeType ?? "";
-              const prompts = Array.isArray(n.prompts) ? n.prompts : [];
-              const chains = Array.isArray(n.chains) ? n.chains : [];
-              const tools = Array.isArray(n.tools) ? n.tools : [];
-              return {
-                id: n.id,
-                type: "langgramNode",
-                position: n.position || { x: 0, y: 0 },
-                data: {
-                  label,
-                  nodeType,
-                  prompts,
-                  chains,
-                  tools,
-                },
-                code: n.code ?? "",
-              };
-            });
-            const nextEdges = (graph.edges || []).map(hydrateEdge);
+            const { nodes: nextNodes, edges: nextEdges } =
+              deserializeGraph(graph);
             setNodes(nextNodes);
             setEdges(nextEdges);
             const resources = graph.resources || {};
@@ -1328,23 +1540,24 @@ function Diagram() {
         </Modal>
 
         <div className="canvas-wrapper">
-          <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            onConnect={onConnect}
-            onDrop={onDrop}
-            onDragStart={onDragStart}
-            onDragOver={onDragOver}
-            onEdgeClick={handleEdgeClick}
-            edgeTypes={edgeTypes}
-            nodeTypes={nodeTypes}
-            fitView
-          >
-            <Background />
-            <Controls />
-          </ReactFlow>
+          <FilterNodeActionsContext.Provider value={filterNodeActions}>
+            <ReactFlow
+              nodes={nodes}
+              edges={edges}
+              onNodesChange={onNodesChange}
+              onEdgesChange={onEdgesChange}
+              onConnect={onConnect}
+              onDrop={onDrop}
+              onDragStart={onDragStart}
+              onDragOver={onDragOver}
+              onEdgeClick={handleEdgeClick}
+              nodeTypes={nodeTypes}
+              fitView
+            >
+              <Background />
+              <Controls />
+            </ReactFlow>
+          </FilterNodeActionsContext.Provider>
         </div>
       </div>
 
