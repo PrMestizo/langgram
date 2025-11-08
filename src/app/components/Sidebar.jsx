@@ -1344,9 +1344,7 @@ const Sidebar = ({ onLoadDiagram }) => {
                 className={`node-item ${
                   menuOpenId === "node-Base" ? "active" : ""
                 }`}
-                onDragStart={(event) =>
-                  onDragStart(event, "Start", "Codigo provisional")
-                }
+                onDragStart={(event) => onDragStart(event, "conditionalNode")}
                 onDragEnd={handleDragEnd}
                 draggable
               >
@@ -1365,9 +1363,7 @@ const Sidebar = ({ onLoadDiagram }) => {
                 className={`node-item ${
                   menuOpenId === "node-Input" ? "active" : ""
                 }`}
-                onDragStart={(event) =>
-                  onDragStart(event, "END", "Codigo provisional")
-                }
+                onDragStart={(event) => onDragStart(event, "conditionalNode")}
                 onDragEnd={handleDragEnd}
                 draggable
               >
@@ -1431,19 +1427,19 @@ const Sidebar = ({ onLoadDiagram }) => {
         return (
           <div className="tab-content">
             <div className="node-section">
-              <div className="section-title">Connection Types</div>
+              <div className="section-title">Conditional Edges</div>
               <div
                 className={`node-item edge-item ${
                   menuOpenId === "node-Input" ? "active" : ""
                 }`}
                 onDragStart={(event) =>
-                  onEdgeDragStart(event, "Direct Connection")
+                  onEdgeDragStart(event, "Base Conditional", "filterEdge")
                 }
                 onDragEnd={handleDragEnd}
                 draggable
               >
                 <div className="edge-item__circle">→</div>
-                Direct Connection
+                Base Conditional
                 <LongMenu
                   className="kebab-menu"
                   onOpenChange={(open) =>

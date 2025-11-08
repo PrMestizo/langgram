@@ -1,5 +1,6 @@
 "use client";
 import { useState, useCallback, useEffect, useMemo } from "react";
+import { ConditionalNode } from "./conditional_node";
 import { useSession } from "next-auth/react";
 import dynamic from "next/dynamic";
 import {
@@ -55,7 +56,7 @@ const initialNodes = [
     position: { x: 0, y: 0 },
     data: {
       label: "START",
-      nodeType: "START",
+      nodeType: "textUpdater",
       prompts: [],
       chains: [],
       tools: [],
@@ -162,16 +163,6 @@ const hydrateEdge = (edge) => ({
 
 const topNavActionsId = "top-nav-actions";
 
-const truncateText = (value, maxLength = 80) => {
-  if (typeof value !== "string") {
-    return "";
-  }
-
-  return value.length > maxLength
-    ? `${value.slice(0, Math.max(0, maxLength - 1))}…`
-    : value;
-};
-
 function Diagram() {
   const { data: session } = useSession();
   const user = session?.user ?? null;
@@ -210,6 +201,7 @@ function Diagram() {
   const nodeTypes = useMemo(
     () => ({
       langgramNode: NodeWithAttachments,
+      conditionalNode: ConditionalNode,
     }),
     []
   );
@@ -593,7 +585,7 @@ function Diagram() {
       const label = dragPayload?.name ?? dragPayload?.type;
       const newNode = {
         id: getId(),
-        type: "langgramNode",
+        type: dragPayload?.type,
         position,
         data: {
           label,
