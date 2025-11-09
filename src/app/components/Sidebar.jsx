@@ -1344,7 +1344,7 @@ const Sidebar = ({ onLoadDiagram }) => {
                 className={`node-item ${
                   menuOpenId === "node-Base" ? "active" : ""
                 }`}
-                onDragStart={(event) => onDragStart(event, "conditionalNode")}
+                onDragStart={(event) => onDragStart(event, "input")}
                 onDragEnd={handleDragEnd}
                 draggable
               >
@@ -1363,7 +1363,7 @@ const Sidebar = ({ onLoadDiagram }) => {
                 className={`node-item ${
                   menuOpenId === "node-Input" ? "active" : ""
                 }`}
-                onDragStart={(event) => onDragStart(event, "conditionalNode")}
+                onDragStart={(event) => onDragStart(event, "output")}
                 onDragEnd={handleDragEnd}
                 draggable
               >
@@ -1432,14 +1432,12 @@ const Sidebar = ({ onLoadDiagram }) => {
                 className={`node-item edge-item ${
                   menuOpenId === "node-Input" ? "active" : ""
                 }`}
-                onDragStart={(event) =>
-                  onEdgeDragStart(event, "Base Conditional", "filterEdge")
-                }
+                onDragStart={(event) => onDragStart(event, "conditionalNode")}
                 onDragEnd={handleDragEnd}
                 draggable
               >
                 <div className="edge-item__circle">→</div>
-                Base Conditional
+                Filtro Condicional
                 <LongMenu
                   className="kebab-menu"
                   onOpenChange={(open) =>
