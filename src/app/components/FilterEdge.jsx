@@ -1,7 +1,12 @@
 "use client";
 
 import { memo, useCallback, useMemo, useState } from "react";
-import { BaseEdge, EdgeLabelRenderer, getBezierPath } from "reactflow";
+import {
+  BaseEdge,
+  EdgeLabelRenderer,
+  getBezierPath,
+  getSmoothStepPath,
+} from "reactflow";
 import { useDnD } from "./DnDContext";
 
 const FilterEdge = ({
@@ -22,7 +27,7 @@ const FilterEdge = ({
   onSelectEdge,
 }) => {
   const { dragPayload, resetDrag } = useDnD();
-  const [defaultEdgePath, defaultLabelX, defaultLabelY] = getBezierPath({
+  const [defaultEdgePath, defaultLabelX, defaultLabelY] = getSmoothStepPath({
     sourceX,
     sourceY,
     targetX,

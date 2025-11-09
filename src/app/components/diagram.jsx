@@ -49,6 +49,62 @@ import ProfileMenu from "./ProfileMenu";
 let id = 0;
 const getId = () => `dndnode_${id++}`;
 
+const DND_NODE_ID_PATTERN = /^dndnode_(\d+)$/;
+
+const syncNodeIdCounter = (nodes) => {
+  if (!Array.isArray(nodes)) {
+    id = 0;
+    return;
+  }
+
+  const highestId = nodes.reduce((max, node) => {
+    if (!node || typeof node.id !== "string") {
+      return max;
+    }
+
+    const match = DND_NODE_ID_PATTERN.exec(node.id);
+    if (!match) {
+      return max;
+    }
+
+    const numericId = Number.parseInt(match[1], 10);
+    if (Number.isNaN(numericId)) {
+      return max;
+    }
+
+    return Math.max(max, numericId);
+  }, -1);
+
+  id = Math.max(0, highestId + 1);
+};
+
+const normalizeGraphNodes = (graphNodes = []) => {
+  const mappedNodes = graphNodes.map((n) => {
+    const nodeType = n.nodeType ?? n.type ?? n.componentType;
+    const label = n.label ?? nodeType ?? "";
+    const prompts = Array.isArray(n.prompts) ? n.prompts : [];
+    const chains = Array.isArray(n.chains) ? n.chains : [];
+    const tools = Array.isArray(n.tools) ? n.tools : [];
+    return {
+      id: n.id,
+      type: "langgramNode",
+      position: n.position || { x: 0, y: 0 },
+      data: {
+        label,
+        nodeType,
+        prompts,
+        chains,
+        tools,
+      },
+      code: n.code ?? "",
+    };
+  });
+
+  syncNodeIdCounter(mappedNodes);
+
+  return mappedNodes;
+};
+
 const initialNodes = [
   {
     id: "n1",
@@ -940,26 +996,7 @@ function Diagram() {
 
       if (storedGraph) {
         try {
-          const nextNodes = (storedGraph.nodes || []).map((n) => {
-            const nodeType = n.nodeType ?? n.type ?? n.componentType;
-            const label = n.label ?? nodeType ?? "";
-            const prompts = Array.isArray(n.prompts) ? n.prompts : [];
-            const chains = Array.isArray(n.chains) ? n.chains : [];
-            const tools = Array.isArray(n.tools) ? n.tools : [];
-            return {
-              id: n.id,
-              type: "langgramNode",
-              position: n.position || { x: 0, y: 0 },
-              data: {
-                label,
-                nodeType,
-                prompts,
-                chains,
-                tools,
-              },
-              code: n.code ?? "",
-            };
-          });
+          const nextNodes = normalizeGraphNodes(storedGraph.nodes);
           const nextEdges = (storedGraph.edges || []).map(hydrateEdge);
           setNodes(nextNodes);
           setEdges(nextEdges);
@@ -1032,7 +1069,9 @@ function Diagram() {
 
   useEffect(() => {
     const handleResetDiagram = () => {
-      setNodes(cloneInitialNodes());
+      const initialClone = cloneInitialNodes();
+      syncNodeIdCounter(initialClone);
+      setNodes(initialClone);
       setEdges(cloneInitialEdges());
       setDiagramResources(() => ({ ...initialResources }));
       setAlert({ message: "", severity: "success", open: false });
@@ -1105,26 +1144,7 @@ function Diagram() {
       const graph = ev?.detail;
       if (!graph) return;
       try {
-        const nextNodes = (graph.nodes || []).map((n) => {
-          const nodeType = n.nodeType ?? n.type ?? n.componentType;
-          const label = n.label ?? nodeType ?? "";
-          const prompts = Array.isArray(n.prompts) ? n.prompts : [];
-          const chains = Array.isArray(n.chains) ? n.chains : [];
-          const tools = Array.isArray(n.tools) ? n.tools : [];
-          return {
-            id: n.id,
-            type: "langgramNode",
-            position: n.position || { x: 0, y: 0 },
-            data: {
-              label,
-              nodeType,
-              prompts,
-              chains,
-              tools,
-            },
-            code: n.code ?? "",
-          };
-        });
+        const nextNodes = normalizeGraphNodes(graph.nodes);
         const nextEdges = (graph.edges || []).map(hydrateEdge);
         setNodes(nextNodes);
         setEdges(nextEdges);
@@ -1154,26 +1174,7 @@ function Diagram() {
       <Sidebar
         onLoadDiagram={(graph) => {
           try {
-            const nextNodes = (graph.nodes || []).map((n) => {
-              const nodeType = n.nodeType ?? n.type ?? n.componentType;
-              const label = n.label ?? nodeType ?? "";
-              const prompts = Array.isArray(n.prompts) ? n.prompts : [];
-              const chains = Array.isArray(n.chains) ? n.chains : [];
-              const tools = Array.isArray(n.tools) ? n.tools : [];
-              return {
-                id: n.id,
-                type: "langgramNode",
-                position: n.position || { x: 0, y: 0 },
-                data: {
-                  label,
-                  nodeType,
-                  prompts,
-                  chains,
-                  tools,
-                },
-                code: n.code ?? "",
-              };
-            });
+            const nextNodes = normalizeGraphNodes(graph.nodes);
             const nextEdges = (graph.edges || []).map(hydrateEdge);
             setNodes(nextNodes);
             setEdges(nextEdges);
