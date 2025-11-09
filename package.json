@@ -17,6 +17,7 @@
     "@mui/material": "^7.3.2",
     "@prisma/client": "^6.17.1",
     "bcryptjs": "^3.0.2",
+    "dagre": "^0.8.5",
     "dexie": "^4.2.1",
     "next": "15.5.3",
     "next-auth": "^4.24.11",

@@ -11,6 +11,7 @@ import {
   addEdge,
   Background,
   Controls,
+  ControlButton,
   useReactFlow,
 } from "reactflow";
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
@@ -45,9 +46,82 @@ import {
   savePersistedDiagram,
 } from "../lib/diagramStorage";
 import ProfileMenu from "./ProfileMenu";
+import dagre from "dagre";
 
 let id = 0;
 const getId = () => `dndnode_${id++}`;
+
+const DAGRE_LAYOUT_CONFIG = {
+  rankdir: "TB",
+  align: "UL",
+  nodesep: 50,
+  ranksep: 100,
+};
+
+const DEFAULT_NODE_DIMENSIONS = {
+  width: 260,
+  height: 150,
+};
+
+const getNodeDimensions = (node) => {
+  const widthCandidate =
+    parseFloat(node?.measured?.width) ||
+    parseFloat(node?.width) ||
+    parseFloat(node?.style?.width);
+  const heightCandidate =
+    parseFloat(node?.measured?.height) ||
+    parseFloat(node?.height) ||
+    parseFloat(node?.style?.height);
+
+  return {
+    width: Number.isFinite(widthCandidate)
+      ? widthCandidate
+      : DEFAULT_NODE_DIMENSIONS.width,
+    height: Number.isFinite(heightCandidate)
+      ? heightCandidate
+      : DEFAULT_NODE_DIMENSIONS.height,
+  };
+};
+
+const layoutWithDagre = (nodes, edges) => {
+  if (!nodes.length) {
+    return nodes;
+  }
+
+  const dagreGraph = new dagre.graphlib.Graph();
+  dagreGraph.setDefaultEdgeLabel(() => ({}));
+  dagreGraph.setGraph({ ...DAGRE_LAYOUT_CONFIG });
+
+  nodes.forEach((node) => {
+    const { width, height } = getNodeDimensions(node);
+    dagreGraph.setNode(node.id, { width, height });
+  });
+
+  edges.forEach((edge) => {
+    if (edge.source && edge.target) {
+      dagreGraph.setEdge(edge.source, edge.target);
+    }
+  });
+
+  dagre.layout(dagreGraph);
+
+  return nodes.map((node) => {
+    const layoutNode = dagreGraph.node(node.id);
+    if (!layoutNode) {
+      return node;
+    }
+
+    const { width, height } = getNodeDimensions(node);
+    const x = layoutNode.x - width / 2;
+    const y = layoutNode.y - height / 2;
+
+    return {
+      ...node,
+      position: { x, y },
+      positionAbsolute: { x, y },
+    };
+  });
+};
 
 const DND_NODE_ID_PATTERN = /^dndnode_(\d+)$/;
 
@@ -253,7 +327,17 @@ function Diagram() {
     []
   );
   const { setType, setCode, dragPayload, setDragPayload, resetDrag } = useDnD();
-  const { screenToFlowPosition } = useReactFlow();
+  const { screenToFlowPosition, fitView } = useReactFlow();
+
+  const handleAutoLayout = useCallback(() => {
+    setNodes((currentNodes) => {
+      const layoutedNodes = layoutWithDagre(currentNodes, edges);
+      requestAnimationFrame(() => {
+        fitView({ padding: 0.2, includeHiddenNodes: true });
+      });
+      return layoutedNodes;
+    });
+  }, [edges, fitView, setNodes]);
   const nodeTypes = useMemo(
     () => ({
       langgramNode: NodeWithAttachments,
@@ -1231,6 +1315,13 @@ function Diagram() {
               <button
                 type="button"
                 className="top-nav__button top-nav__button--secondary"
+                onClick={handleAutoLayout}
+              >
+                Ordenar
+              </button>
+              <button
+                type="button"
+                className="top-nav__button top-nav__button--secondary"
                 onClick={() => setShowJsonModal(true)}
               >
                 Ver JSON
@@ -1336,7 +1427,14 @@ function Diagram() {
             fitView
           >
             <Background />
-            <Controls />
+            <Controls>
+              <ControlButton
+                onClick={handleAutoLayout}
+                title="Ordenar diagrama"
+              >
+                Ordenar
+              </ControlButton>
+            </Controls>
           </ReactFlow>
         </div>
       </div>
