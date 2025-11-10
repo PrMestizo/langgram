@@ -31,6 +31,8 @@ const Sidebar = ({ onLoadDiagram }) => {
   const [menuOpenId, setMenuOpenId] = useState(null);
   const [modalInitialName, setModalInitialName] = useState("");
   const [modalInitialCode, setModalInitialCode] = useState("");
+  const [modalInitialConditionalEdge, setModalInitialConditionalEdge] =
+    useState(false);
   const [editingContext, setEditingContext] = useState(null);
   const tabItems = useMemo(
     () => [
@@ -520,6 +522,7 @@ const Sidebar = ({ onLoadDiagram }) => {
     setEditingContext(null);
     setPopupMode(mode);
     setModalInitialName("");
+    setModalInitialConditionalEdge(false);
     setModalInitialCode(modalConfigs[mode]?.initialCode ?? "");
     setIsPopupVisible(true);
   };
@@ -567,8 +570,13 @@ const Sidebar = ({ onLoadDiagram }) => {
     }
   };
 
-  const handleSaveCustomEdge = async (code, edgeName) => {
-    const newEdge = { name: edgeName, code, language: "python" };
+  const handleSaveCustomEdge = async (code, edgeName, conditionalEdge) => {
+    const newEdge = {
+      name: edgeName,
+      code,
+      language: "python",
+      conditionalEdge,
+    };
     try {
       const res = await fetch("/api/edges", {
         method: "POST",
@@ -982,7 +990,7 @@ const Sidebar = ({ onLoadDiagram }) => {
       if (type === "diagram") {
         return handleUpdateCustomDiagram(item, code, name);
       } else if (type === "edge") {
-        return handleUpdateCustomEdge(item, code, name);
+        return handleUpdateCustomEdge(item, code, name, conditionalEdge);
       } else if (type === "prompt") {
         return handleUpdateCustomPrompt(item, code, name);
       } else if (type === "chain") {
@@ -995,7 +1003,7 @@ const Sidebar = ({ onLoadDiagram }) => {
     }
 
     if (popupMode === "edge") {
-      handleSaveCustomEdge(code, name);
+      handleSaveCustomEdge(code, name, conditionalEdge);
       selectPanelTab("edges"); // switch to Edges tab
     } else if (popupMode === "prompt") {
       handleSaveCustomPrompt(code, name);
@@ -1687,6 +1695,7 @@ const Sidebar = ({ onLoadDiagram }) => {
         onSave={handleSaveFromPopup}
         initialCode={modalInitialCode}
         initialName={modalInitialName}
+        initialConditionalEdge={modalInitialConditionalEdge}
         title={modalTitle}
         nameLabel={activeModalConfig.nameLabel}
         namePlaceholder={activeModalConfig.namePlaceholder}

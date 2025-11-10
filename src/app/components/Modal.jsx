@@ -1,12 +1,16 @@
 import * as React from "react";
-import Backdrop from "@mui/material/Backdrop";
-import Box from "@mui/material/Box";
-import MuiModal from "@mui/material/Modal";
-import Fade from "@mui/material/Fade";
-import Button from "@mui/material/Button";
-import Typography from "@mui/material/Typography";
+import {
+  Checkbox,
+  TextField,
+  Typography,
+  Button,
+  Fade,
+  Box,
+  Backdrop,
+  FormControlLabel,
+} from "@mui/material";
 import Editor from "@monaco-editor/react";
-import TextField from "@mui/material/TextField";
+import MuiModal from "@mui/material/Modal";
 
 const style = {
   position: "absolute",
@@ -39,6 +43,7 @@ function CustomModal({
   const [open, setOpen] = React.useState(!!isVisible);
   const [code, setCode] = React.useState(initialCode);
   const [nodeName, setNodeName] = React.useState(initialName);
+  const [conditionalEdge, setConditionalEdge] = React.useState(false);
 
   React.useEffect(() => {
     setOpen(!!isVisible);
@@ -60,7 +65,7 @@ function CustomModal({
   const editorLanguage = language ?? "python";
 
   const handleSave = async () => {
-    const result = await onSave?.(code, nodeName);
+    const result = await onSave?.(code, nodeName, conditionalEdge);
     if (result === false) {
       return;
     }
@@ -97,6 +102,12 @@ function CustomModal({
               value={nodeName}
               onChange={(e) => setNodeName(e.target.value)}
               placeholder={namePlaceholder ?? nameLabel}
+            />
+            <FormControlLabel
+              sx={{ marginLeft: "3.5rem", marginTop: "1.25rem" }}
+              control={<Checkbox />}
+              label="Conditional Edge"
+              onChange={(e) => setConditionalEdge(e.target.checked)}
             />
           </div>
           {isTextEditor ? (
