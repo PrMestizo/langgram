@@ -92,6 +92,7 @@ model EdgeTemplate {
   metadata    Json?
   owner       User?   @relation("UserEdgeTemplates", fields: [ownerId], references: [id])
   ownerId     String?
+  conditionalEdge Boolean @default(false)
   isPublic    Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

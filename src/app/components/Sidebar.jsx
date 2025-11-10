@@ -34,6 +34,16 @@ const Sidebar = ({ onLoadDiagram }) => {
   const [modalInitialConditionalEdge, setModalInitialConditionalEdge] =
     useState(false);
   const [editingContext, setEditingContext] = useState(null);
+  const normalizeEdge = useCallback(
+    (edge) =>
+      edge
+        ? {
+            ...edge,
+            conditionalEdge: !!edge.conditionalEdge,
+          }
+        : edge,
+    []
+  );
   const tabItems = useMemo(
     () => [
       {
@@ -290,13 +300,19 @@ const Sidebar = ({ onLoadDiagram }) => {
           throw new Error(`Error ${res.status}: ${res.statusText}`);
         }
         const data = await res.json();
-        setCustomEdges(Array.isArray(data) ? data : []);
+        setCustomEdges(
+          Array.isArray(data)
+            ? data
+                .map((edge) => normalizeEdge(edge))
+                .filter((edge) => Boolean(edge))
+            : []
+        );
       } catch (err) {
         console.error("Error al cargar edges:", err);
       }
     };
     fetchEdges();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, normalizeEdge]);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -360,7 +376,7 @@ const Sidebar = ({ onLoadDiagram }) => {
 
   useEffect(() => {
     const handleEdgesUpdated = (event) => {
-      const savedEdge = event?.detail;
+      const savedEdge = normalizeEdge(event?.detail);
       if (!savedEdge) {
         return;
       }
@@ -379,7 +395,7 @@ const Sidebar = ({ onLoadDiagram }) => {
     window.addEventListener("edges-updated", handleEdgesUpdated);
     return () =>
       window.removeEventListener("edges-updated", handleEdgesUpdated);
-  }, []);
+  }, [normalizeEdge]);
 
   const onDragStart = (event, nodeType, nodeCode) => {
     const payload = {
@@ -545,6 +561,9 @@ const Sidebar = ({ onLoadDiagram }) => {
     } else {
       setModalInitialCode(item?.code ?? "");
     }
+    setModalInitialConditionalEdge(
+      mode === "edge" ? !!item?.conditionalEdge : false
+    );
     setIsPopupVisible(true);
   };
 
@@ -553,6 +572,7 @@ const Sidebar = ({ onLoadDiagram }) => {
     setEditingContext(null);
     setModalInitialName("");
     setModalInitialCode("");
+    setModalInitialConditionalEdge(false);
   };
 
   const handleSaveCustomNode = async (code, nodeName) => {
@@ -575,7 +595,7 @@ const Sidebar = ({ onLoadDiagram }) => {
       name: edgeName,
       code,
       language: "python",
-      conditionalEdge,
+      conditionalEdge: !!conditionalEdge,
     };
     try {
       const res = await fetch("/api/edges", {
@@ -583,7 +603,10 @@ const Sidebar = ({ onLoadDiagram }) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newEdge),
       });
-      const saved = await res.json();
+      const saved = normalizeEdge(await res.json());
+      if (!saved) {
+        return;
+      }
       setCustomEdges((prev) => [...prev, saved]);
     } catch (err) {
       console.error("Error al guardar edge:", err);
@@ -847,12 +870,18 @@ const Sidebar = ({ onLoadDiagram }) => {
     }
   };
 
-  const handleUpdateCustomEdge = async (edge, code, edgeName) => {
+  const handleUpdateCustomEdge = async (
+    edge,
+    code,
+    edgeName,
+    conditionalEdge
+  ) => {
     try {
       const payload = {
         id: edge.id,
         name: edgeName,
         code,
+        conditionalEdge: !!conditionalEdge,
       };
 
       if (edge.language) {
@@ -870,7 +899,10 @@ const Sidebar = ({ onLoadDiagram }) => {
         throw new Error(error?.details || "Error al actualizar edge");
       }
 
-      const saved = await res.json();
+      const saved = normalizeEdge(await res.json());
+      if (!saved) {
+        return true;
+      }
       setCustomEdges((prev) =>
         prev.map((item) => (item.id === saved.id ? saved : item))
       );
@@ -984,13 +1016,13 @@ const Sidebar = ({ onLoadDiagram }) => {
   };
 
   // Unified save handler so we can also switch to the right tab after save
-  const handleSaveFromPopup = (code, name) => {
+  const handleSaveFromPopup = (code, name, conditionalEdgeValue) => {
     if (editingContext) {
       const { type, item } = editingContext;
       if (type === "diagram") {
         return handleUpdateCustomDiagram(item, code, name);
       } else if (type === "edge") {
-        return handleUpdateCustomEdge(item, code, name, conditionalEdge);
+        return handleUpdateCustomEdge(item, code, name, conditionalEdgeValue);
       } else if (type === "prompt") {
         return handleUpdateCustomPrompt(item, code, name);
       } else if (type === "chain") {
@@ -1003,7 +1035,7 @@ const Sidebar = ({ onLoadDiagram }) => {
     }
 
     if (popupMode === "edge") {
-      handleSaveCustomEdge(code, name, conditionalEdge);
+      handleSaveCustomEdge(code, name, conditionalEdgeValue);
       selectPanelTab("edges"); // switch to Edges tab
     } else if (popupMode === "prompt") {
       handleSaveCustomPrompt(code, name);
@@ -1431,7 +1463,13 @@ const Sidebar = ({ onLoadDiagram }) => {
             </div>
           </div>
         );
-      case "edges":
+      case "edges": {
+        const conditionalEdges = customEdges.filter(
+          (edge) => edge.conditionalEdge
+        );
+        const standardEdges = customEdges.filter(
+          (edge) => !edge.conditionalEdge
+        );
         return (
           <div className="tab-content">
             <div className="node-section">
@@ -1453,11 +1491,39 @@ const Sidebar = ({ onLoadDiagram }) => {
                   }
                 />
               </div>
+              {conditionalEdges.map((itemE) => (
+                <div
+                  key={itemE.id}
+                  className={`node-item edge-item edge-item--custom ${
+                    menuOpenId === `conditional-${itemE.id}` ? "active" : ""
+                  }`}
+                  onDragStart={(event) =>
+                    onDragStart(event, "conditionalNode", itemE.code)
+                  }
+                  onDragEnd={handleDragEnd}
+                  draggable
+                >
+                  <div className="edge-item__circle">◆</div>
+                  {itemE.name}
+                  <LongMenu
+                    className="kebab-menu"
+                    onOpenChange={(open) =>
+                      setMenuOpenId(open ? `conditional-${itemE.id}` : null)
+                    }
+                    onEdit={() => handleEditCustomEdge(itemE)}
+                    onDelete={() => handleDeleteCustomEdge(itemE.name)}
+                    isPublic={Boolean(itemE.isPublic)}
+                    onToggleVisibility={(nextValue) =>
+                      handleToggleEdgeVisibility(itemE, nextValue)
+                    }
+                  />
+                </div>
+              ))}
             </div>
-            {customEdges.length > 0 && (
+            {standardEdges.length > 0 && (
               <div className="node-section">
                 <div className="section-title">Custom Edges</div>
-                {customEdges.map((item) => (
+                {standardEdges.map((item) => (
                   <div
                     key={item.id}
                     className={`node-item edge-item edge-item--custom ${
@@ -1504,6 +1570,7 @@ const Sidebar = ({ onLoadDiagram }) => {
             </div>
           </div>
         );
+      }
       case "prompts":
         return (
           <div className="tab-content">

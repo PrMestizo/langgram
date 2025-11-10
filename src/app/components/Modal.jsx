@@ -31,6 +31,7 @@ function CustomModal({
   initialCode = "",
   initialName = "",
   title = "Editor de nodo personalizado",
+  initialConditionalEdge = false,
   nameLabel = "Nombre",
   language = "python",
   saveLabel = "Guardar",
@@ -43,8 +44,9 @@ function CustomModal({
   const [open, setOpen] = React.useState(!!isVisible);
   const [code, setCode] = React.useState(initialCode);
   const [nodeName, setNodeName] = React.useState(initialName);
-  const [conditionalEdge, setConditionalEdge] = React.useState(false);
-
+  const [conditionalEdge, setConditionalEdge] = React.useState(
+    !!initialConditionalEdge
+  );
   React.useEffect(() => {
     setOpen(!!isVisible);
   }, [isVisible]);
@@ -60,6 +62,12 @@ function CustomModal({
       setNodeName(initialName);
     }
   }, [initialName, isVisible]);
+
+  React.useEffect(() => {
+    if (isVisible) {
+      setConditionalEdge(!!initialConditionalEdge);
+    }
+  }, [initialConditionalEdge, isVisible]);
 
   const isTextEditor = editorType === "text";
   const editorLanguage = language ?? "python";
@@ -105,9 +113,13 @@ function CustomModal({
             />
             <FormControlLabel
               sx={{ marginLeft: "3.5rem", marginTop: "1.25rem" }}
-              control={<Checkbox />}
+              control={
+                <Checkbox
+                  checked={conditionalEdge}
+                  onChange={(e) => setConditionalEdge(e.target.checked)}
+                />
+              }
               label="Conditional Edge"
-              onChange={(e) => setConditionalEdge(e.target.checked)}
             />
           </div>
           {isTextEditor ? (
