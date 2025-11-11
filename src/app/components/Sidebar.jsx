@@ -34,16 +34,6 @@ const Sidebar = ({ onLoadDiagram }) => {
   const [modalInitialConditionalEdge, setModalInitialConditionalEdge] =
     useState(false);
   const [editingContext, setEditingContext] = useState(null);
-  const normalizeEdge = useCallback(
-    (edge) =>
-      edge
-        ? {
-            ...edge,
-            conditionalEdge: !!edge.conditionalEdge,
-          }
-        : edge,
-    []
-  );
   const tabItems = useMemo(
     () => [
       {
@@ -300,19 +290,13 @@ const Sidebar = ({ onLoadDiagram }) => {
           throw new Error(`Error ${res.status}: ${res.statusText}`);
         }
         const data = await res.json();
-        setCustomEdges(
-          Array.isArray(data)
-            ? data
-                .map((edge) => normalizeEdge(edge))
-                .filter((edge) => Boolean(edge))
-            : []
-        );
+        setCustomEdges(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error("Error al cargar edges:", err);
       }
     };
     fetchEdges();
-  }, [isAuthenticated, normalizeEdge]);
+  }, [isAuthenticated]);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -376,7 +360,7 @@ const Sidebar = ({ onLoadDiagram }) => {
 
   useEffect(() => {
     const handleEdgesUpdated = (event) => {
-      const savedEdge = normalizeEdge(event?.detail);
+      const savedEdge = event?.detail;
       if (!savedEdge) {
         return;
       }
@@ -395,7 +379,7 @@ const Sidebar = ({ onLoadDiagram }) => {
     window.addEventListener("edges-updated", handleEdgesUpdated);
     return () =>
       window.removeEventListener("edges-updated", handleEdgesUpdated);
-  }, [normalizeEdge]);
+  }, []);
 
   const onDragStart = (event, nodeType, nodeCode) => {
     const payload = {
@@ -603,10 +587,7 @@ const Sidebar = ({ onLoadDiagram }) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newEdge),
       });
-      const saved = normalizeEdge(await res.json());
-      if (!saved) {
-        return;
-      }
+      const saved = await res.json();
       setCustomEdges((prev) => [...prev, saved]);
     } catch (err) {
       console.error("Error al guardar edge:", err);
@@ -898,11 +879,7 @@ const Sidebar = ({ onLoadDiagram }) => {
         const error = await res.json();
         throw new Error(error?.details || "Error al actualizar edge");
       }
-
-      const saved = normalizeEdge(await res.json());
-      if (!saved) {
-        return true;
-      }
+      const saved = await res.json();
       setCustomEdges((prev) =>
         prev.map((item) => (item.id === saved.id ? saved : item))
       );
@@ -1153,10 +1130,23 @@ const Sidebar = ({ onLoadDiagram }) => {
     try {
       const edgeToDelete = customEdges.find((edge) => edge.name === edgeName);
 
-      // Preparar el body con id si está disponible, si no usar name
-      const requestBody = edgeToDelete?.id
-        ? { id: edgeToDelete.id, name: edgeName } // Enviar ambos por si acaso
-        : { name: edgeName };
+      if (!edgeToDelete) {
+        console.error("Edge not found:", edgeName);
+        throw new Error("No se encontró el edge para eliminar");
+      }
+
+      // Ensure we have either ID or name
+      if (!edgeToDelete.id && !edgeToDelete.name) {
+        console.error("No ID or name found for edge:", edgeToDelete);
+        throw new Error("No se pudo identificar el edge para eliminar");
+      }
+
+      const requestBody = {
+        ...(edgeToDelete.id && { id: edgeToDelete.id }),
+        ...(edgeToDelete.name && { name: edgeToDelete.name }),
+      };
+
+      console.log("Deleting edge with:", requestBody);
 
       const res = await fetch("/api/edges", {
         method: "DELETE",
@@ -1164,15 +1154,14 @@ const Sidebar = ({ onLoadDiagram }) => {
         body: JSON.stringify(requestBody),
       });
 
+      const responseData = await res.json();
+
       if (!res.ok) {
-        const error = await res.json();
-        console.error("Server error:", error);
-        throw new Error(error.details || "Error al eliminar edge");
+        console.error("Server error:", responseData);
+        throw new Error(responseData.details || "Error al eliminar edge");
       }
 
-      const deleted = await res.json();
-      console.log("Edge deleted successfully:", deleted);
-
+      console.log("Edge deleted successfully:", responseData);
       setCustomEdges((prev) => prev.filter((edge) => edge.name !== edgeName));
     } catch (err) {
       console.error("Error al eliminar edge:", err);
@@ -1475,6 +1464,7 @@ const Sidebar = ({ onLoadDiagram }) => {
             <div className="node-section">
               <div className="section-title">Conditional Edges</div>
               <div
+                key="conditional-filter-default"
                 className={`node-item edge-item ${
                   menuOpenId === "node-Input" ? "active" : ""
                 }`}

@@ -231,10 +231,7 @@ function enforceUpdateFields(data, fieldNames) {
   }
 }
 
-function sanitizeTemplateCreate(
-  payload,
-  { allowPublic = false, extraBooleanFields = [] } = {}
-) {
+function sanitizeTemplateCreate(payload, { allowPublic = false } = {}) {
   const data = ensurePlainObject(payload, "body");
   const sanitized = {
     name: sanitizeName(data.name, { required: true }),
@@ -249,19 +246,10 @@ function sanitizeTemplateCreate(
       sanitized.isPublic = isPublic;
     }
   }
-  extraBooleanFields.forEach((fieldName) => {
-    const value = sanitizeBoolean(data[fieldName], fieldName);
-    if (value !== undefined) {
-      sanitized[fieldName] = value;
-    }
-  });
   return dropUndefinedKeys(sanitized);
 }
 
-function sanitizeTemplateUpdate(
-  payload,
-  { allowPublic = false, extraBooleanFields = [], extraFields = [] } = {}
-) {
+function sanitizeTemplateUpdate(payload, { allowPublic = false } = {}) {
   const data = ensurePlainObject(payload, "body");
   const sanitized = {
     id: sanitizeId(data.id),
@@ -277,12 +265,6 @@ function sanitizeTemplateUpdate(
       sanitized.isPublic = isPublic;
     }
   }
-  extraBooleanFields.forEach((fieldName) => {
-    const value = sanitizeBoolean(data[fieldName], fieldName);
-    if (value !== undefined) {
-      sanitized[fieldName] = value;
-    }
-  });
   enforceUpdateFields(sanitized, [
     "name",
     "description",
@@ -290,7 +272,7 @@ function sanitizeTemplateUpdate(
     "language",
     "metadata",
     "isPublic",
-    ...extraFields,
+    "conditionalEdge",
   ]);
   return dropUndefinedKeys(sanitized);
 }
@@ -304,18 +286,11 @@ export function validateNodeTemplateUpdate(payload) {
 }
 
 export function validateEdgeTemplateCreate(payload) {
-  return sanitizeTemplateCreate(payload, {
-    allowPublic: true,
-    extraBooleanFields: ["conditionalEdge"],
-  });
+  return sanitizeTemplateCreate(payload, { allowPublic: true });
 }
 
 export function validateEdgeTemplateUpdate(payload) {
-  return sanitizeTemplateUpdate(payload, {
-    allowPublic: true,
-    extraBooleanFields: ["conditionalEdge"],
-    extraFields: ["conditionalEdge"],
-  });
+  return sanitizeTemplateUpdate(payload, { allowPublic: true });
 }
 
 export function validateChainTemplateCreate(payload) {
