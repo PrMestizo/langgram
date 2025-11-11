@@ -238,6 +238,7 @@ function sanitizeTemplateCreate(payload, { allowPublic = false } = {}) {
     description: sanitizeDescription(data.description),
     code: sanitizeCode(data.code, { required: true }),
     language: sanitizeLanguage(data.language),
+    conditionalEdge: sanitizeBoolean(data.conditionalEdge, "conditionalEdge"),
     metadata: sanitizeJson(data.metadata, "metadata"),
   };
   if (allowPublic) {
@@ -257,6 +258,7 @@ function sanitizeTemplateUpdate(payload, { allowPublic = false } = {}) {
     description: sanitizeDescription(data.description),
     code: sanitizeCode(data.code),
     language: sanitizeLanguage(data.language),
+    conditionalEdge: sanitizeBoolean(data.conditionalEdge, "conditionalEdge"),
     metadata: sanitizeJson(data.metadata, "metadata"),
   };
   if (allowPublic) {
