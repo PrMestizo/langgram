@@ -924,37 +924,56 @@ function Diagram() {
   );
 
   const GraphJSON = useCallback(() => {
-    const nodeData = nodes.map((n) => ({
-      id: n.id,
-      type: n.data?.nodeType ?? n.type,
-      componentType: n.type,
-      label: n.data?.label ?? n.data?.nodeType ?? "",
-      position: n.position,
-      code: n.code ?? "",
-      prompts: Array.isArray(n.data?.prompts) ? n.data.prompts : [],
-      chains: Array.isArray(n.data?.chains) ? n.data.chains : [],
-      tools: Array.isArray(n.data?.tools) ? n.data.tools : [],
-    }));
+    const nodeIdMap = new Map();
+    const nodeData = nodes.map((n, index) => {
+      const nodeId = `node_${index + 1}`;
+      nodeIdMap.set(n.id, nodeId);
+      return {
+        id: nodeId,
+        type: n.data?.nodeType ?? n.type,
+        componentType: n.type,
+        label: n.data?.label ?? n.data?.nodeType ?? "",
+        position: n.position,
+        code: n.code ?? "",
+        prompts: Array.isArray(n.data?.prompts)
+          ? n.data.prompts.map((prompt) => ({ ...prompt }))
+          : [],
+        chains: Array.isArray(n.data?.chains)
+          ? n.data.chains.map((chain) => ({ ...chain }))
+          : [],
+        tools: Array.isArray(n.data?.tools)
+          ? n.data.tools.map((tool) => ({ ...tool }))
+          : [],
+      };
+    });
 
-    const edgeData = edges.map((e) => ({
-      source: e.source,
-      target: e.target,
-      id: e.id,
-      type: e.type,
-      filterCode: e.data?.filterCode || "",
-      filterName: e.data?.filterName || "",
-      filterTemplateId: coerceTemplateId(e.data?.filterTemplateId),
-    }));
+    const edgeData = edges.map((e, index) => {
+      const edgeId = `edge_${index + 1}`;
+      return {
+        source: nodeIdMap.get(e.source) ?? e.source,
+        target: nodeIdMap.get(e.target) ?? e.target,
+        id: edgeId,
+        type: e.type,
+        filterCode: e.data?.filterCode || "",
+        filterName: e.data?.filterName || "",
+        filterTemplateId: coerceTemplateId(e.data?.filterTemplateId),
+      };
+    });
 
-    const resourcePrompts = Array.isArray(diagramResources.prompts)
-      ? diagramResources.prompts.map((prompt) => ({ ...prompt }))
-      : [];
-    const resourceChains = Array.isArray(diagramResources.chains)
-      ? diagramResources.chains.map((chain) => ({ ...chain }))
-      : [];
-    const resourceTools = Array.isArray(diagramResources.tools)
-      ? diagramResources.tools.map((tool) => ({ ...tool }))
-      : [];
+    const withSequentialIds = (items, prefix) =>
+      Array.isArray(items)
+        ? items.map((item, index) => ({
+            ...item,
+            id: `${prefix}_${index + 1}`,
+          }))
+        : [];
+
+    const resourcePrompts = withSequentialIds(
+      diagramResources.prompts,
+      "prompt"
+    );
+    const resourceChains = withSequentialIds(diagramResources.chains, "chain");
+    const resourceTools = withSequentialIds(diagramResources.tools, "tool");
 
     const graphJSON = {
       StateGraph: {
