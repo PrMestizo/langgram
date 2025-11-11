@@ -153,26 +153,88 @@ const syncNodeIdCounter = (nodes) => {
 };
 
 const normalizeGraphNodes = (graphNodes = []) => {
-  const mappedNodes = graphNodes.map((n) => {
-    const nodeType = n.nodeType ?? n.type ?? n.componentType;
-    const label = n.label ?? nodeType ?? "";
-    const prompts = Array.isArray(n.prompts) ? n.prompts : [];
-    const chains = Array.isArray(n.chains) ? n.chains : [];
-    const tools = Array.isArray(n.tools) ? n.tools : [];
-    return {
-      id: n.id,
-      type: "langgramNode",
-      position: n.position || { x: 0, y: 0 },
-      data: {
-        label,
-        nodeType,
-        prompts,
-        chains,
-        tools,
-      },
-      code: n.code ?? "",
-    };
-  });
+  const mappedNodes = graphNodes
+    .map((node) => {
+      if (!node || typeof node !== "object") {
+        return null;
+      }
+
+      const existingData =
+        node.data && typeof node.data === "object" ? { ...node.data } : {};
+
+      const storedComponentType =
+        (typeof node.componentType === "string" && node.componentType) ||
+        (typeof existingData.componentType === "string" &&
+          existingData.componentType) ||
+        (typeof node.type === "string" && node.type) ||
+        "langgramNode";
+
+      const storedNodeType =
+        (typeof existingData.nodeType === "string" && existingData.nodeType) ||
+        (typeof node.nodeType === "string" && node.nodeType) ||
+        (typeof node.type === "string" && node.type) ||
+        (typeof existingData.type === "string" && existingData.type) ||
+        storedComponentType;
+
+      const storedLabel =
+        (typeof existingData.label === "string" && existingData.label) ||
+        (typeof node.label === "string" && node.label) ||
+        (typeof node.name === "string" && node.name) ||
+        (typeof storedNodeType === "string" && storedNodeType) ||
+        "";
+
+      const promptsSource = Array.isArray(node.prompts)
+        ? node.prompts
+        : Array.isArray(existingData.prompts)
+        ? existingData.prompts
+        : [];
+      const chainsSource = Array.isArray(node.chains)
+        ? node.chains
+        : Array.isArray(existingData.chains)
+        ? existingData.chains
+        : [];
+      const toolsSource = Array.isArray(node.tools)
+        ? node.tools
+        : Array.isArray(existingData.tools)
+        ? existingData.tools
+        : [];
+
+      const prompts = promptsSource.map((prompt) => ({ ...prompt }));
+      const chains = chainsSource.map((chain) => ({ ...chain }));
+      const tools = toolsSource.map((tool) => ({ ...tool }));
+
+      const position =
+        node.position && typeof node.position === "object"
+          ? { ...node.position }
+          : { x: 0, y: 0 };
+
+      const normalizedNode = {
+        id: node.id,
+        type: storedComponentType,
+        position,
+        data: {
+          ...existingData,
+          label: storedLabel,
+          nodeType: storedNodeType,
+          prompts,
+          chains,
+          tools,
+        },
+        code:
+          typeof node.code === "string"
+            ? node.code
+            : typeof existingData.code === "string"
+            ? existingData.code
+            : "",
+      };
+
+      if (typeof node.name === "string") {
+        normalizedNode.name = node.name;
+      }
+
+      return normalizedNode;
+    })
+    .filter(Boolean);
 
   syncNodeIdCounter(mappedNodes);
 
