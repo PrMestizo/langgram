@@ -1538,10 +1538,11 @@ function Diagram() {
             fitView
           >
             <Background />
-            <Controls>
+            <Controls className="diagram-controls">
               <ControlButton
                 onClick={handleAutoLayout}
                 title="Ordenar diagrama"
+                className="diagram-controls__button"
               >
                 Ordenar
               </ControlButton>

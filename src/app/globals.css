@@ -162,6 +162,29 @@ body {
   height: calc(100vh - var(--top-nav-height));
 }
 
+.diagram-controls.react-flow__controls {
+  border: none;
+  box-shadow: none;
+  overflow: visible;
+  padding: 0;
+}
+
+.diagram-controls__button.react-flow__controls-button {
+  min-width: 6.5rem;
+  height: 12px;
+  padding: 0.5rem 1rem;
+  background: rgb(234, 234, 234);
+  font-weight: 600;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.45);
+  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.diagram-controls__button.react-flow__controls-button:hover,
+.diagram-controls__button.react-flow__controls-button:focus-visible {
+  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.55);
+  outline: none;
+}
+
 .diagram-resource-tabs {
   position: fixed;
   top: 18%;
