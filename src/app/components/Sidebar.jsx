@@ -381,12 +381,12 @@ const Sidebar = ({ onLoadDiagram }) => {
       window.removeEventListener("edges-updated", handleEdgesUpdated);
   }, []);
 
-  const onDragStart = (event, nodeType, nodeCode) => {
+  const onDragStart = (event, nodeType, nodeCode, nodeName) => {
     const payload = {
       kind: "node",
       type: nodeType,
       code: nodeCode || "",
-      name: nodeType,
+      name: nodeName,
     };
     setType(nodeType);
     setCode(nodeCode);
@@ -1488,7 +1488,12 @@ const Sidebar = ({ onLoadDiagram }) => {
                     menuOpenId === `conditional-${itemE.id}` ? "active" : ""
                   }`}
                   onDragStart={(event) =>
-                    onDragStart(event, "conditionalNode", itemE.code)
+                    onDragStart(
+                      event,
+                      "conditionalNode",
+                      itemE.code,
+                      itemE.name
+                    )
                   }
                   onDragEnd={handleDragEnd}
                   draggable
