@@ -162,12 +162,30 @@ const normalizeGraphNodes = (graphNodes = []) => {
       const existingData =
         node.data && typeof node.data === "object" ? { ...node.data } : {};
 
-      const storedComponentType =
-        (typeof node.componentType === "string" && node.componentType) ||
-        (typeof existingData.componentType === "string" &&
-          existingData.componentType) ||
-        (typeof node.type === "string" && node.type) ||
-        "langgramNode";
+      const isConditionalNode = Boolean(
+        (typeof node.componentType === "string" &&
+          node.componentType === "conditionalNode") ||
+          (typeof existingData.componentType === "string" &&
+            existingData.componentType === "conditionalNode") ||
+          (typeof node.nodeType === "string" &&
+            node.nodeType === "conditionalNode") ||
+          (typeof existingData.nodeType === "string" &&
+            existingData.nodeType === "conditionalNode") ||
+          (typeof node.type === "string" && node.type === "conditionalNode") ||
+          (typeof existingData.type === "string" &&
+            existingData.type === "conditionalNode") ||
+          node?.conditionalEdge === true ||
+          existingData?.conditionalEdge === true ||
+          node?.data?.conditionalEdge === true
+      );
+
+      const storedComponentType = isConditionalNode
+        ? (typeof node.componentType === "string" && node.componentType) ||
+          (typeof existingData.componentType === "string" &&
+            existingData.componentType) ||
+          (typeof node.type === "string" && node.type) ||
+          "conditionalNode"
+        : "langgramNode";
 
       const storedNodeType =
         (typeof existingData.nodeType === "string" && existingData.nodeType) ||
@@ -214,11 +232,13 @@ const normalizeGraphNodes = (graphNodes = []) => {
         position,
         data: {
           ...existingData,
+          componentType: storedComponentType,
           label: storedLabel,
           nodeType: storedNodeType,
           prompts,
           chains,
           tools,
+          conditionalEdge: isConditionalNode,
         },
         code:
           typeof node.code === "string"
@@ -784,10 +804,11 @@ function Diagram() {
         x: event.clientX,
         y: event.clientY,
       });
+      const isConditionalDrag = dragPayload?.type === "conditionalNode";
       const label = dragPayload?.name ?? dragPayload?.type;
       const newNode = {
         id: getId(),
-        type: dragPayload?.type,
+        type: isConditionalDrag ? "conditionalNode" : "langgramNode",
         position,
         data: {
           label,
@@ -795,6 +816,7 @@ function Diagram() {
           prompts: [],
           chains: [],
           tools: [],
+          conditionalEdge: isConditionalDrag,
         },
         code: dragPayload?.code ?? "",
       };
