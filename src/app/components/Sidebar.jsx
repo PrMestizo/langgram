@@ -1753,6 +1753,7 @@ const Sidebar = ({ onLoadDiagram }) => {
         initialCode={modalInitialCode}
         initialName={modalInitialName}
         initialConditionalEdge={modalInitialConditionalEdge}
+        showConditionalEdge={popupMode === "edge"}
         title={modalTitle}
         nameLabel={activeModalConfig.nameLabel}
         namePlaceholder={activeModalConfig.namePlaceholder}

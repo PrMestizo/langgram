@@ -40,6 +40,7 @@ function CustomModal({
   editorType = "code",
   contentLabel = "Contenido",
   textPlaceholder = "",
+  showConditionalEdge = false,
 }) {
   const [open, setOpen] = React.useState(!!isVisible);
   const [code, setCode] = React.useState(initialCode);
@@ -111,16 +112,18 @@ function CustomModal({
               onChange={(e) => setNodeName(e.target.value)}
               placeholder={namePlaceholder ?? nameLabel}
             />
-            <FormControlLabel
-              sx={{ marginLeft: "3.5rem", marginTop: "1.25rem" }}
-              control={
-                <Checkbox
-                  checked={conditionalEdge}
-                  onChange={(e) => setConditionalEdge(e.target.checked)}
-                />
-              }
-              label="Conditional Edge"
-            />
+            {showConditionalEdge && (
+              <FormControlLabel
+                sx={{ marginLeft: "3.5rem", marginTop: "1.25rem" }}
+                control={
+                  <Checkbox
+                    checked={conditionalEdge}
+                    onChange={(e) => setConditionalEdge(e.target.checked)}
+                  />
+                }
+                label="Conditional Edge"
+              />
+            )}
           </div>
           {isTextEditor ? (
             <TextField
