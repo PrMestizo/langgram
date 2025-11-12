@@ -152,6 +152,68 @@ const syncNodeIdCounter = (nodes) => {
   id = Math.max(0, highestId + 1);
 };
 
+const extractStategraphCode = (graph) => {
+  if (!graph || typeof graph !== "object") {
+    return "";
+  }
+
+  const stategraphSource =
+    graph.StateGraph ??
+    graph.stateGraph ??
+    graph.stategraph ??
+    graph.state_graph ??
+    graph.stategraphCode ??
+    graph.stategraph_code;
+
+  if (typeof stategraphSource === "string") {
+    return stategraphSource;
+  }
+
+  if (stategraphSource && typeof stategraphSource === "object") {
+    if (typeof stategraphSource.code === "string") {
+      return stategraphSource.code;
+    }
+    if (typeof stategraphSource.content === "string") {
+      return stategraphSource.content;
+    }
+    if (typeof stategraphSource.value === "string") {
+      return stategraphSource.value;
+    }
+  }
+
+  return "";
+};
+
+const extractGraphResources = (graph) => {
+  if (!graph || typeof graph !== "object") {
+    return { prompts: [], chains: [], tools: [] };
+  }
+
+  const rawResources =
+    (graph.resources &&
+      typeof graph.resources === "object" &&
+      graph.resources) ||
+    (graph.Resources &&
+      typeof graph.Resources === "object" &&
+      graph.Resources) ||
+    {};
+
+  const coerceList = (value) =>
+    Array.isArray(value) ? value.map((entry) => ({ ...entry })) : [];
+
+  const prompts = coerceList(
+    rawResources.prompts ?? rawResources.Prompts ?? rawResources.prompt
+  );
+  const chains = coerceList(
+    rawResources.chains ?? rawResources.Chains ?? rawResources.chain
+  );
+  const tools = coerceList(
+    rawResources.tools ?? rawResources.Tools ?? rawResources.tool
+  );
+
+  return { prompts, chains, tools };
+};
+
 const normalizeGraphNodes = (graphNodes = []) => {
   const mappedNodes = graphNodes
     .map((node) => {
@@ -1187,37 +1249,9 @@ function Diagram() {
           const nextEdges = (storedGraph.edges || []).map(hydrateEdge);
           setNodes(nextNodes);
           setEdges(nextEdges);
-          const storedResources = storedGraph.resources || {};
-          const storedPrompts = Array.isArray(storedResources.prompts)
-            ? storedResources.prompts.map((prompt) => ({ ...prompt }))
-            : [];
-          const storedChains = Array.isArray(storedResources.chains)
-            ? storedResources.chains.map((chain) => ({ ...chain }))
-            : [];
-          const storedTools = Array.isArray(storedResources.tools)
-            ? storedResources.tools.map((tool) => ({ ...tool }))
-            : [];
-          const storedStateGraph = storedGraph.StateGraph || {};
-          setStategraphCode(() => {
-            if (
-              storedStateGraph &&
-              typeof storedStateGraph === "object" &&
-              typeof storedStateGraph.code === "string"
-            ) {
-              return storedStateGraph.code;
-            }
-
-            if (typeof storedStateGraph === "string") {
-              return storedStateGraph;
-            }
-
-            return "";
-          });
-          setDiagramResources({
-            prompts: storedPrompts,
-            chains: storedChains,
-            tools: storedTools,
-          });
+          const storedResources = extractGraphResources(storedGraph);
+          setStategraphCode(extractStategraphCode(storedGraph));
+          setDiagramResources(storedResources);
         } catch (error) {
           console.error(
             "Error al hidratar el diagrama desde el almacenamiento local:",
@@ -1335,21 +1369,8 @@ function Diagram() {
         const nextEdges = (graph.edges || []).map(hydrateEdge);
         setNodes(nextNodes);
         setEdges(nextEdges);
-        const resources = graph.resources || {};
-        const graphPrompts = Array.isArray(resources.prompts)
-          ? resources.prompts.map((prompt) => ({ ...prompt }))
-          : [];
-        const graphChains = Array.isArray(resources.chains)
-          ? resources.chains.map((chain) => ({ ...chain }))
-          : [];
-        const graphTools = Array.isArray(resources.tools)
-          ? resources.tools.map((tool) => ({ ...tool }))
-          : [];
-        setDiagramResources({
-          prompts: graphPrompts,
-          chains: graphChains,
-          tools: graphTools,
-        });
+        setStategraphCode(extractStategraphCode(graph));
+        setDiagramResources(extractGraphResources(graph));
       } catch {}
     };
     window.addEventListener("load-diagram", handler);
@@ -1365,21 +1386,8 @@ function Diagram() {
             const nextEdges = (graph.edges || []).map(hydrateEdge);
             setNodes(nextNodes);
             setEdges(nextEdges);
-            const resources = graph.resources || {};
-            const graphPrompts = Array.isArray(resources.prompts)
-              ? resources.prompts.map((prompt) => ({ ...prompt }))
-              : [];
-            const graphChains = Array.isArray(resources.chains)
-              ? resources.chains.map((chain) => ({ ...chain }))
-              : [];
-            const graphTools = Array.isArray(resources.tools)
-              ? resources.tools.map((tool) => ({ ...tool }))
-              : [];
-            setDiagramResources({
-              prompts: graphPrompts,
-              chains: graphChains,
-              tools: graphTools,
-            });
+            setStategraphCode(extractStategraphCode(graph));
+            setDiagramResources(extractGraphResources(graph));
           } catch {}
         }}
       />
