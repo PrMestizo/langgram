@@ -109,6 +109,38 @@ const NodeWithAttachments = ({ id, data }) => {
     [dragPayload, id, isAttachmentDrag, resetDrag, setNodes]
   );
 
+  const handleRemoveAttachment = useCallback(
+    (attachmentKind, attachmentName) => {
+      const attachmentConfig = ATTACHMENT_KINDS[attachmentKind];
+
+      if (!attachmentConfig) {
+        return;
+      }
+
+      setNodes((currentNodes) =>
+        currentNodes.map((node) => {
+          if (node.id !== id) {
+            return node;
+          }
+
+          const nextData = { ...node.data };
+          const listKey = attachmentConfig.key;
+          const existingList = normalizeAttachmentList(nextData[listKey]);
+
+          nextData[listKey] = existingList.filter(
+            (entry) => entry.name !== attachmentName
+          );
+
+          return {
+            ...node,
+            data: nextData,
+          };
+        })
+      );
+    },
+    [id, setNodes]
+  );
+
   const attachments = useMemo(
     () => [
       ...prompts.map((prompt) => ({
@@ -148,20 +180,37 @@ const NodeWithAttachments = ({ id, data }) => {
       <Handle type="source" position={Position.Bottom} />
       <span className="langgram-node__label">{label}</span>
       <div className={attachmentsClassName} aria-label="Recursos asociados">
-        {attachments.map(({ kind, name, Icon }) => (
-          <div
-            key={`${kind}-${name}`}
-            className={`langgram-node__attachment langgram-node__attachment--${kind}`}
-            title={name}
-            data-label={name}
-            role="img"
-            aria-label={`${
-              kind === "prompt" ? "Prompt" : kind === "chain" ? "Chain" : "Tool"
-            } ${name}`}
-          >
-            <Icon aria-hidden="true" />
-          </div>
-        ))}
+        {attachments.map(({ kind, name, Icon }) => {
+          const attachmentLabel =
+            kind === "prompt" ? "Prompt" : kind === "chain" ? "Chain" : "Tool";
+
+          const handleRemoveClick = (event) => {
+            event.stopPropagation();
+            event.preventDefault();
+            handleRemoveAttachment(kind, name);
+          };
+
+          return (
+            <div
+              key={`${kind}-${name}`}
+              className={`langgram-node__attachment langgram-node__attachment--${kind}`}
+              title={name}
+              data-label={name}
+              role="img"
+              aria-label={`${attachmentLabel} ${name}`}
+            >
+              <Icon aria-hidden="true" />
+              <button
+                type="button"
+                className="langgram-node__attachment-remove"
+                aria-label={`Eliminar ${attachmentLabel.toLowerCase()} ${name}`}
+                onClick={handleRemoveClick}
+              >
+                ×
+              </button>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
