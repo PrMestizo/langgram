@@ -66,8 +66,10 @@ export function ConditionalNode({ data }) {
           left: 0;
           right: 0;
           bottom: 0;
-          background: white;
-          border: 2px solid #555;
+          border: 1px solid rgba(148, 163, 184, 0.4);
+          background: linear-gradient(135deg, #f8fafc, #eef2ff);
+          box-shadow: 0 8px 18px rgba(15, 23, 42, 0.1);
+          color: #0f172a;
           transform: rotate(45deg);
           z-index: 1;
         }
