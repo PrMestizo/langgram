@@ -471,17 +471,55 @@ function Diagram() {
     []
   );
   const { setType, setCode, dragPayload, setDragPayload, resetDrag } = useDnD();
-  const { screenToFlowPosition, fitView } = useReactFlow();
+  const { screenToFlowPosition, fitView, getEdges } = useReactFlow();
 
-  const handleAutoLayout = useCallback(() => {
-    setNodes((currentNodes) => {
-      const layoutedNodes = layoutWithDagre(currentNodes, edges);
+  const layoutAndFitView = useCallback(
+    (nodesToLayout, edgesToLayout) => {
+      const layoutedNodes = layoutWithDagre(nodesToLayout, edgesToLayout);
       requestAnimationFrame(() => {
         fitView({ padding: 0.2, includeHiddenNodes: true });
       });
       return layoutedNodes;
+    },
+    [fitView]
+  );
+
+  const scheduleLayoutWithMeasuredNodes = useCallback(() => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setNodes((currentNodes) => layoutAndFitView(currentNodes, getEdges()));
+      });
     });
-  }, [edges, fitView, setNodes]);
+  }, [getEdges, layoutAndFitView, setNodes]);
+
+  const applyGraphData = useCallback(
+    (graph) => {
+      if (!graph || typeof graph !== "object") {
+        return;
+      }
+
+      try {
+        const nextNodes = normalizeGraphNodes(graph.nodes);
+        const nextEdges = (graph.edges || []).map(hydrateEdge);
+        const layoutedNodes = layoutAndFitView(nextNodes, nextEdges);
+
+        setNodes(layoutedNodes);
+        setEdges(nextEdges);
+        setStategraphCode(extractStategraphCode(graph));
+        setDiagramResources(extractGraphResources(graph));
+
+        scheduleLayoutWithMeasuredNodes();
+      } catch (error) {
+        console.error("Error applying graph data:", error);
+      }
+    },
+    [layoutAndFitView, scheduleLayoutWithMeasuredNodes]
+  );
+
+  const handleAutoLayout = useCallback(() => {
+    setNodes((currentNodes) => layoutAndFitView(currentNodes, getEdges()));
+  }, [getEdges, layoutAndFitView, setNodes]);
+
   const nodeTypes = useMemo(
     () => ({
       langgramNode: NodeWithAttachments,
@@ -1244,20 +1282,7 @@ function Diagram() {
       }
 
       if (storedGraph) {
-        try {
-          const nextNodes = normalizeGraphNodes(storedGraph.nodes);
-          const nextEdges = (storedGraph.edges || []).map(hydrateEdge);
-          setNodes(nextNodes);
-          setEdges(nextEdges);
-          const storedResources = extractGraphResources(storedGraph);
-          setStategraphCode(extractStategraphCode(storedGraph));
-          setDiagramResources(storedResources);
-        } catch (error) {
-          console.error(
-            "Error al hidratar el diagrama desde el almacenamiento local:",
-            error
-          );
-        }
+        applyGraphData(storedGraph);
       } else {
         setDiagramResources(() => ({ ...initialResources }));
         setStategraphCode("");
@@ -1273,7 +1298,7 @@ function Diagram() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [applyGraphData]);
 
   useEffect(() => {
     if (!isHydrated) {
@@ -1363,34 +1388,15 @@ function Diagram() {
   useEffect(() => {
     const handler = (ev) => {
       const graph = ev?.detail;
-      if (!graph) return;
-      try {
-        const nextNodes = normalizeGraphNodes(graph.nodes);
-        const nextEdges = (graph.edges || []).map(hydrateEdge);
-        setNodes(nextNodes);
-        setEdges(nextEdges);
-        setStategraphCode(extractStategraphCode(graph));
-        setDiagramResources(extractGraphResources(graph));
-      } catch {}
+      applyGraphData(graph);
     };
     window.addEventListener("load-diagram", handler);
     return () => window.removeEventListener("load-diagram", handler);
-  }, [setNodes, setEdges]);
+  }, [applyGraphData]);
 
   return (
     <div className="dndflow">
-      <Sidebar
-        onLoadDiagram={(graph) => {
-          try {
-            const nextNodes = normalizeGraphNodes(graph.nodes);
-            const nextEdges = (graph.edges || []).map(hydrateEdge);
-            setNodes(nextNodes);
-            setEdges(nextEdges);
-            setStategraphCode(extractStategraphCode(graph));
-            setDiagramResources(extractGraphResources(graph));
-          } catch {}
-        }}
-      />
+      <Sidebar onLoadDiagram={applyGraphData} />
       <div className="workspace">
         <header className="top-nav">
           <div className="top-nav__content">
