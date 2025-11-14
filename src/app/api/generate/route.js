@@ -18,14 +18,26 @@ const RULES_PROMPT = `A partir del grafo LangGraph proporcionado genera cuatro a
 - requirements.txt → lista de dependencias (una por línea) detectadas a partir del código y recursos.
 - .env → nombres de secrets requeridos. Nunca escribas sus valores; deja cada clave vacía (por ejemplo, OPENAI_API_KEY=).
 
-Instrucciones específicas:
-1) agent.py debe seguir LangGraph v1 con from langgraph.graph import StateGraph, START, END.
-2) Inserta el código del nodo START al comienzo tal cual se suministra.
-3) Para cada nodo ejecutable genera una función snake_case basada en su etiqueta o id; si falta código usa raise NotImplementedError.
-4) Construye una sola instancia g = StateGraph(State) y añade nodos/edges siguiendo el orden original. Compila al final con app = g.compile().
-5) langgraph.json debe describir nodos, edges y recursos relevantes con la información mínima necesaria para reconstrucción.
-6) requirements.txt incluye sólo paquetes externos necesarios; si no hay dependencias escribe un comentario '# No external dependencies'.
-7) .env lista cada secret único requerido (por ejemplo API keys, tokens) como NOMBRE= sin valor. Si no se requiere ninguno escribe '# No secrets required'.`;
+Usa siempre:
+from langgraph.graph import StateGraph, START, END
+from typing_extensions import TypedDict
+from typing import Literal
+Copia dentro de agent.py el contenido de StateGraph.code exactamente como esté.
+Para cada nodo del JSON:
+Si code contiene código Python válido: cópialo tal cual en agent.py.
+Si no hay código: crea una función en snake_case basada en su label o id que haga raise NotImplementedError.
+Para nodos condicionales (conditionalNode): copia su código tal cual; esa función se usará en add_conditional_edges.
+Crea un solo grafo:
+builder = StateGraph(State)
+Añade nodos:
+builder.add_node("<id>", <funcion>)
+Construye edges según el JSON:
+Si apunta a un nodo Start → usar START
+Si apunta al fin → usar END
+Si es un condicional → usar add_conditional_edges(origen, funcion_condicional)
+Si es normal → add_edge(source, target)
+Compila al final con:
+graph = builder.compile()`;
 
 const RESPONSE_SCHEMA = {
   name: "langgraph_generation",
