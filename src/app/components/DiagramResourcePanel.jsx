@@ -131,7 +131,13 @@ export default function DiagramResourcePanel({
   onDragOver,
   onDrop,
   onRemoveResource,
+  memoryComplement,
+  onToggleMemory,
 }) {
+  const memoryEnabled = Boolean(memoryComplement?.enabled);
+  const memoryCode =
+    typeof memoryComplement?.code === "string" ? memoryComplement.code : "";
+
   return (
     <>
       <div
@@ -244,11 +250,36 @@ export default function DiagramResourcePanel({
                 <Checkbox
                   sx={{
                     color: "#f9fafb",
+                    "&.Mui-checked": {
+                      color: "#60a5fa",
+                    },
+                  }}
+                  checked={memoryEnabled}
+                  onChange={(event) => {
+                    if (typeof onToggleMemory === "function") {
+                      onToggleMemory(event.target.checked);
+                    }
                   }}
                 />
               }
               label="Memory"
+              sx={{
+                color: "#f9fafb",
+                "& .MuiFormControlLabel-label": {
+                  fontWeight: 600,
+                },
+              }}
             />
+            <div className="diagram-resource-sidebar__memory-preview">
+              <p className="diagram-resource-sidebar__memory-description">
+                {memoryEnabled
+                  ? "El chatbot utilizará memoria para recordar el historial de la conversación."
+                  : "El chatbot no utilizará memoria en esta configuración."}
+              </p>
+              <pre className="diagram-resource-sidebar__memory-code-block">
+                {memoryCode}
+              </pre>
+            </div>
           </>
         ) : (
           <>
