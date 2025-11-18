@@ -8,6 +8,7 @@ import { GiCrossedChains } from "react-icons/gi";
 import { FaTools } from "react-icons/fa";
 import dynamic from "next/dynamic";
 import { Box } from "@mui/material";
+import { Checkbox, FormControlLabel } from "@mui/material";
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
   ssr: false,
   loading: () => <Box sx={{ p: 2 }}>Cargando editor...</Box>,
@@ -168,6 +169,20 @@ export default function DiagramResourcePanel({
         >
           Recursos
         </button>
+        <button
+          type="button"
+          className={`diagram-resource-tab-button${
+            activeTab === "complementos"
+              ? " diagram-resource-tab-button--active"
+              : ""
+          }`}
+          onClick={() => onSelectTab("complementos")}
+          aria-controls="diagram-resource-sidebar"
+          aria-selected={activeTab === "complementos"}
+          role="tab"
+        >
+          Complementos
+        </button>
       </div>
       <aside
         id="diagram-resource-sidebar"
@@ -204,6 +219,35 @@ export default function DiagramResourcePanel({
             <StategraphSummary
               value={stategraphCode}
               onChange={onStategraphChange}
+            />
+          </>
+        ) : activeTab === "complementos" ? (
+          <>
+            <div className="diagram-resource-sidebar__header">
+              <h2
+                id="diagram-resource-sidebar-title"
+                className="diagram-resource-sidebar__title"
+              >
+                Complementos del diagrama
+              </h2>
+              <Tooltip
+                title="Aquí puedes gestionar los complementos del diagrama."
+                arrow
+              >
+                <IconButton>
+                  <InfoOutlinedIcon className="diagram-resource-sidebar__tooltip" />
+                </IconButton>
+              </Tooltip>
+            </div>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  sx={{
+                    color: "#f9fafb",
+                  }}
+                />
+              }
+              label="Memory"
             />
           </>
         ) : (
