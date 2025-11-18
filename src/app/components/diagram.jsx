@@ -214,6 +214,54 @@ const extractGraphResources = (graph) => {
   return { prompts, chains, tools };
 };
 
+const extractGraphComplements = (graph) => {
+  const fallback = cloneInitialComplements();
+  if (!graph || typeof graph !== "object") {
+    return fallback;
+  }
+
+  const rawComplements =
+    (graph.complements &&
+      typeof graph.complements === "object" &&
+      graph.complements) ||
+    (graph.Complements &&
+      typeof graph.Complements === "object" &&
+      graph.Complements) ||
+    (graph.resources &&
+      typeof graph.resources === "object" &&
+      typeof graph.resources.complements === "object" &&
+      graph.resources.complements) ||
+    {};
+
+  const memorySource =
+    rawComplements.memory ||
+    rawComplements.Memory ||
+    rawComplements.memoria ||
+    {};
+
+  const enabled =
+    typeof memorySource.enabled === "boolean"
+      ? memorySource.enabled
+      : typeof memorySource.active === "boolean"
+      ? memorySource.active
+      : false;
+
+  const codeCandidate =
+    typeof memorySource.code === "string" ? memorySource.code : null;
+
+  return {
+    memory: {
+      enabled,
+      code:
+        codeCandidate && codeCandidate.trim()
+          ? codeCandidate
+          : enabled
+          ? MEMORY_ENABLED_SNIPPET
+          : MEMORY_DISABLED_SNIPPET,
+    },
+  };
+};
+
 const normalizeGraphNodes = (graphNodes = []) => {
   const mappedNodes = graphNodes
     .map((node) => {
@@ -354,11 +402,39 @@ const initialEdges = [
   },
 ];
 
+const MEMORY_ENABLED_SNIPPET = [
+  "# Complemento Memory activado",
+  "# El chatbot recordará el historial de la conversación.",
+  "from langchain.memory import ConversationBufferMemory",
+  "",
+  "chat_memory = ConversationBufferMemory(",
+  "    memory_key=\"chat_history\",",
+  "    return_messages=True,",
+  ")",
+].join("\n");
+
+const MEMORY_DISABLED_SNIPPET = [
+  "# Complemento Memory desactivado",
+  "# El chatbot no conservará el historial de la conversación.",
+  "chat_memory = None",
+].join("\n");
+
 const initialResources = {
   prompts: [],
   chains: [],
   tools: [],
 };
+
+const initialComplements = {
+  memory: {
+    enabled: false,
+    code: MEMORY_DISABLED_SNIPPET,
+  },
+};
+
+const cloneInitialComplements = () => ({
+  memory: { ...initialComplements.memory },
+});
 
 const cloneInitialNodes = () =>
   initialNodes.map((node) => ({
@@ -445,6 +521,9 @@ function Diagram() {
   const [diagramResources, setDiagramResources] = useState(() => ({
     ...initialResources,
   }));
+  const [complements, setComplements] = useState(() =>
+    cloneInitialComplements()
+  );
   const [stategraphCode, setStategraphCode] = useState("");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
@@ -507,6 +586,7 @@ function Diagram() {
         setEdges(nextEdges);
         setStategraphCode(extractStategraphCode(graph));
         setDiagramResources(extractGraphResources(graph));
+        setComplements(extractGraphComplements(graph));
 
         scheduleLayoutWithMeasuredNodes();
       } catch (error) {
@@ -1045,6 +1125,42 @@ function Diagram() {
     [activeResourcePanelTab]
   );
 
+  const handleToggleMemoryComplement = useCallback((nextValue) => {
+    setComplements((prev) => {
+      const currentMemory = prev.memory ?? initialComplements.memory;
+      const nextEnabled = Boolean(nextValue);
+      let nextCode = currentMemory.code;
+
+      if (nextEnabled) {
+        const trimmedCode =
+          typeof currentMemory.code === "string"
+            ? currentMemory.code.trim()
+            : "";
+        if (!trimmedCode || trimmedCode === MEMORY_DISABLED_SNIPPET) {
+          nextCode = MEMORY_ENABLED_SNIPPET;
+        }
+      } else {
+        nextCode = MEMORY_DISABLED_SNIPPET;
+      }
+
+      if (
+        currentMemory.enabled === nextEnabled &&
+        currentMemory.code === nextCode
+      ) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        memory: {
+          ...currentMemory,
+          enabled: nextEnabled,
+          code: nextCode,
+        },
+      };
+    });
+  }, []);
+
   const GraphJSON = useCallback(() => {
     const nodeIdMap = new Map();
     const nodeData = nodes.map((n, index) => {
@@ -1097,6 +1213,18 @@ function Diagram() {
     const resourceChains = withSequentialIds(diagramResources.chains, "chain");
     const resourceTools = withSequentialIds(diagramResources.tools, "tool");
 
+    const memoryComplement = complements?.memory ?? initialComplements.memory;
+    const normalizedMemory = {
+      enabled: Boolean(memoryComplement?.enabled),
+      code:
+        typeof memoryComplement?.code === "string" &&
+        memoryComplement.code.trim()
+          ? memoryComplement.code
+          : memoryComplement?.enabled
+          ? MEMORY_ENABLED_SNIPPET
+          : MEMORY_DISABLED_SNIPPET,
+    };
+
     const graphJSON = {
       StateGraph: {
         label: "StateGraph",
@@ -1109,9 +1237,12 @@ function Diagram() {
         chains: resourceChains,
         tools: resourceTools,
       },
+      complements: {
+        memory: normalizedMemory,
+      },
     };
     return graphJSON;
-  }, [diagramResources, edges, nodes, stategraphCode]);
+  }, [complements, diagramResources, edges, nodes, stategraphCode]);
 
   const generateCodeWithAI = useCallback(async () => {
     const graphJSON = GraphJSON();
@@ -1285,6 +1416,7 @@ function Diagram() {
         applyGraphData(storedGraph);
       } else {
         setDiagramResources(() => ({ ...initialResources }));
+        setComplements(cloneInitialComplements());
         setStategraphCode("");
       }
 
@@ -1320,6 +1452,7 @@ function Diagram() {
       setNodes(initialClone);
       setEdges(cloneInitialEdges());
       setDiagramResources(() => ({ ...initialResources }));
+      setComplements(cloneInitialComplements());
       setAlert({ message: "", severity: "success", open: false });
       setIsMenuOpen(false);
       setStategraphCode("");
@@ -1570,6 +1703,8 @@ function Diagram() {
         onDragOver={handleResourceDragOver}
         onDrop={handleResourceDrop}
         onRemoveResource={handleRemoveResource}
+        memoryComplement={complements.memory}
+        onToggleMemory={handleToggleMemoryComplement}
       />
       {contextMenu.open && (
         <div
