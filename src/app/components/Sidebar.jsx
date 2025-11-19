@@ -843,6 +843,11 @@ const Sidebar = ({ onLoadDiagram }) => {
       setCustomNodes((prev) =>
         prev.map((item) => (item.id === saved.id ? saved : item))
       );
+      window.dispatchEvent(
+        new CustomEvent("node-updated", {
+          detail: { oldName: node.name, newName: nodeName },
+        })
+      );
       return true;
     } catch (err) {
       console.error("Error al actualizar nodo:", err);
@@ -914,6 +919,11 @@ const Sidebar = ({ onLoadDiagram }) => {
       setCustomPrompts((prev) =>
         prev.map((item) => (item.id === saved.id ? saved : item))
       );
+      window.dispatchEvent(
+        new CustomEvent("prompt-updated", {
+          detail: { oldName: prompt.name, newName: promptName },
+        })
+      );
       return true;
     } catch (err) {
       console.error("Error al actualizar prompt:", err);
@@ -949,6 +959,11 @@ const Sidebar = ({ onLoadDiagram }) => {
       setCustomChains((prev) =>
         prev.map((item) => (item.id === saved.id ? saved : item))
       );
+      window.dispatchEvent(
+        new CustomEvent("chain-updated", {
+          detail: { oldName: chain.name, newName: chainName },
+        })
+      );
       return true;
     } catch (err) {
       console.error("Error al actualizar chain:", err);
@@ -983,6 +998,11 @@ const Sidebar = ({ onLoadDiagram }) => {
       const saved = await res.json();
       setCustomTools((prev) =>
         prev.map((item) => (item.id === saved.id ? saved : item))
+      );
+      window.dispatchEvent(
+        new CustomEvent("tool-updated", {
+          detail: { oldName: tool.name, newName: toolName },
+        })
       );
       return true;
     } catch (err) {

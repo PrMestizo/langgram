@@ -803,7 +803,94 @@ function Diagram() {
     if (!edgeStillExists) {
       closeFilterEditor();
     }
-  }, [closeFilterEditor, edges, filterEditor.edgeId, filterEditor.open]);
+  }, [edges, filterEditor.open, filterEditor.edgeId, closeFilterEditor]);
+
+  useEffect(() => {
+    const handleNodeUpdate = (event) => {
+      const { oldName, newName } = event.detail;
+      setNodes((prevNodes) =>
+        prevNodes.map((node) => {
+          if (node.data?.label === oldName) {
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                label: newName,
+                nodeType: newName, // Assuming nodeType also tracks the name for custom nodes
+              },
+            };
+          }
+          return node;
+        })
+      );
+    };
+
+    const handleChainUpdate = (event) => {
+      const { oldName, newName } = event.detail;
+      setNodes((prevNodes) =>
+        prevNodes.map((node) => {
+          const updatedChains = (node.data?.chains || []).map((chain) =>
+            chain.name === oldName ? { ...chain, name: newName } : chain
+          );
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              chains: updatedChains,
+            },
+          };
+        })
+      );
+    };
+
+    const handleToolUpdate = (event) => {
+      const { oldName, newName } = event.detail;
+      setNodes((prevNodes) =>
+        prevNodes.map((node) => {
+          const updatedTools = (node.data?.tools || []).map((tool) =>
+            tool.name === oldName ? { ...tool, name: newName } : tool
+          );
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              tools: updatedTools,
+            },
+          };
+        })
+      );
+    };
+
+    const handlePromptUpdate = (event) => {
+      const { oldName, newName } = event.detail;
+      setNodes((prevNodes) =>
+        prevNodes.map((node) => {
+          const updatedPrompts = (node.data?.prompts || []).map((prompt) =>
+            prompt.name === oldName ? { ...prompt, name: newName } : prompt
+          );
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              prompts: updatedPrompts,
+            },
+          };
+        })
+      );
+    };
+
+    window.addEventListener("node-updated", handleNodeUpdate);
+    window.addEventListener("chain-updated", handleChainUpdate);
+    window.addEventListener("tool-updated", handleToolUpdate);
+    window.addEventListener("prompt-updated", handlePromptUpdate);
+
+    return () => {
+      window.removeEventListener("node-updated", handleNodeUpdate);
+      window.removeEventListener("chain-updated", handleChainUpdate);
+      window.removeEventListener("tool-updated", handleToolUpdate);
+      window.removeEventListener("prompt-updated", handlePromptUpdate);
+    };
+  }, []);
 
   useEffect(() => {
     if (!contextMenu.open) {
