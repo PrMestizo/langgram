@@ -19,10 +19,8 @@ const RULES_PROMPT = `A partir del grafo LangGraph proporcionado genera cuatro a
 - .env → nombres de secrets requeridos. Nunca escribas sus valores; deja cada clave vacía (por ejemplo, OPENAI_API_KEY=).
 
 Usa siempre:
-from langgraph.graph import StateGraph, START, END
-from typing_extensions import TypedDict
-from typing import Literal
-Copia dentro de agent.py el contenido de StateGraph.code exactamente como esté.
+Identifica que imports necesita el codigo analizando el resto del codigo.
+Añade dentro de agent.py el contenido de StateGraph.code exactamente como esté.
 Para cada nodo del JSON:
 Si code contiene código Python válido: cópialo tal cual en agent.py.
 Si no hay código: crea una función en snake_case basada en su label o id que haga raise NotImplementedError.

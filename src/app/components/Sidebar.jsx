@@ -1391,9 +1391,9 @@ const Sidebar = ({ onLoadDiagram }) => {
               <div className="section-title">Essential Nodes</div>
               <div
                 className={`node-item ${
-                  menuOpenId === "node-Base" ? "active" : ""
+                  menuOpenId === "START" ? "active" : ""
                 }`}
-                onDragStart={(event) => onDragStart(event, "input")}
+                onDragStart={(event) => onDragStart(event, "START")}
                 onDragEnd={handleDragEnd}
                 draggable
               >
@@ -1404,15 +1404,15 @@ const Sidebar = ({ onLoadDiagram }) => {
                 <LongMenu
                   className="kebab-menu"
                   onOpenChange={(open) =>
-                    setMenuOpenId(open ? "node-Base" : null)
+                    setMenuOpenId(open ? "START" : null)
                   }
                 />
               </div>
               <div
                 className={`node-item ${
-                  menuOpenId === "node-Input" ? "active" : ""
+                  menuOpenId === "END" ? "active" : ""
                 }`}
-                onDragStart={(event) => onDragStart(event, "output")}
+                onDragStart={(event) => onDragStart(event, "END")}
                 onDragEnd={handleDragEnd}
                 draggable
               >
@@ -1423,7 +1423,7 @@ const Sidebar = ({ onLoadDiagram }) => {
                 <LongMenu
                   className="kebab-menu"
                   onOpenChange={(open) =>
-                    setMenuOpenId(open ? "node-Input" : null)
+                    setMenuOpenId(open ? "END" : null)
                   }
                 />
               </div>

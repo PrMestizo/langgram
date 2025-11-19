@@ -373,19 +373,19 @@ const normalizeGraphNodes = (graphNodes = []) => {
 
 const initialNodes = [
   {
-    id: "n1",
+    id: "START",
     type: "langgramNode",
     position: { x: 0, y: 0 },
     data: {
       label: "START",
-      nodeType: "textUpdater",
+      nodeType: "START",
       prompts: [],
       chains: [],
       tools: [],
     },
   },
   {
-    id: "n2",
+    id: "END",
     type: "langgramNode",
     position: { x: 0, y: 100 },
     data: { label: "END", nodeType: "END", prompts: [], chains: [], tools: [] },
@@ -394,9 +394,9 @@ const initialNodes = [
 
 const initialEdges = [
   {
-    id: "n1-n2",
-    source: "n1",
-    target: "n2",
+    id: "START-END",
+    source: "START",
+    target: "END",
     type: "filterEdge",
     data: { filterCode: "", filterName: "", filterTemplateId: null },
   },
@@ -1072,9 +1072,27 @@ function Diagram() {
         y: event.clientY,
       });
       const isConditionalDrag = dragPayload?.type === "conditionalNode";
+      const isStart = dragPayload?.type === "START";
+      const isEnd = dragPayload?.type === "END";
+      
+      let nodeId = getId();
+      if (isStart) nodeId = "START";
+      if (isEnd) nodeId = "END";
+
+      // Check if START or END already exists
+      if ((isStart || isEnd) && nodes.some((n) => n.id === nodeId)) {
+        setAlert({
+          message: `El nodo ${nodeId} ya existe en el diagrama.`,
+          severity: "warning",
+          open: true,
+        });
+        resetDrag();
+        return;
+      }
+
       const label = dragPayload?.name ?? dragPayload?.type;
       const newNode = {
-        id: getId(),
+        id: nodeId,
         type: isConditionalDrag ? "conditionalNode" : "langgramNode",
         position,
         data: {
@@ -1091,7 +1109,7 @@ function Diagram() {
       setNodes((nds) => nds.concat(newNode));
       resetDrag();
     },
-    [dragPayload, resetDrag, screenToFlowPosition, setNodes]
+    [dragPayload, resetDrag, screenToFlowPosition, setNodes, nodes]
   );
 
   const onDragStart = (event, nodeType, nodeCode) => {
@@ -1251,7 +1269,10 @@ function Diagram() {
   const GraphJSON = useCallback(() => {
     const nodeIdMap = new Map();
     const nodeData = nodes.map((n, index) => {
-      const nodeId = `node_${index + 1}`;
+      let nodeId = `node_${index + 1}`;
+      if (n.id === "START" || n.id === "END") {
+        nodeId = n.id;
+      }
       nodeIdMap.set(n.id, nodeId);
       return {
         id: nodeId,
