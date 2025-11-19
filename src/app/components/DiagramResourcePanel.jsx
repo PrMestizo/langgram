@@ -277,9 +277,52 @@ export default function DiagramResourcePanel({
                   ? "El chatbot utilizará memoria para recordar el historial de la conversación."
                   : "El chatbot no utilizará memoria en esta configuración."}
               </p>
-              <pre className="diagram-resource-sidebar__memory-code-block">
-                {memoryCode}
-              </pre>
+                        <Box
+                sx={{
+                  mt: 2,
+                  height: "200px",
+                  border: "1px solid #eeededff",
+                  borderRadius: 1,
+                  overflow: "hidden",
+                  "& .monaco-editor": {
+                    "--vscode-editor-background": "#1E1E1E",
+                    "--vscode-editor-foreground": "#D4D4D4",
+                    "--vscode-editor-lineHighlightBackground": "#2A2D2E",
+                  },
+                  "& .monaco-scrollable-element > .scrollbar > .slider": {
+                    background: "rgba(121, 121, 121, 0.4) !important",
+                    "&:hover": {
+                      background: "rgba(100, 100, 100, 0.7) !important",
+                    },
+                    "&:active": {
+                      background: "rgba(191, 191, 191, 0.4) !important",
+                    },
+                  },
+                }}
+              >
+                <MonacoEditor
+                  height="100%"
+                  defaultLanguage="python"
+                  theme="vs-dark"
+                  value={memoryCode}
+                  options={{
+                    readOnly: true,
+                    automaticLayout: true,
+                    fontSize: 12,
+                    lineNumbers: "off",
+                    wordWrap: "on",
+                    minimap: { enabled: false },
+                    scrollBeyondLastLine: false,
+                    fontFamily: 'Menlo, Monaco, "Courier New", monospace',
+                    tabSize: 2,
+                    scrollbar: {
+                      vertical: "auto",
+                      horizontal: "hidden",
+                      useShadows: true,
+                    },
+                  }}
+                />
+              </Box>
             </div>
           </>
         ) : (
