@@ -264,12 +264,14 @@ export default function DiagramResourcePanel({
               label="Memory"
               sx={{
                 color: "#f9fafb",
+                mt: -4, // Reduce space between title and checkbox
+                mb: -3,  // Reduce space between checkbox and message
                 "& .MuiFormControlLabel-label": {
                   fontWeight: 600,
                 },
               }}
             />
-            <div className="diagram-resource-sidebar__memory-preview">
+            <div className="diagram-resource-sidebar__memory-preview" style={{ marginTop: '4px' }}>
               <p className="diagram-resource-sidebar__memory-description">
                 {memoryEnabled
                   ? "El chatbot utilizará memoria para recordar el historial de la conversación."
