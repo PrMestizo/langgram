@@ -1553,30 +1553,33 @@ function Diagram() {
     persistDiagram();
   }, [GraphJSON, isHydrated]);
 
-  useEffect(() => {
-    const handleResetDiagram = () => {
-      const initialClone = cloneInitialNodes();
-      syncNodeIdCounter(initialClone);
-      setNodes(initialClone);
-      setEdges(cloneInitialEdges());
-      setDiagramResources(() => ({ ...initialResources }));
-      setComplements(cloneInitialComplements());
-      setAlert({ message: "", severity: "success", open: false });
-      setIsMenuOpen(false);
-      setStategraphCode("");
-      setIsSaveDialogOpen(false);
-      setDiagramName("");
-      closeFilterEditor();
-      closeFilterContextMenu();
-      resetDrag();
-      setIsResourcePanelOpen(false);
-    };
+  const resetDiagram = useCallback(() => {
+    const initialClone = cloneInitialNodes();
+    syncNodeIdCounter(initialClone);
+    setNodes(initialClone);
+    setEdges(cloneInitialEdges());
+    setDiagramResources(() => ({ ...initialResources }));
+    setComplements(cloneInitialComplements());
+    setAlert({ message: "", severity: "success", open: false });
+    setIsMenuOpen(false);
+    setStategraphCode("");
+    setIsSaveDialogOpen(false);
+    setDiagramName("");
+    closeFilterEditor();
+    closeFilterContextMenu();
+    resetDrag();
+    setIsResourcePanelOpen(false);
+    requestAnimationFrame(() => {
+      fitView({ padding: 0.2, includeHiddenNodes: true });
+    });
+  }, [closeFilterContextMenu, closeFilterEditor, resetDrag, fitView]);
 
-    window.addEventListener("reset-diagram", handleResetDiagram);
+  useEffect(() => {
+    window.addEventListener("reset-diagram", resetDiagram);
     return () => {
-      window.removeEventListener("reset-diagram", handleResetDiagram);
+      window.removeEventListener("reset-diagram", resetDiagram);
     };
-  }, [closeFilterContextMenu, closeFilterEditor, resetDrag]);
+  }, [resetDiagram]);
 
   const handleClearFilterFromEdge = useCallback(
     (edgeId) => {
@@ -1683,6 +1686,13 @@ function Diagram() {
                 onClick={() => setShowJsonModal(true)}
               >
                 Ver JSON
+              </button>
+              <button
+                type="button"
+                className="top-nav__button top-nav__button--secondary"
+                onClick={resetDiagram}
+              >
+                Reset
               </button>
               <ProfileMenu />
             </div>
