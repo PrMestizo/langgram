@@ -387,20 +387,12 @@ const initialNodes = [
   {
     id: "END",
     type: "langgramNode",
-    position: { x: 0, y: 100 },
+    position: { x: 0, y: 300 },
     data: { label: "END", nodeType: "END", prompts: [], chains: [], tools: [] },
   },
 ];
 
-const initialEdges = [
-  {
-    id: "START-END",
-    source: "START",
-    target: "END",
-    type: "filterEdge",
-    data: { filterCode: "", filterName: "", filterTemplateId: null },
-  },
-];
+const initialEdges = [];
 
 const MEMORY_ENABLED_SNIPPET = [
   "# Complemento Memory activado",
@@ -1570,7 +1562,9 @@ function Diagram() {
     resetDrag();
     setIsResourcePanelOpen(false);
     requestAnimationFrame(() => {
-      fitView({ padding: 0.2, includeHiddenNodes: true });
+      requestAnimationFrame(() => {
+        fitView({ padding: 0.2, includeHiddenNodes: true });
+      });
     });
   }, [closeFilterContextMenu, closeFilterEditor, resetDrag, fitView]);
 
