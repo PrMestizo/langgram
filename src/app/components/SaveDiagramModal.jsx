@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+
 import Modal from "@mui/material/Modal";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
@@ -15,6 +17,26 @@ export default function SaveDiagramModal({
   onSave,
   onClose,
 }) {
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (
+        open &&
+        (event.ctrlKey || event.metaKey) &&
+        event.key === "s"
+      ) {
+        event.preventDefault();
+        if (diagramName.trim()) {
+          onSave();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [open, diagramName, onSave]);
+
   return (
     <Modal
       open={open}

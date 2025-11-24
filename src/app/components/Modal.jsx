@@ -81,6 +81,24 @@ function CustomModal({
     onClose?.();
   };
 
+  React.useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (
+        open &&
+        (event.ctrlKey || event.metaKey) &&
+        event.key === "s"
+      ) {
+        event.preventDefault();
+        handleSave();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [open, handleSave]);
+
   return (
     <MuiModal
       aria-labelledby="transition-modal-title"
