@@ -8,6 +8,7 @@ import {
   Box,
   Backdrop,
   FormControlLabel,
+  Alert,
 } from "@mui/material";
 import Editor from "@monaco-editor/react";
 import MuiModal from "@mui/material/Modal";
@@ -48,8 +49,13 @@ function CustomModal({
   const [conditionalEdge, setConditionalEdge] = React.useState(
     !!initialConditionalEdge
   );
+  const [error, setError] = React.useState("");
+
   React.useEffect(() => {
     setOpen(!!isVisible);
+    if (isVisible) {
+      setError("");
+    }
   }, [isVisible]);
 
   React.useEffect(() => {
@@ -74,7 +80,21 @@ function CustomModal({
   const editorLanguage = language ?? "python";
 
   const handleSave = async () => {
-    const result = await onSave?.(code, nodeName, conditionalEdge);
+    const trimmedName = nodeName.trim();
+    const trimmedCode = code.trim();
+
+    if (!trimmedName) {
+      setError("El nombre es obligatorio.");
+      return;
+    }
+
+    if (!trimmedCode) {
+      setError("El contenido/código es obligatorio.");
+      return;
+    }
+
+    setError("");
+    const result = await onSave?.(trimmedCode, trimmedName, conditionalEdge);
     if (result === false) {
       return;
     }
@@ -118,6 +138,13 @@ function CustomModal({
           <Typography id="transition-modal-title" variant="h6" component="h2">
             {title}
           </Typography>
+          
+          {error && (
+            <Alert severity="error" sx={{ mt: 2, mb: 1 }}>
+              {error}
+            </Alert>
+          )}
+
           <div style={{ marginBottom: "1rem" }}>
             <TextField
               label={nameLabel}
@@ -127,7 +154,10 @@ function CustomModal({
               margin="normal"
               sx={{ width: "300px" }}
               value={nodeName}
-              onChange={(e) => setNodeName(e.target.value)}
+              onChange={(e) => {
+                setNodeName(e.target.value);
+                if (error) setError("");
+              }}
               placeholder={namePlaceholder ?? nameLabel}
             />
             {showConditionalEdge && (
@@ -152,7 +182,10 @@ function CustomModal({
               multiline
               minRows={8}
               value={code}
-              onChange={(e) => setCode(e.target.value)}
+              onChange={(e) => {
+                setCode(e.target.value);
+                if (error) setError("");
+              }}
               placeholder={textPlaceholder}
               sx={{ marginBottom: "1rem" }}
             />
@@ -168,7 +201,10 @@ function CustomModal({
                   scrollBeyondLastLine: false,
                   fontSize: 14,
                 }}
-                onChange={(val) => setCode(val ?? "")}
+                onChange={(val) => {
+                  setCode(val ?? "");
+                  if (error) setError("");
+                }}
               />
             </div>
           )}
