@@ -1187,9 +1187,82 @@ const Sidebar = ({ onLoadDiagram }) => {
     );
 
     return (
-      <SimpleTreeView sx={{ color: "white" }}>
-        {/* Diagrams Section */}
-        <TreeItem itemId="section-diagrams" label="Diagrams">
+      <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+        {/* Sidebar Header */}
+        <div
+          style={{
+            height: "60px",
+            background: "#1b1b1b",
+            display: "flex",
+            alignItems: "center",
+            padding: "0 16px",
+            gap: "12px",
+            borderBottom: "1px solid #333",
+            flexShrink: 0,
+          }}
+        >
+          <button
+            onClick={() => router.push("/store")}
+            style={{
+              background: "transparent",
+              border: "none",
+              color: "white",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              fontSize: "0.9rem",
+              fontWeight: 600,
+            }}
+          >
+            <FaStore /> Store
+          </button>
+          <button
+            onClick={() => selectPanelTab("settings")} // Or open modal directly if preferred
+            style={{
+              background: "transparent",
+              border: "none",
+              color: "white",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              fontSize: "0.9rem",
+              fontWeight: 600,
+            }}
+          >
+            <AiOutlineSetting /> Settings
+          </button>
+        </div>
+
+        {/* Tree View */}
+        <div style={{ flex: 1, overflowY: "auto", padding: "10px" }}>
+          <SimpleTreeView
+            sx={{
+              color: "white",
+              "& .MuiTreeItem-content": {
+                padding: "8px",
+                borderRadius: "4px",
+                width: "100%",
+                boxSizing: "border-box",
+                "&:hover": {
+                  backgroundColor: "rgba(33, 150, 243, 0.1)", // Light blue hover
+                },
+                "&.Mui-selected": {
+                  backgroundColor: "rgba(33, 150, 243, 0.2) !important", // Blue selected
+                },
+                "&.Mui-selected:hover": {
+                  backgroundColor: "rgba(33, 150, 243, 0.3) !important",
+                },
+              },
+              "& .MuiTreeItem-root": {
+                 // Ensure the root takes full width so content can expand
+                 width: "100%",
+              }
+            }}
+          >
+            {/* Diagrams Section */}
+            <TreeItem itemId="section-diagrams" label="Diagrams">
           <TreeItem itemId="section-diagram-tools" label="Diagram Tools">
             <TreeItem
               itemId="create-flow"
@@ -1571,16 +1644,10 @@ const Sidebar = ({ onLoadDiagram }) => {
           </div>
         </TreeItem>
 
-        {/* Store & Settings */}
-        <TreeItem
-          itemId="store"
-          label={commonTreeItemLabel("Store", <FaStore />, null, { onClick: () => router.push("/store"), style: { cursor: "pointer", width: "100%", display: "flex", alignItems: "center", color: "white" } })}
-        />
-        <TreeItem
-          itemId="settings"
-          label={commonTreeItemLabel("Settings", <AiOutlineSetting />, null)}
-        />
+        {/* Store & Settings removed from here as they are now in the header */}
       </SimpleTreeView>
+    </div>
+  </div>
     );
   };
 
@@ -1588,7 +1655,7 @@ const Sidebar = ({ onLoadDiagram }) => {
     <>
       <aside
         className="chatgpt-sidebar"
-        style={{ width: "300px", display: "flex", flexDirection: "column", overflowY: "auto", padding: "10px" }}
+        style={{ width: "300px", display: "flex", flexDirection: "column", overflow: "hidden", background: "#0f0f11", borderRight: "1px solid #333" }}
       >
         {renderSidebarContent()}
       </aside>
