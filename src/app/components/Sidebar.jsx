@@ -1,5 +1,7 @@
 // Sidebar.jsx
 "use client";
+import { SimpleTreeView } from '@mui/x-tree-view/SimpleTreeView';
+import { TreeItem } from '@mui/x-tree-view/TreeItem';
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDnD } from "./DnDContext";
 import LongMenu from "./KebabMenu";
@@ -34,136 +36,11 @@ const Sidebar = ({ onLoadDiagram }) => {
   const [modalInitialConditionalEdge, setModalInitialConditionalEdge] =
     useState(false);
   const [editingContext, setEditingContext] = useState(null);
-  const tabItems = useMemo(
-    () => [
-      {
-        id: "diagrams",
-        label: "Diagrams",
-        icon: <BsDiagram3 />,
-        type: "panel",
-      },
-      { id: "nodes", label: "Nodes", icon: <FaShareNodes />, type: "panel" },
-      { id: "edges", label: "Edges", icon: <MdCable />, type: "panel" },
-      { id: "prompts", label: "Prompts", icon: <TbPrompt />, type: "panel" },
-      { id: "tools", label: "Tools", icon: <FaTools />, type: "panel" },
-      {
-        id: "chains",
-        label: "Chains",
-        icon: <GiCrossedChains />,
-        type: "panel",
-      },
-      {
-        id: "store",
-        label: "Store",
-        icon: <FaStore />,
-        type: "route",
-        path: "/store",
-      },
-      {
-        id: "settings",
-        label: "Settings",
-        icon: <AiOutlineSetting />,
-        type: "panel",
-      },
-    ],
-    []
-  );
-  const defaultPanelId = tabItems[0].id;
+  const isEditing = Boolean(editingContext);
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [activeTab, setActiveTab] = useState(() => {
-    if (pathname === "/store") {
-      return "store";
-    }
 
-    const tabParam = searchParams?.get("tab");
-    const matchingPanel = tabItems.find(
-      (item) => item.id === tabParam && item.type === "panel"
-    );
-
-    return matchingPanel?.id ?? defaultPanelId;
-  });
-
-  const updateTabQuery = useCallback(
-    (nextTabId, { method = "replace" } = {}) => {
-      const params = new URLSearchParams(searchParams?.toString());
-
-      if (nextTabId) {
-        params.set("tab", nextTabId);
-      } else {
-        params.delete("tab");
-      }
-
-      const queryString = params.toString();
-      const targetUrl = queryString ? `/?${queryString}` : "/";
-      const navigate = method === "push" ? router.push : router.replace;
-      navigate(targetUrl, { scroll: false });
-    },
-    [router, searchParams]
-  );
-
-  const selectPanelTab = useCallback(
-    (tabId, options = {}) => {
-      const { method, skipUrl } = options;
-
-      setActiveTab(tabId);
-
-      if (skipUrl) {
-        return;
-      }
-
-      if (pathname === "/store") {
-        if (tabId && tabId !== "store") {
-          updateTabQuery(tabId, { method: method ?? "push" });
-        }
-        return;
-      }
-
-      if (tabId === null) {
-        updateTabQuery(null, { method: method ?? "replace" });
-        return;
-      }
-
-      if (tabId !== "store") {
-        updateTabQuery(tabId, { method: method ?? "replace" });
-      }
-    },
-    [pathname, updateTabQuery]
-  );
-
-  const activeTabConfig = tabItems.find((item) => item.id === activeTab);
-  const isPanelVisible = activeTabConfig?.type === "panel";
-
-  const isEditing = Boolean(editingContext);
-
-  useEffect(() => {
-    if (pathname === "/store") {
-      if (activeTab !== "store") {
-        selectPanelTab("store", { skipUrl: true });
-      }
-      setMenuOpenId(null);
-      return;
-    }
-
-    const tabParam = searchParams?.get("tab");
-    if (tabParam) {
-      const matchingItem = tabItems.find((item) => item.id === tabParam);
-      if (matchingItem?.type === "panel" && activeTab !== matchingItem.id) {
-        selectPanelTab(matchingItem.id, { skipUrl: true });
-        setMenuOpenId(null);
-      }
-    } else if (activeTab === "store") {
-      selectPanelTab(defaultPanelId, { skipUrl: true });
-    }
-  }, [
-    activeTab,
-    defaultPanelId,
-    pathname,
-    searchParams,
-    selectPanelTab,
-    tabItems,
-  ]);
 
   const modalConfigs = {
     node: {
@@ -491,31 +368,7 @@ const Sidebar = ({ onLoadDiagram }) => {
     setDragPayload(null);
   };
 
-  const handleNavClick = (item, event) => {
-    event.preventDefault();
 
-    if (item.type === "route" && item.path) {
-      if (pathname !== item.path) {
-        router.push(item.path);
-      }
-      setActiveTab(item.id, { skipUrl: true });
-      setMenuOpenId(null);
-      return;
-    }
-
-    if (pathname === "/store" && item.id !== "store") {
-      selectPanelTab(item.id, { method: "push" });
-      setMenuOpenId(null);
-      return;
-    }
-
-    if (activeTab === item.id) {
-      selectPanelTab(null);
-    } else {
-      selectPanelTab(item.id);
-    }
-    setMenuOpenId(null);
-  };
 
   const popupAction = (mode = "node") => {
     setMenuOpenId(null);
@@ -1033,19 +886,19 @@ const Sidebar = ({ onLoadDiagram }) => {
 
     if (popupMode === "edge") {
       handleSaveCustomEdge(code, name, conditionalEdgeValue);
-      selectPanelTab("edges"); // switch to Edges tab
+      // selectPanelTab("edges"); // Removed tab switching
     } else if (popupMode === "prompt") {
       handleSaveCustomPrompt(code, name);
-      selectPanelTab("prompts"); // switch to Prompts tab
+      // selectPanelTab("prompts"); // Removed tab switching
     } else if (popupMode === "chain") {
       handleSaveCustomChain(code, name);
-      selectPanelTab("chains"); // switch to Chains tab
+      // selectPanelTab("chains"); // Removed tab switching
     } else if (popupMode === "tool") {
       handleSaveCustomTool(code, name);
-      selectPanelTab("tools"); // switch to Tools tab
+      // selectPanelTab("tools"); // Removed tab switching
     } else {
       handleSaveCustomNode(code, name);
-      selectPanelTab("nodes"); // switch to Nodes tab
+      // selectPanelTab("nodes"); // Removed tab switching
     }
     return true;
   };
@@ -1307,65 +1160,73 @@ const Sidebar = ({ onLoadDiagram }) => {
           new CustomEvent("load-diagram", { detail: diagramContent })
         );
       }
-      selectPanelTab("diagrams");
+      // selectPanelTab("diagrams"); // Removed tab switching
     } catch (err) {
       console.error("Error al cargar el diagrama:", err);
     }
   };
 
-  const renderTabContent = () => {
-    if (activeTab === null) {
-      return null;
-    }
-    switch (activeTab) {
-      case "diagrams":
-        return (
-          <div className="tab-content">
-            <div className="node-section">
-              <div className="section-title">Diagram Tools</div>
-              <div
-                className={`node-item ${
-                  menuOpenId === "create-flow" ? "active" : ""
-                }`}
-              >
-                <div className="node-icon">
-                  <FaAnkh />
-                </div>
-                Create Flow
+  const renderSidebarContent = () => {
+    const commonTreeItemLabel = (label, icon, menu, draggableProps = {}) => (
+      <div
+        className="node-item"
+        style={{ width: "100%", display: "flex", alignItems: "center", color: "white" }}
+        {...draggableProps}
+      >
+        <div className="node-icon">{icon}</div>
+        <span style={{ flex: 1 }}>{label}</span>
+        {menu}
+      </div>
+    );
+
+    const conditionalEdges = customEdges.filter(
+      (edge) => edge.conditionalEdge
+    );
+    const standardEdges = customEdges.filter(
+      (edge) => !edge.conditionalEdge
+    );
+
+    return (
+      <SimpleTreeView sx={{ color: "white" }}>
+        {/* Diagrams Section */}
+        <TreeItem itemId="section-diagrams" label="Diagrams">
+          <TreeItem itemId="section-diagram-tools" label="Diagram Tools">
+            <TreeItem
+              itemId="create-flow"
+              label={commonTreeItemLabel(
+                "Create Flow",
+                <FaAnkh />,
                 <LongMenu
                   className="kebab-menu"
                   onOpenChange={(open) =>
                     setMenuOpenId(open ? "create-flow" : null)
                   }
                 />
-              </div>
-              <div className="node-item">
-                <div className="node-icon">
-                  <FaAnkh />
-                </div>
-                Save Diagram
+              )}
+            />
+            <TreeItem
+              itemId="save-diagram"
+              label={commonTreeItemLabel(
+                "Save Diagram",
+                <FaAnkh />,
                 <LongMenu
                   className="kebab-menu"
                   onOpenChange={(open) =>
                     setMenuOpenId(open ? "node-Base" : null)
                   }
                 />
-              </div>
-            </div>
-            {customDiagrams.length > 0 && (
-              <div className="node-section">
-                <div className="section-title">Saved Diagrams</div>
-                {customDiagrams.map((d) => (
-                  <div
-                    key={d.name}
-                    className="node-item"
-                    onClick={() => handleLoadDiagram(d)}
-                    style={{ cursor: "pointer" }}
-                  >
-                    <div className="node-icon">
-                      <FaAnkh />
-                    </div>
-                    {d.name}
+              )}
+            />
+          </TreeItem>
+          {customDiagrams.length > 0 && (
+            <TreeItem itemId="section-saved-diagrams" label="Saved Diagrams">
+              {customDiagrams.map((d) => (
+                <TreeItem
+                  key={d.name}
+                  itemId={`diagram-${d.name}`}
+                  label={commonTreeItemLabel(
+                    d.name,
+                    <FaAnkh />,
                     <LongMenu
                       className="kebab-menu"
                       onOpenChange={(open) =>
@@ -1377,74 +1238,64 @@ const Sidebar = ({ onLoadDiagram }) => {
                       onToggleVisibility={(nextValue) =>
                         handleToggleDiagramVisibility(d, nextValue)
                       }
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        );
-      case "nodes":
-        return (
-          <div className="tab-content">
-            <div className="node-section">
-              <div className="section-title">Essential Nodes</div>
-              <div
-                className={`node-item ${
-                  menuOpenId === "START" ? "active" : ""
-                }`}
-                onDragStart={(event) => onDragStart(event, "START")}
-                onDragEnd={handleDragEnd}
-                draggable
-              >
-                <div className="node-icon">
-                  <FaApple />
-                </div>
-                START
+                    />,
+                    { onClick: () => handleLoadDiagram(d), style: { cursor: "pointer", width: "100%", display: "flex", alignItems: "center", color: "white" } }
+                  )}
+                />
+              ))}
+            </TreeItem>
+          )}
+        </TreeItem>
+
+        {/* Nodes Section */}
+        <TreeItem itemId="section-nodes" label="Nodes">
+          <TreeItem itemId="section-essential-nodes" label="Essential Nodes">
+            <TreeItem
+              itemId="node-start"
+              label={commonTreeItemLabel(
+                "START",
+                <FaApple />,
                 <LongMenu
                   className="kebab-menu"
                   onOpenChange={(open) =>
                     setMenuOpenId(open ? "START" : null)
                   }
-                />
-              </div>
-              <div
-                className={`node-item ${
-                  menuOpenId === "END" ? "active" : ""
-                }`}
-                onDragStart={(event) => onDragStart(event, "END")}
-                onDragEnd={handleDragEnd}
-                draggable
-              >
-                <div className="node-icon">
-                  <FaApple />
-                </div>
-                END
+                />,
+                {
+                  draggable: true,
+                  onDragStart: (event) => onDragStart(event, "START"),
+                  onDragEnd: handleDragEnd,
+                }
+              )}
+            />
+            <TreeItem
+              itemId="node-end"
+              label={commonTreeItemLabel(
+                "END",
+                <FaApple />,
                 <LongMenu
                   className="kebab-menu"
                   onOpenChange={(open) =>
                     setMenuOpenId(open ? "END" : null)
                   }
-                />
-              </div>
-            </div>
-            {customNodes.length > 0 && (
-              <div className="node-section">
-                <div className="section-title">Custom Nodes</div>
-                {customNodes.map((n) => (
-                  <div
-                    key={n.name}
-                    className={`node-item ${
-                      menuOpenId === `custom-${n.name}` ? "active" : ""
-                    }`}
-                    onDragStart={(event) => onDragStart(event, n.name, n.code)}
-                    onDragEnd={handleDragEnd}
-                    draggable
-                  >
-                    <div className="node-icon">
-                      <FaApple />
-                    </div>
-                    {n.name}
+                />,
+                {
+                  draggable: true,
+                  onDragStart: (event) => onDragStart(event, "END"),
+                  onDragEnd: handleDragEnd,
+                }
+              )}
+            />
+          </TreeItem>
+          {customNodes.length > 0 && (
+            <TreeItem itemId="section-custom-nodes" label="Custom Nodes">
+              {customNodes.map((n) => (
+                <TreeItem
+                  key={n.name}
+                  itemId={`node-${n.name}`}
+                  label={commonTreeItemLabel(
+                    n.name,
+                    <FaApple />,
                     <LongMenu
                       className="kebab-menu"
                       onOpenChange={(open) =>
@@ -1456,70 +1307,58 @@ const Sidebar = ({ onLoadDiagram }) => {
                       onToggleVisibility={(nextValue) =>
                         handleToggleNodeVisibility(n, nextValue)
                       }
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
-            <div className="sidebar-action-buttons">
-              <button
-                className="sidebar-action-btn primary"
-                onClick={() => popupAction("node")}
-              >
-                <span className="btn-icon">➕</span>
-                Add Custom Node
-              </button>
-            </div>
+                    />,
+                    {
+                      draggable: true,
+                      onDragStart: (event) => onDragStart(event, n.name, n.code),
+                      onDragEnd: handleDragEnd,
+                    }
+                  )}
+                />
+              ))}
+            </TreeItem>
+          )}
+          <div className="sidebar-action-buttons">
+            <button
+              className="sidebar-action-btn primary"
+              onClick={() => popupAction("node")}
+            >
+              <span className="btn-icon">➕</span>
+              Add Custom Node
+            </button>
           </div>
-        );
-      case "edges": {
-        const conditionalEdges = customEdges.filter(
-          (edge) => edge.conditionalEdge
-        );
-        const standardEdges = customEdges.filter(
-          (edge) => !edge.conditionalEdge
-        );
-        return (
-          <div className="tab-content">
-            <div className="node-section">
-              <div className="section-title">Conditional Edges</div>
-              <div
-                key="conditional-filter-default"
-                className={`node-item edge-item ${
-                  menuOpenId === "node-Input" ? "active" : ""
-                }`}
-                onDragStart={(event) => onDragStart(event, "conditionalNode")}
-                onDragEnd={handleDragEnd}
-                draggable
-              >
-                <div className="edge-item__circle">→</div>
-                Filtro Condicional
+        </TreeItem>
+
+        {/* Edges Section */}
+        <TreeItem itemId="section-edges" label="Edges">
+          <TreeItem itemId="section-conditional-edges" label="Conditional Edges">
+            <TreeItem
+              itemId="edge-conditional-default"
+              label={commonTreeItemLabel(
+                "Filtro Condicional",
+                <div className="edge-item__circle">→</div>,
                 <LongMenu
                   className="kebab-menu"
                   onOpenChange={(open) =>
                     setMenuOpenId(open ? "node-Base" : null)
                   }
-                />
-              </div>
-              {conditionalEdges.map((itemE) => (
-                <div
-                  key={itemE.id}
-                  className={`node-item edge-item edge-item--custom ${
-                    menuOpenId === `conditional-${itemE.id}` ? "active" : ""
-                  }`}
-                  onDragStart={(event) =>
-                    onDragStart(
-                      event,
-                      "conditionalNode",
-                      itemE.code,
-                      itemE.name
-                    )
-                  }
-                  onDragEnd={handleDragEnd}
-                  draggable
-                >
-                  <div className="edge-item__circle">◆</div>
-                  {itemE.name}
+                />,
+                {
+                  draggable: true,
+                  onDragStart: (event) => onDragStart(event, "conditionalNode"),
+                  onDragEnd: handleDragEnd,
+                  className: "node-item edge-item",
+                  style: { width: "100%", display: "flex", alignItems: "center", color: "white" }
+                }
+              )}
+            />
+            {conditionalEdges.map((itemE) => (
+              <TreeItem
+                key={itemE.id}
+                itemId={`edge-conditional-${itemE.id}`}
+                label={commonTreeItemLabel(
+                  itemE.name,
+                  <div className="edge-item__circle">◆</div>,
                   <LongMenu
                     className="kebab-menu"
                     onOpenChange={(open) =>
@@ -1531,33 +1370,33 @@ const Sidebar = ({ onLoadDiagram }) => {
                     onToggleVisibility={(nextValue) =>
                       handleToggleEdgeVisibility(itemE, nextValue)
                     }
-                  />
-                </div>
-              ))}
-            </div>
-            {standardEdges.length > 0 && (
-              <div className="node-section">
-                <div className="section-title">Custom Edges</div>
-                {standardEdges.map((item) => (
-                  <div
-                    key={item.id}
-                    className={`node-item edge-item edge-item--custom ${
-                      menuOpenId === `custom-${item.id}` ? "active" : ""
-                    }`}
-                    onDragStart={(event) =>
-                      onEdgeDragStart(
+                  />,
+                  {
+                    draggable: true,
+                    onDragStart: (event) =>
+                      onDragStart(
                         event,
-                        item.name,
-                        item.code,
-                        "filterEdge",
-                        item.id
-                      )
-                    }
-                    onDragEnd={handleDragEnd}
-                    draggable
-                  >
-                    <div className="edge-item__circle">ƒ</div>
-                    {item.name}
+                        "conditionalNode",
+                        itemE.code,
+                        itemE.name
+                      ),
+                    onDragEnd: handleDragEnd,
+                    className: "node-item edge-item edge-item--custom",
+                    style: { width: "100%", display: "flex", alignItems: "center", color: "white" }
+                  }
+                )}
+              />
+            ))}
+          </TreeItem>
+          {standardEdges.length > 0 && (
+            <TreeItem itemId="section-custom-edges" label="Custom Edges">
+              {standardEdges.map((item) => (
+                <TreeItem
+                  key={item.id}
+                  itemId={`edge-custom-${item.id}`}
+                  label={commonTreeItemLabel(
+                    item.name,
+                    <div className="edge-item__circle">ƒ</div>,
                     <LongMenu
                       className="kebab-menu"
                       onOpenChange={(open) =>
@@ -1569,43 +1408,48 @@ const Sidebar = ({ onLoadDiagram }) => {
                       onToggleVisibility={(nextValue) =>
                         handleToggleEdgeVisibility(item, nextValue)
                       }
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
-            <div className="sidebar-action-buttons">
-              <button
-                className="sidebar-action-btn primary"
-                onClick={() => popupAction("edge")}
-              >
-                <span className="btn-icon">➕</span>
-                Add Custom Edge
-              </button>
-            </div>
+                    />,
+                    {
+                      draggable: true,
+                      onDragStart: (event) =>
+                        onEdgeDragStart(
+                          event,
+                          item.name,
+                          item.code,
+                          "filterEdge",
+                          item.id
+                        ),
+                      onDragEnd: handleDragEnd,
+                      className: "node-item edge-item edge-item--custom",
+                      style: { width: "100%", display: "flex", alignItems: "center", color: "white" }
+                    }
+                  )}
+                />
+              ))}
+            </TreeItem>
+          )}
+          <div className="sidebar-action-buttons">
+            <button
+              className="sidebar-action-btn primary"
+              onClick={() => popupAction("edge")}
+            >
+              <span className="btn-icon">➕</span>
+              Add Custom Edge
+            </button>
           </div>
-        );
-      }
-      case "prompts":
-        return (
-          <div className="tab-content">
-            {customPrompts.length > 0 && (
-              <div className="node-section">
-                <div className="section-title">Custom Prompts</div>
-                {customPrompts.map((p) => (
-                  <div
-                    key={p.name}
-                    className={`node-item ${
-                      menuOpenId === `prompt-${p.name}` ? "active" : ""
-                    }`}
-                    draggable
-                    onDragStart={(event) => onPromptDragStart(event, p)}
-                    onDragEnd={handleDragEnd}
-                  >
-                    <div className="node-icon">
-                      <TbPrompt />
-                    </div>
-                    {p.name}
+        </TreeItem>
+
+        {/* Prompts Section */}
+        <TreeItem itemId="section-prompts" label="Prompts">
+          {customPrompts.length > 0 && (
+            <TreeItem itemId="section-custom-prompts" label="Custom Prompts">
+              {customPrompts.map((p) => (
+                <TreeItem
+                  key={p.name}
+                  itemId={`prompt-${p.name}`}
+                  label={commonTreeItemLabel(
+                    p.name,
+                    <TbPrompt />,
                     <LongMenu
                       className="kebab-menu"
                       onOpenChange={(open) =>
@@ -1617,42 +1461,39 @@ const Sidebar = ({ onLoadDiagram }) => {
                       onToggleVisibility={(nextValue) =>
                         handleTogglePromptVisibility(p, nextValue)
                       }
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
-            <div className="sidebar-action-buttons">
-              <button
-                className="sidebar-action-btn primary"
-                onClick={() => popupAction("prompt")}
-              >
-                <span className="btn-icon">➕</span>
-                Add Custom Prompt
-              </button>
-            </div>
+                    />,
+                    {
+                      draggable: true,
+                      onDragStart: (event) => onPromptDragStart(event, p),
+                      onDragEnd: handleDragEnd,
+                    }
+                  )}
+                />
+              ))}
+            </TreeItem>
+          )}
+          <div className="sidebar-action-buttons">
+            <button
+              className="sidebar-action-btn primary"
+              onClick={() => popupAction("prompt")}
+            >
+              <span className="btn-icon">➕</span>
+              Add Custom Prompt
+            </button>
           </div>
-        );
-      case "tools":
-        return (
-          <div className="tab-content">
-            {customTools.length > 0 && (
-              <div className="node-section">
-                <div className="section-title">Custom Tools</div>
-                {customTools.map((t) => (
-                  <div
-                    key={t.name}
-                    className={`node-item ${
-                      menuOpenId === `tool-${t.name}` ? "active" : ""
-                    }`}
-                    draggable
-                    onDragStart={(event) => onToolDragStart(event, t)}
-                    onDragEnd={handleDragEnd}
-                  >
-                    <div className="node-icon">
-                      <FaTools />
-                    </div>
-                    {t.name}
+        </TreeItem>
+
+        {/* Tools Section */}
+        <TreeItem itemId="section-tools" label="Tools">
+          {customTools.length > 0 && (
+            <TreeItem itemId="section-custom-tools" label="Custom Tools">
+              {customTools.map((t) => (
+                <TreeItem
+                  key={t.name}
+                  itemId={`tool-${t.name}`}
+                  label={commonTreeItemLabel(
+                    t.name,
+                    <FaTools />,
                     <LongMenu
                       className="kebab-menu"
                       onOpenChange={(open) =>
@@ -1664,42 +1505,39 @@ const Sidebar = ({ onLoadDiagram }) => {
                       onToggleVisibility={(nextValue) =>
                         handleToggleToolVisibility(t, nextValue)
                       }
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
-            <div className="sidebar-action-buttons">
-              <button
-                className="sidebar-action-btn primary"
-                onClick={() => popupAction("tool")}
-              >
-                <span className="btn-icon">➕</span>
-                Add Custom Tool
-              </button>
-            </div>
+                    />,
+                    {
+                      draggable: true,
+                      onDragStart: (event) => onToolDragStart(event, t),
+                      onDragEnd: handleDragEnd,
+                    }
+                  )}
+                />
+              ))}
+            </TreeItem>
+          )}
+          <div className="sidebar-action-buttons">
+            <button
+              className="sidebar-action-btn primary"
+              onClick={() => popupAction("tool")}
+            >
+              <span className="btn-icon">➕</span>
+              Add Custom Tool
+            </button>
           </div>
-        );
-      case "chains":
-        return (
-          <div className="tab-content">
-            {customChains.length > 0 && (
-              <div className="node-section">
-                <div className="section-title">Custom Chains</div>
-                {customChains.map((c) => (
-                  <div
-                    key={c.name}
-                    className={`node-item ${
-                      menuOpenId === `chain-${c.name}` ? "active" : ""
-                    }`}
-                    draggable
-                    onDragStart={(event) => onChainDragStart(event, c)}
-                    onDragEnd={handleDragEnd}
-                  >
-                    <div className="node-icon">
-                      <GiCrossedChains />
-                    </div>
-                    {c.name}
+        </TreeItem>
+
+        {/* Chains Section */}
+        <TreeItem itemId="section-chains" label="Chains">
+          {customChains.length > 0 && (
+            <TreeItem itemId="section-custom-chains" label="Custom Chains">
+              {customChains.map((c) => (
+                <TreeItem
+                  key={c.name}
+                  itemId={`chain-${c.name}`}
+                  label={commonTreeItemLabel(
+                    c.name,
+                    <GiCrossedChains />,
                     <LongMenu
                       className="kebab-menu"
                       onOpenChange={(open) =>
@@ -1711,63 +1549,48 @@ const Sidebar = ({ onLoadDiagram }) => {
                       onToggleVisibility={(nextValue) =>
                         handleToggleChainVisibility(c, nextValue)
                       }
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
-            <div className="sidebar-action-buttons">
-              <button
-                className="sidebar-action-btn primary"
-                onClick={() => popupAction("chain")}
-              >
-                <span className="btn-icon">➕</span>
-                Add Custom Chain
-              </button>
-            </div>
+                    />,
+                    {
+                      draggable: true,
+                      onDragStart: (event) => onChainDragStart(event, c),
+                      onDragEnd: handleDragEnd,
+                    }
+                  )}
+                />
+              ))}
+            </TreeItem>
+          )}
+          <div className="sidebar-action-buttons">
+            <button
+              className="sidebar-action-btn primary"
+              onClick={() => popupAction("chain")}
+            >
+              <span className="btn-icon">➕</span>
+              Add Custom Chain
+            </button>
           </div>
-        );
-      default:
-        return null;
-    }
+        </TreeItem>
+
+        {/* Store & Settings */}
+        <TreeItem
+          itemId="store"
+          label={commonTreeItemLabel("Store", <FaStore />, null, { onClick: () => router.push("/store"), style: { cursor: "pointer", width: "100%", display: "flex", alignItems: "center", color: "white" } })}
+        />
+        <TreeItem
+          itemId="settings"
+          label={commonTreeItemLabel("Settings", <AiOutlineSetting />, null)}
+        />
+      </SimpleTreeView>
+    );
   };
 
   return (
     <>
       <aside
-        className={`chatgpt-sidebar ${!isPanelVisible ? "collapsed" : ""}`}
+        className="chatgpt-sidebar"
+        style={{ width: "300px", display: "flex", flexDirection: "column", overflowY: "auto", padding: "10px" }}
       >
-        <div className="vs-sidebar">
-          <nav className="vs-sidebar-nav" aria-label="Sidebar tabs">
-            {tabItems.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                title={item.label}
-                className={`vs-nav-item ${
-                  activeTab === item.id ? "active" : ""
-                }`}
-                onClick={(event) => handleNavClick(item, event)}
-              >
-                <span className="vs-nav-icon" aria-hidden="true">
-                  {item.icon}
-                </span>
-                <span className="sr-only">{item.label}</span>
-              </button>
-            ))}
-          </nav>
-          {isPanelVisible && activeTabConfig && (
-            <div className="vs-sidebar-panel">
-              <div className="vs-panel-header">
-                <span className="vs-panel-icon" aria-hidden="true">
-                  {activeTabConfig.icon}
-                </span>
-                <span className="vs-panel-title">{activeTabConfig.label}</span>
-              </div>
-              <div className="sidebar-content">{renderTabContent()}</div>
-            </div>
-          )}
-        </div>
+        {renderSidebarContent()}
       </aside>
 
       <CustomModal
