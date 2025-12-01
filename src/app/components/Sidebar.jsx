@@ -13,10 +13,12 @@ import { FaApple, FaTools } from "react-icons/fa";
 import { FaAnkh } from "react-icons/fa";
 import { TbPrompt } from "react-icons/tb";
 import { GiCrossedChains } from "react-icons/gi";
-import { AiOutlineSetting } from "react-icons/ai";
-import { FaStore } from "react-icons/fa";
+import { AiOutlineSetting, AiOutlineMenu } from "react-icons/ai";
+import { FaStore, FaPlus } from "react-icons/fa";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
+import Menu from "@mui/material/Menu";
+import MenuItem from "@mui/material/MenuItem";
 
 const Sidebar = ({ onLoadDiagram }) => {
   const { setType, setCode, setDragPayload } = useDnD();
@@ -37,6 +39,9 @@ const Sidebar = ({ onLoadDiagram }) => {
     useState(false);
   const [editingContext, setEditingContext] = useState(null);
   const isEditing = Boolean(editingContext);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [anchorElAdd, setAnchorElAdd] = useState(null);
+  const openAddMenu = Boolean(anchorElAdd);
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -1131,6 +1136,19 @@ const Sidebar = ({ onLoadDiagram }) => {
     }
   };
 
+  const handleAddClick = (event) => {
+    setAnchorElAdd(event.currentTarget);
+  };
+
+  const handleAddClose = () => {
+    setAnchorElAdd(null);
+  };
+
+  const handleAddOption = (mode) => {
+    popupAction(mode);
+    handleAddClose();
+  };
+
   const activeModalConfig = modalConfigs[popupMode] ?? modalConfigs.node;
   const modalTitle = isEditing
     ? activeModalConfig.editTitle ?? activeModalConfig.title
@@ -1186,6 +1204,26 @@ const Sidebar = ({ onLoadDiagram }) => {
       (edge) => !edge.conditionalEdge
     );
 
+    if (isCollapsed) {
+      return (
+        <div style={{ display: "flex", flexDirection: "column", height: "100%", alignItems: "center", paddingTop: "10px" }}>
+           <button
+            onClick={() => setIsCollapsed(false)}
+            style={{
+              background: "transparent",
+              border: "none",
+              color: "white",
+              cursor: "pointer",
+              fontSize: "1.2rem",
+              padding: "8px",
+            }}
+          >
+            <AiOutlineMenu />
+          </button>
+        </div>
+      );
+    }
+
     return (
       <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
         {/* Sidebar Header */}
@@ -1232,6 +1270,22 @@ const Sidebar = ({ onLoadDiagram }) => {
             }}
           >
             <AiOutlineSetting /> Settings
+          </button>
+        </div>
+
+        {/* Toggle Bar */}
+        <div style={{ display: "flex", justifyContent: "flex-end", padding: "5px 10px", background: "#1b1b1b" }}>
+           <button
+            onClick={() => setIsCollapsed(true)}
+            style={{
+              background: "transparent",
+              border: "none",
+              color: "white",
+              cursor: "pointer",
+              fontSize: "1.2rem",
+            }}
+          >
+            <AiOutlineMenu />
           </button>
         </div>
 
@@ -1391,15 +1445,6 @@ const Sidebar = ({ onLoadDiagram }) => {
               ))}
             </TreeItem>
           )}
-          <div className="sidebar-action-buttons">
-            <button
-              className="sidebar-action-btn primary"
-              onClick={() => popupAction("node")}
-            >
-              <span className="btn-icon">➕</span>
-              Add Custom Node
-            </button>
-          </div>
         </TreeItem>
 
         {/* Edges Section */}
@@ -1501,15 +1546,6 @@ const Sidebar = ({ onLoadDiagram }) => {
               ))}
             </TreeItem>
           )}
-          <div className="sidebar-action-buttons">
-            <button
-              className="sidebar-action-btn primary"
-              onClick={() => popupAction("edge")}
-            >
-              <span className="btn-icon">➕</span>
-              Add Custom Edge
-            </button>
-          </div>
         </TreeItem>
 
         {/* Prompts Section */}
@@ -1545,15 +1581,6 @@ const Sidebar = ({ onLoadDiagram }) => {
               ))}
             </TreeItem>
           )}
-          <div className="sidebar-action-buttons">
-            <button
-              className="sidebar-action-btn primary"
-              onClick={() => popupAction("prompt")}
-            >
-              <span className="btn-icon">➕</span>
-              Add Custom Prompt
-            </button>
-          </div>
         </TreeItem>
 
         {/* Tools Section */}
@@ -1589,15 +1616,6 @@ const Sidebar = ({ onLoadDiagram }) => {
               ))}
             </TreeItem>
           )}
-          <div className="sidebar-action-buttons">
-            <button
-              className="sidebar-action-btn primary"
-              onClick={() => popupAction("tool")}
-            >
-              <span className="btn-icon">➕</span>
-              Add Custom Tool
-            </button>
-          </div>
         </TreeItem>
 
         {/* Chains Section */}
@@ -1633,19 +1651,63 @@ const Sidebar = ({ onLoadDiagram }) => {
               ))}
             </TreeItem>
           )}
-          <div className="sidebar-action-buttons">
-            <button
-              className="sidebar-action-btn primary"
-              onClick={() => popupAction("chain")}
-            >
-              <span className="btn-icon">➕</span>
-              Add Custom Chain
-            </button>
-          </div>
         </TreeItem>
 
         {/* Store & Settings removed from here as they are now in the header */}
       </SimpleTreeView>
+    </div>
+
+    {/* Footer with Add Button */}
+    <div
+      style={{
+        height: "60px",
+        background: "#1b1b1b",
+        borderTop: "1px solid #333",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flexShrink: 0,
+      }}
+    >
+      <button
+        onClick={handleAddClick}
+        style={{
+          background: "#2196f3",
+          border: "none",
+          borderRadius: "4px",
+          color: "white",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+          padding: "8px 16px",
+          fontSize: "0.9rem",
+          fontWeight: 600,
+          width: "90%",
+          justifyContent: "center",
+        }}
+      >
+        <FaPlus /> Add
+      </button>
+      <Menu
+        anchorEl={anchorElAdd}
+        open={openAddMenu}
+        onClose={handleAddClose}
+        anchorOrigin={{
+          vertical: "top",
+          horizontal: "center",
+        }}
+        transformOrigin={{
+          vertical: "bottom",
+          horizontal: "center",
+        }}
+      >
+        <MenuItem onClick={() => handleAddOption("node")}>Custom Node</MenuItem>
+        <MenuItem onClick={() => handleAddOption("edge")}>Custom Edge</MenuItem>
+        <MenuItem onClick={() => handleAddOption("prompt")}>Custom Prompt</MenuItem>
+        <MenuItem onClick={() => handleAddOption("tool")}>Custom Tool</MenuItem>
+        <MenuItem onClick={() => handleAddOption("chain")}>Custom Chain</MenuItem>
+      </Menu>
     </div>
   </div>
     );
@@ -1655,7 +1717,7 @@ const Sidebar = ({ onLoadDiagram }) => {
     <>
       <aside
         className="chatgpt-sidebar"
-        style={{ width: "300px", display: "flex", flexDirection: "column", overflow: "hidden", background: "#0f0f11", borderRight: "1px solid #333" }}
+        style={{ width: isCollapsed ? "50px" : "300px", display: "flex", flexDirection: "column", overflow: "hidden", background: "#0f0f11", borderRight: "1px solid #333", transition: "width 0.3s ease" }}
       >
         {renderSidebarContent()}
       </aside>
