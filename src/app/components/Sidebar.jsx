@@ -6,9 +6,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDnD } from "./DnDContext";
 import LongMenu from "./KebabMenu";
 import CustomModal from "./Modal";
-import { BsDiagram3 } from "react-icons/bs";
-import { FaShareNodes } from "react-icons/fa6";
-import { MdCable } from "react-icons/md";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 import { FaApple, FaTools } from "react-icons/fa";
 import { FaAnkh } from "react-icons/fa";
 import { TbPrompt } from "react-icons/tb";
@@ -19,6 +19,36 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
+
+const CustomExpandIcon = () => (
+  <div style={{
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '20px',
+    height: '20px',
+    borderRadius: '50%',
+    backgroundColor: '#2196f3',
+    color: 'white',
+  }}>
+    <ChevronRightIcon sx={{ fontSize: '16px' }} />
+  </div>
+);
+
+const CustomCollapseIcon = () => (
+  <div style={{
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '20px',
+    height: '20px',
+    borderRadius: '50%',
+    backgroundColor: '#2196f3',
+    color: 'white',
+  }}>
+    <ExpandMoreIcon sx={{ fontSize: '16px' }} />
+  </div>
+);
 
 const Sidebar = ({ onLoadDiagram }) => {
   const { setType, setCode, setDragPayload } = useDnD();
@@ -1292,25 +1322,48 @@ const Sidebar = ({ onLoadDiagram }) => {
         {/* Tree View */}
         <div style={{ flex: 1, overflowY: "auto", padding: "10px" }}>
           <SimpleTreeView
+            slots={{
+              expandIcon: CustomExpandIcon,
+              collapseIcon: CustomCollapseIcon,
+              endIcon: FiberManualRecordIcon,
+            }}
             sx={{
-              color: "white",
+              color: "#e3f2fd",
+              backgroundColor: "#0f131a",
+              borderRadius: "12px",
+              padding: "8px",
               "& .MuiTreeItem-content": {
-                padding: "8px",
-                borderRadius: "4px",
+                padding: "8px 10px",
+                borderRadius: "10px",
                 width: "100%",
                 boxSizing: "border-box",
+                gap: "6px",
+                transition: "background-color 0.2s ease, color 0.2s ease",
                 "&:hover": {
-                  backgroundColor: "rgba(33, 150, 243, 0.1)", // Light blue hover
+                  backgroundColor: "rgba(33, 150, 243, 0.08)",
                 },
                 "&.Mui-selected": {
-                  backgroundColor: "rgba(33, 150, 243, 0.2) !important", // Blue selected
+                  backgroundColor: "rgba(33, 150, 243, 0.18) !important",
+                  border: "1px solid #2b7bdc",
+                  color: "#fff",
                 },
                 "&.Mui-selected:hover": {
-                  backgroundColor: "rgba(33, 150, 243, 0.3) !important",
+                  backgroundColor: "rgba(33, 150, 243, 0.26) !important",
                 },
               },
+              "& .MuiTreeItem-label": {
+                fontSize: "0.95rem",
+                fontWeight: 700,
+              },
+              "& .MuiTreeItem-group": {
+                marginLeft: "12px",
+                paddingLeft: "12px",
+                borderLeft: "1px dashed rgba(255, 255, 255, 0.2)",
+              },
+              "& .MuiTreeItem-iconContainer": {
+                marginRight: "8px",
+              },
               "& .MuiTreeItem-root": {
-                 // Ensure the root takes full width so content can expand
                  width: "100%",
               }
             }}
