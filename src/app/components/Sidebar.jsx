@@ -1194,7 +1194,6 @@ const Sidebar = ({ onLoadDiagram }) => {
           {...props}
           sx={{
             color: "white",
-            borderLeft: "2px dashed rgba(255, 255, 255, 1)",
           }}
         />
       </animated.div>
@@ -1219,6 +1218,12 @@ const Sidebar = ({ onLoadDiagram }) => {
         label: {
           sx: {
             color: "white",
+          },
+        },
+        groupTransition: {
+          sx: {
+            ml: "15.5px",
+            borderLeft: "2px dashed rgba(255, 255, 255, 1)",
           },
         },
       }}
