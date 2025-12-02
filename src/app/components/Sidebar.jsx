@@ -1,7 +1,9 @@
 // Sidebar.jsx
 "use client";
 import { SimpleTreeView } from '@mui/x-tree-view/SimpleTreeView';
-import { TreeItem } from '@mui/x-tree-view/TreeItem';
+import Box from '@mui/material/Box';
+import { styled, alpha } from '@mui/material/styles';
+import { TreeItem, treeItemClasses } from '@mui/x-tree-view/TreeItem';
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDnD } from "./DnDContext";
 import LongMenu from "./KebabMenu";
@@ -1214,6 +1216,38 @@ const Sidebar = ({ onLoadDiagram }) => {
     }
   };
 
+  const CustomTreeItem = styled(TreeItem)(({ theme }) => ({
+    color: theme.palette.grey[200],
+    [`& .${treeItemClasses.content}`]: {
+      borderRadius: theme.spacing(0.5),
+      padding: theme.spacing(0.5, 1),
+      margin: theme.spacing(0.2, 0),
+      [`& .${treeItemClasses.label}`]: {
+        fontSize: '0.8rem',
+        fontWeight: 500,
+      },
+    },
+    [`& .${treeItemClasses.iconContainer}`]: {
+      borderRadius: '50%',
+      backgroundColor: theme.palette.primary.dark,
+      padding: theme.spacing(0, 1.2),
+      ...theme.applyStyles('light', {
+        backgroundColor: alpha(theme.palette.primary.main, 0.25),
+      }),
+      ...theme.applyStyles('dark', {
+        color: theme.palette.primary.contrastText,
+      }),
+    },
+    [`& .${treeItemClasses.groupTransition}`]: {
+      marginLeft: 15,
+      paddingLeft: 18,
+      borderLeft: `1px dashed ${alpha(theme.palette.text.primary, 0.4)}`,
+    },
+    ...theme.applyStyles('light', {
+      color: theme.palette.grey[800],
+    }),
+}));
+
   const renderSidebarContent = () => {
     const commonTreeItemLabel = (label, icon, menu, draggableProps = {}) => (
       <div
@@ -1320,395 +1354,13 @@ const Sidebar = ({ onLoadDiagram }) => {
         </div>
 
         {/* Tree View */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "10px" }}>
-          <SimpleTreeView
-            slots={{
-              expandIcon: CustomExpandIcon,
-              collapseIcon: CustomCollapseIcon,
-              endIcon: FiberManualRecordIcon,
-            }}
-            sx={{
-              color: "#e3f2fd",
-              backgroundColor: "#0f131a",
-              borderRadius: "12px",
-              padding: "8px",
-              "& .MuiTreeItem-content": {
-                padding: "8px 10px",
-                borderRadius: "10px",
-                width: "100%",
-                boxSizing: "border-box",
-                gap: "6px",
-                transition: "background-color 0.2s ease, color 0.2s ease",
-                "&:hover": {
-                  backgroundColor: "rgba(33, 150, 243, 0.08)",
-                },
-                "&.Mui-selected": {
-                  backgroundColor: "rgba(33, 150, 243, 0.18) !important",
-                  border: "1px solid #2b7bdc",
-                  color: "#fff",
-                },
-                "&.Mui-selected:hover": {
-                  backgroundColor: "rgba(33, 150, 243, 0.26) !important",
-                },
-              },
-              "& .MuiTreeItem-label": {
-                fontSize: "0.95rem",
-                fontWeight: 700,
-              },
-              "& .MuiTreeItem-group": {
-                marginLeft: "12px",
-                paddingLeft: "12px",
-                borderLeft: "1px dashed rgba(255, 255, 255, 0.2)",
-              },
-              "& .MuiTreeItem-iconContainer": {
-                marginRight: "8px",
-              },
-              "& .MuiTreeItem-root": {
-                 width: "100%",
-              }
-            }}
-          >
-            {/* Diagrams Section */}
-            <TreeItem itemId="section-diagrams" label="Diagrams">
-          <TreeItem itemId="section-diagram-tools" label="Diagram Tools">
-            <TreeItem
-              itemId="create-flow"
-              label={commonTreeItemLabel(
-                "Create Flow",
-                <FaAnkh />,
-                <LongMenu
-                  className="kebab-menu"
-                  onOpenChange={(open) =>
-                    setMenuOpenId(open ? "create-flow" : null)
-                  }
-                />
-              )}
-            />
-            <TreeItem
-              itemId="save-diagram"
-              label={commonTreeItemLabel(
-                "Save Diagram",
-                <FaAnkh />,
-                <LongMenu
-                  className="kebab-menu"
-                  onOpenChange={(open) =>
-                    setMenuOpenId(open ? "node-Base" : null)
-                  }
-                />
-              )}
-            />
-          </TreeItem>
-          {customDiagrams.length > 0 && (
-            <TreeItem itemId="section-saved-diagrams" label="Saved Diagrams">
-              {customDiagrams.map((d) => (
-                <TreeItem
-                  key={d.name}
-                  itemId={`diagram-${d.name}`}
-                  label={commonTreeItemLabel(
-                    d.name,
-                    <FaAnkh />,
-                    <LongMenu
-                      className="kebab-menu"
-                      onOpenChange={(open) =>
-                        setMenuOpenId(open ? "node-Base" : null)
-                      }
-                      onEdit={() => handleEditCustomDiagram(d)}
-                      onDelete={() => handleDeleteCustomDiagram(d.name)}
-                      isPublic={Boolean(d.isPublic)}
-                      onToggleVisibility={(nextValue) =>
-                        handleToggleDiagramVisibility(d, nextValue)
-                      }
-                    />,
-                    { onClick: () => handleLoadDiagram(d), style: { cursor: "pointer", width: "100%", display: "flex", alignItems: "center", color: "white" } }
-                  )}
-                />
-              ))}
-            </TreeItem>
-          )}
-        </TreeItem>
-
-        {/* Nodes Section */}
-        <TreeItem itemId="section-nodes" label="Nodes">
-          <TreeItem itemId="section-essential-nodes" label="Essential Nodes">
-            <TreeItem
-              itemId="node-start"
-              label={commonTreeItemLabel(
-                "START",
-                <FaApple />,
-                <LongMenu
-                  className="kebab-menu"
-                  onOpenChange={(open) =>
-                    setMenuOpenId(open ? "START" : null)
-                  }
-                />,
-                {
-                  draggable: true,
-                  onDragStart: (event) => onDragStart(event, "START"),
-                  onDragEnd: handleDragEnd,
-                }
-              )}
-            />
-            <TreeItem
-              itemId="node-end"
-              label={commonTreeItemLabel(
-                "END",
-                <FaApple />,
-                <LongMenu
-                  className="kebab-menu"
-                  onOpenChange={(open) =>
-                    setMenuOpenId(open ? "END" : null)
-                  }
-                />,
-                {
-                  draggable: true,
-                  onDragStart: (event) => onDragStart(event, "END"),
-                  onDragEnd: handleDragEnd,
-                }
-              )}
-            />
-          </TreeItem>
-          {customNodes.length > 0 && (
-            <TreeItem itemId="section-custom-nodes" label="Custom Nodes">
-              {customNodes.map((n) => (
-                <TreeItem
-                  key={n.name}
-                  itemId={`node-${n.name}`}
-                  label={commonTreeItemLabel(
-                    n.name,
-                    <FaApple />,
-                    <LongMenu
-                      className="kebab-menu"
-                      onOpenChange={(open) =>
-                        setMenuOpenId(open ? `custom-${n.name}` : null)
-                      }
-                      onEdit={() => handleEditCustomNode(n)}
-                      onDelete={() => handleDeleteCustomNode(n.name)}
-                      isPublic={Boolean(n.isPublic)}
-                      onToggleVisibility={(nextValue) =>
-                        handleToggleNodeVisibility(n, nextValue)
-                      }
-                    />,
-                    {
-                      draggable: true,
-                      onDragStart: (event) => onDragStart(event, n.name, n.code),
-                      onDragEnd: handleDragEnd,
-                    }
-                  )}
-                />
-              ))}
-            </TreeItem>
-          )}
-        </TreeItem>
-
-        {/* Edges Section */}
-        <TreeItem itemId="section-edges" label="Edges">
-          <TreeItem itemId="section-conditional-edges" label="Conditional Edges">
-            <TreeItem
-              itemId="edge-conditional-default"
-              label={commonTreeItemLabel(
-                "Filtro Condicional",
-                <div className="edge-item__circle">→</div>,
-                <LongMenu
-                  className="kebab-menu"
-                  onOpenChange={(open) =>
-                    setMenuOpenId(open ? "node-Base" : null)
-                  }
-                />,
-                {
-                  draggable: true,
-                  onDragStart: (event) => onDragStart(event, "conditionalNode"),
-                  onDragEnd: handleDragEnd,
-                  className: "node-item edge-item",
-                  style: { width: "100%", display: "flex", alignItems: "center", color: "white" }
-                }
-              )}
-            />
-            {conditionalEdges.map((itemE) => (
-              <TreeItem
-                key={itemE.id}
-                itemId={`edge-conditional-${itemE.id}`}
-                label={commonTreeItemLabel(
-                  itemE.name,
-                  <div className="edge-item__circle">◆</div>,
-                  <LongMenu
-                    className="kebab-menu"
-                    onOpenChange={(open) =>
-                      setMenuOpenId(open ? `conditional-${itemE.id}` : null)
-                    }
-                    onEdit={() => handleEditCustomEdge(itemE)}
-                    onDelete={() => handleDeleteCustomEdge(itemE.name)}
-                    isPublic={Boolean(itemE.isPublic)}
-                    onToggleVisibility={(nextValue) =>
-                      handleToggleEdgeVisibility(itemE, nextValue)
-                    }
-                  />,
-                  {
-                    draggable: true,
-                    onDragStart: (event) =>
-                      onDragStart(
-                        event,
-                        "conditionalNode",
-                        itemE.code,
-                        itemE.name
-                      ),
-                    onDragEnd: handleDragEnd,
-                    className: "node-item edge-item edge-item--custom",
-                    style: { width: "100%", display: "flex", alignItems: "center", color: "white" }
-                  }
-                )}
-              />
-            ))}
-          </TreeItem>
-          {standardEdges.length > 0 && (
-            <TreeItem itemId="section-custom-edges" label="Custom Edges">
-              {standardEdges.map((item) => (
-                <TreeItem
-                  key={item.id}
-                  itemId={`edge-custom-${item.id}`}
-                  label={commonTreeItemLabel(
-                    item.name,
-                    <div className="edge-item__circle">ƒ</div>,
-                    <LongMenu
-                      className="kebab-menu"
-                      onOpenChange={(open) =>
-                        setMenuOpenId(open ? `custom-${item.id}` : null)
-                      }
-                      onEdit={() => handleEditCustomEdge(item)}
-                      onDelete={() => handleDeleteCustomEdge(item.name)}
-                      isPublic={Boolean(item.isPublic)}
-                      onToggleVisibility={(nextValue) =>
-                        handleToggleEdgeVisibility(item, nextValue)
-                      }
-                    />,
-                    {
-                      draggable: true,
-                      onDragStart: (event) =>
-                        onEdgeDragStart(
-                          event,
-                          item.name,
-                          item.code,
-                          "filterEdge",
-                          item.id
-                        ),
-                      onDragEnd: handleDragEnd,
-                      className: "node-item edge-item edge-item--custom",
-                      style: { width: "100%", display: "flex", alignItems: "center", color: "white" }
-                    }
-                  )}
-                />
-              ))}
-            </TreeItem>
-          )}
-        </TreeItem>
-
-        {/* Prompts Section */}
-        <TreeItem itemId="section-prompts" label="Prompts">
-          {customPrompts.length > 0 && (
-            <TreeItem itemId="section-custom-prompts" label="Custom Prompts">
-              {customPrompts.map((p) => (
-                <TreeItem
-                  key={p.name}
-                  itemId={`prompt-${p.name}`}
-                  label={commonTreeItemLabel(
-                    p.name,
-                    <TbPrompt />,
-                    <LongMenu
-                      className="kebab-menu"
-                      onOpenChange={(open) =>
-                        setMenuOpenId(open ? `prompt-${p.name}` : null)
-                      }
-                      onEdit={() => handleEditCustomPrompt(p)}
-                      onDelete={() => handleDeleteCustomPrompt(p.name)}
-                      isPublic={Boolean(p.isPublic)}
-                      onToggleVisibility={(nextValue) =>
-                        handleTogglePromptVisibility(p, nextValue)
-                      }
-                    />,
-                    {
-                      draggable: true,
-                      onDragStart: (event) => onPromptDragStart(event, p),
-                      onDragEnd: handleDragEnd,
-                    }
-                  )}
-                />
-              ))}
-            </TreeItem>
-          )}
-        </TreeItem>
-
-        {/* Tools Section */}
-        <TreeItem itemId="section-tools" label="Tools">
-          {customTools.length > 0 && (
-            <TreeItem itemId="section-custom-tools" label="Custom Tools">
-              {customTools.map((t) => (
-                <TreeItem
-                  key={t.name}
-                  itemId={`tool-${t.name}`}
-                  label={commonTreeItemLabel(
-                    t.name,
-                    <FaTools />,
-                    <LongMenu
-                      className="kebab-menu"
-                      onOpenChange={(open) =>
-                        setMenuOpenId(open ? `tool-${t.name}` : null)
-                      }
-                      onEdit={() => handleEditCustomTool(t)}
-                      onDelete={() => handleDeleteCustomTool(t.name)}
-                      isPublic={Boolean(t.isPublic)}
-                      onToggleVisibility={(nextValue) =>
-                        handleToggleToolVisibility(t, nextValue)
-                      }
-                    />,
-                    {
-                      draggable: true,
-                      onDragStart: (event) => onToolDragStart(event, t),
-                      onDragEnd: handleDragEnd,
-                    }
-                  )}
-                />
-              ))}
-            </TreeItem>
-          )}
-        </TreeItem>
-
-        {/* Chains Section */}
-        <TreeItem itemId="section-chains" label="Chains">
-          {customChains.length > 0 && (
-            <TreeItem itemId="section-custom-chains" label="Custom Chains">
-              {customChains.map((c) => (
-                <TreeItem
-                  key={c.name}
-                  itemId={`chain-${c.name}`}
-                  label={commonTreeItemLabel(
-                    c.name,
-                    <GiCrossedChains />,
-                    <LongMenu
-                      className="kebab-menu"
-                      onOpenChange={(open) =>
-                        setMenuOpenId(open ? `chain-${c.name}` : null)
-                      }
-                      onEdit={() => handleEditCustomChain(c)}
-                      onDelete={() => handleDeleteCustomChain(c.name)}
-                      isPublic={Boolean(c.isPublic)}
-                      onToggleVisibility={(nextValue) =>
-                        handleToggleChainVisibility(c, nextValue)
-                      }
-                    />,
-                    {
-                      draggable: true,
-                      onDragStart: (event) => onChainDragStart(event, c),
-                      onDragEnd: handleDragEnd,
-                    }
-                  )}
-                />
-              ))}
-            </TreeItem>
-          )}
-        </TreeItem>
-
-        {/* Store & Settings removed from here as they are now in the header */}
-      </SimpleTreeView>
-    </div>
+        <Box sx={{ flex: 1, overflowY: "auto", padding: "10px" }}>
+          <SimpleTreeView>
+            <CustomTreeItem itemId='diagrams' label='Diagrams'>
+              
+            </CustomTreeItem>
+          </SimpleTreeView>
+        </Box>
 
     {/* Footer with Add Button */}
     <div
