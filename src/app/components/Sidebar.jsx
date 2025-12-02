@@ -1,16 +1,13 @@
 // Sidebar.jsx
 "use client";
-import { SimpleTreeView } from '@mui/x-tree-view/SimpleTreeView';
-import Box from '@mui/material/Box';
-import { styled, alpha } from '@mui/material/styles';
-import { TreeItem, treeItemClasses } from '@mui/x-tree-view/TreeItem';
+import * as React from "react";
+import { SimpleTreeView } from "@mui/x-tree-view/SimpleTreeView";
+import Box from "@mui/material/Box";
+import { TreeItem } from "@mui/x-tree-view/TreeItem";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDnD } from "./DnDContext";
 import LongMenu from "./KebabMenu";
 import CustomModal from "./Modal";
-import ChevronRightIcon from "@mui/icons-material/ChevronRight";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 import { FaApple, FaTools } from "react-icons/fa";
 import { FaAnkh } from "react-icons/fa";
 import { TbPrompt } from "react-icons/tb";
@@ -21,36 +18,8 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
-
-const CustomExpandIcon = () => (
-  <div style={{
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '20px',
-    height: '20px',
-    borderRadius: '50%',
-    backgroundColor: '#2196f3',
-    color: 'white',
-  }}>
-    <ChevronRightIcon sx={{ fontSize: '16px' }} />
-  </div>
-);
-
-const CustomCollapseIcon = () => (
-  <div style={{
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '20px',
-    height: '20px',
-    borderRadius: '50%',
-    backgroundColor: '#2196f3',
-    color: 'white',
-  }}>
-    <ExpandMoreIcon sx={{ fontSize: '16px' }} />
-  </div>
-);
+import { useSpring, animated } from "@react-spring/web";
+import Collapse from "@mui/material/Collapse";
 
 const Sidebar = ({ onLoadDiagram }) => {
   const { setType, setCode, setDragPayload } = useDnD();
@@ -75,9 +44,6 @@ const Sidebar = ({ onLoadDiagram }) => {
   const [anchorElAdd, setAnchorElAdd] = useState(null);
   const openAddMenu = Boolean(anchorElAdd);
   const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-
 
   const modalConfigs = {
     node: {
@@ -404,8 +370,6 @@ const Sidebar = ({ onLoadDiagram }) => {
     setCode(null);
     setDragPayload(null);
   };
-
-
 
   const popupAction = (mode = "node") => {
     setMenuOpenId(null);
@@ -1216,43 +1180,62 @@ const Sidebar = ({ onLoadDiagram }) => {
     }
   };
 
-  const CustomTreeItem = styled(TreeItem)(({ theme }) => ({
-    color: theme.palette.grey[200],
-    [`& .${treeItemClasses.content}`]: {
-      borderRadius: theme.spacing(0.5),
-      padding: theme.spacing(0.5, 1),
-      margin: theme.spacing(0.2, 0),
-      [`& .${treeItemClasses.label}`]: {
-        fontSize: '0.8rem',
-        fontWeight: 500,
+  function TransitionComponent(props) {
+    const style = useSpring({
+      to: {
+        opacity: props.in ? 1 : 0,
+        transform: `translate3d(${props.in ? 0 : 20}px,0,0)`,
       },
-    },
-    [`& .${treeItemClasses.iconContainer}`]: {
-      borderRadius: '50%',
-      backgroundColor: theme.palette.primary.dark,
-      padding: theme.spacing(0, 1.2),
-      ...theme.applyStyles('light', {
-        backgroundColor: alpha(theme.palette.primary.main, 0.25),
-      }),
-      ...theme.applyStyles('dark', {
-        color: theme.palette.primary.contrastText,
-      }),
-    },
-    [`& .${treeItemClasses.groupTransition}`]: {
-      marginLeft: 15,
-      paddingLeft: 18,
-      borderLeft: `1px dashed ${alpha(theme.palette.text.primary, 0.4)}`,
-    },
-    ...theme.applyStyles('light', {
-      color: theme.palette.grey[800],
-    }),
-}));
+    });
+
+    return (
+      <animated.div style={style}>
+        <Collapse
+          {...props}
+          sx={{
+            color: "white",
+            borderLeft: "2px dashed rgba(255, 255, 255, 1)",
+          }}
+        />
+      </animated.div>
+    );
+  }
+
+  const CustomTreeItem = React.forwardRef((props, ref) => (
+    <TreeItem
+      {...props}
+      slots={{ groupTransition: TransitionComponent, ...props.slots }}
+      slotProps={{
+        content: {
+          sx: {
+            borderRadius: "10px",
+            color: "white",
+
+            "&:hover": {
+              backgroundColor: "rgba(109, 116, 156, 0.48)",
+            },
+          },
+        },
+        label: {
+          sx: {
+            color: "white",
+          },
+        },
+      }}
+      ref={ref}
+    />
+  ));
 
   const renderSidebarContent = () => {
     const commonTreeItemLabel = (label, icon, menu, draggableProps = {}) => (
       <div
         className="node-item"
-        style={{ width: "100%", display: "flex", alignItems: "center", color: "white" }}
+        style={{
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          color: "white",
+        }}
         {...draggableProps}
       >
         <div className="node-icon">{icon}</div>
@@ -1261,17 +1244,21 @@ const Sidebar = ({ onLoadDiagram }) => {
       </div>
     );
 
-    const conditionalEdges = customEdges.filter(
-      (edge) => edge.conditionalEdge
-    );
-    const standardEdges = customEdges.filter(
-      (edge) => !edge.conditionalEdge
-    );
+    const conditionalEdges = customEdges.filter((edge) => edge.conditionalEdge);
+    const standardEdges = customEdges.filter((edge) => !edge.conditionalEdge);
 
     if (isCollapsed) {
       return (
-        <div style={{ display: "flex", flexDirection: "column", height: "100%", alignItems: "center", paddingTop: "10px" }}>
-           <button
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            height: "100%",
+            alignItems: "center",
+            paddingTop: "10px",
+          }}
+        >
+          <button
             onClick={() => setIsCollapsed(false)}
             style={{
               background: "transparent",
@@ -1338,8 +1325,15 @@ const Sidebar = ({ onLoadDiagram }) => {
         </div>
 
         {/* Toggle Bar */}
-        <div style={{ display: "flex", justifyContent: "flex-end", padding: "5px 10px", background: "#1b1b1b" }}>
-           <button
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "flex-end",
+            padding: "5px 10px",
+            background: "#1b1b1b",
+          }}
+        >
+          <button
             onClick={() => setIsCollapsed(true)}
             style={{
               background: "transparent",
@@ -1356,65 +1350,462 @@ const Sidebar = ({ onLoadDiagram }) => {
         {/* Tree View */}
         <Box sx={{ flex: 1, overflowY: "auto", padding: "10px" }}>
           <SimpleTreeView>
-            <CustomTreeItem itemId='diagrams' label='Diagrams'>
-              
+            {/* Diagrams Section */}
+            <CustomTreeItem itemId="section-diagrams" label="Diagrams">
+              <CustomTreeItem
+                itemId="section-diagrams-tools"
+                label="Diagram Tools"
+              >
+                <CustomTreeItem
+                  itemId="create-flow"
+                  label={commonTreeItemLabel(
+                    "Create Flow",
+                    <FaAnkh />,
+                    <LongMenu
+                      className="kebab-menu"
+                      onOpenChange={(open) =>
+                        setMenuOpenId(open ? "create-flow" : null)
+                      }
+                    />
+                  )}
+                />
+                <CustomTreeItem
+                  itemId="save-diagram"
+                  label={commonTreeItemLabel(
+                    "Save Diagram",
+                    <FaAnkh />,
+                    <LongMenu
+                      className="kebab-menu"
+                      onOpenChange={(open) =>
+                        setMenuOpenId(open ? "node-Base" : null)
+                      }
+                    />
+                  )}
+                />
+              </CustomTreeItem>
+              {customDiagrams.length > 0 && (
+                <CustomTreeItem
+                  itemId="section-saved-diagrams"
+                  label="Saved Diagrams"
+                >
+                  {customDiagrams.map((d) => (
+                    <CustomTreeItem
+                      key={d.name}
+                      itemId={`diagram-${d.name}`}
+                      label={commonTreeItemLabel(
+                        d.name,
+                        <FaAnkh />,
+                        <LongMenu
+                          className="kebab-menu"
+                          onOpenChange={(open) =>
+                            setMenuOpenId(open ? "node-Base" : null)
+                          }
+                          onEdit={() => handleEditCustomDiagram(d)}
+                          onDelete={() => handleDeleteCustomDiagram(d.name)}
+                          isPublic={Boolean(d.isPublic)}
+                          onToggleVisibility={(nextValue) =>
+                            handleToggleDiagramVisibility(d, nextValue)
+                          }
+                        />,
+                        {
+                          onClick: () => handleLoadDiagram(d),
+                          style: {
+                            cursor: "pointer",
+                            width: "100%",
+                            display: "flex",
+                            alignItems: "center",
+                            color: "white",
+                          },
+                        }
+                      )}
+                    />
+                  ))}
+                </CustomTreeItem>
+              )}
+            </CustomTreeItem>
+
+            {/* Nodes Section */}
+            <CustomTreeItem itemId="section-nodes" label="Nodes">
+              <CustomTreeItem
+                itemId="section-essential-nodes"
+                label="Essential Nodes"
+              >
+                <CustomTreeItem
+                  itemId="node-start"
+                  label={commonTreeItemLabel(
+                    "START",
+                    <FaApple />,
+                    <LongMenu
+                      className="kebab-menu"
+                      onOpenChange={(open) =>
+                        setMenuOpenId(open ? "START" : null)
+                      }
+                    />,
+                    {
+                      draggable: true,
+                      onDragStart: (event) => onDragStart(event, "START"),
+                      onDragEnd: handleDragEnd,
+                    }
+                  )}
+                />
+                <CustomTreeItem
+                  itemId="node-end"
+                  label={commonTreeItemLabel(
+                    "END",
+                    <FaApple />,
+                    <LongMenu
+                      className="kebab-menu"
+                      onOpenChange={(open) =>
+                        setMenuOpenId(open ? "END" : null)
+                      }
+                    />,
+                    {
+                      draggable: true,
+                      onDragStart: (event) => onDragStart(event, "END"),
+                      onDragEnd: handleDragEnd,
+                    }
+                  )}
+                />
+              </CustomTreeItem>
+              {customNodes.length > 0 && (
+                <CustomTreeItem
+                  itemId="section-custom-nodes"
+                  label="Custom Nodes"
+                >
+                  {customNodes.map((n) => (
+                    <CustomTreeItem
+                      key={n.name}
+                      itemId={`node-${n.name}`}
+                      label={commonTreeItemLabel(
+                        n.name,
+                        <FaApple />,
+                        <LongMenu
+                          className="kebab-menu"
+                          onOpenChange={(open) =>
+                            setMenuOpenId(open ? `custom-${n.name}` : null)
+                          }
+                          onEdit={() => handleEditCustomNode(n)}
+                          onDelete={() => handleDeleteCustomNode(n.name)}
+                          isPublic={Boolean(n.isPublic)}
+                          onToggleVisibility={(nextValue) =>
+                            handleToggleNodeVisibility(n, nextValue)
+                          }
+                        />,
+                        {
+                          draggable: true,
+                          onDragStart: (event) =>
+                            onDragStart(event, n.name, n.code),
+                          onDragEnd: handleDragEnd,
+                        }
+                      )}
+                    />
+                  ))}
+                </CustomTreeItem>
+              )}
+            </CustomTreeItem>
+
+            {/* Edges Section */}
+            <CustomTreeItem itemId="section-edges" label="Edges">
+              <CustomTreeItem
+                itemId="section-conditional-edges"
+                label="Conditional Edges"
+              >
+                <CustomTreeItem
+                  itemId="edge-conditional-default"
+                  label={commonTreeItemLabel(
+                    "Filtro Condicional",
+                    <div className="edge-item__circle">→</div>,
+                    <LongMenu
+                      className="kebab-menu"
+                      onOpenChange={(open) =>
+                        setMenuOpenId(open ? "node-Base" : null)
+                      }
+                    />,
+                    {
+                      draggable: true,
+                      onDragStart: (event) =>
+                        onDragStart(event, "conditionalNode"),
+                      onDragEnd: handleDragEnd,
+                      className: "node-item edge-item",
+                      style: {
+                        width: "100%",
+                        display: "flex",
+                        alignItems: "center",
+                        color: "white",
+                      },
+                    }
+                  )}
+                />
+                {conditionalEdges.map((itemE) => (
+                  <CustomTreeItem
+                    key={itemE.id}
+                    itemId={`edge-conditional-${itemE.id}`}
+                    label={commonTreeItemLabel(
+                      itemE.name,
+                      <div className="edge-item__circle">◆</div>,
+                      <LongMenu
+                        className="kebab-menu"
+                        onOpenChange={(open) =>
+                          setMenuOpenId(open ? `conditional-${itemE.id}` : null)
+                        }
+                        onEdit={() => handleEditCustomEdge(itemE)}
+                        onDelete={() => handleDeleteCustomEdge(itemE.name)}
+                        isPublic={Boolean(itemE.isPublic)}
+                        onToggleVisibility={(nextValue) =>
+                          handleToggleEdgeVisibility(itemE, nextValue)
+                        }
+                      />,
+                      {
+                        draggable: true,
+                        onDragStart: (event) =>
+                          onDragStart(
+                            event,
+                            "conditionalNode",
+                            itemE.code,
+                            itemE.name
+                          ),
+                        onDragEnd: handleDragEnd,
+                        className: "node-item edge-item edge-item--custom",
+                        style: {
+                          width: "100%",
+                          display: "flex",
+                          alignItems: "center",
+                          color: "white",
+                        },
+                      }
+                    )}
+                  />
+                ))}
+              </CustomTreeItem>
+              {standardEdges.length > 0 && (
+                <CustomTreeItem
+                  itemId="section-custom-edges"
+                  label="Custom Edges"
+                >
+                  {standardEdges.map((item) => (
+                    <CustomTreeItem
+                      key={item.id}
+                      itemId={`edge-custom-${item.id}`}
+                      label={commonTreeItemLabel(
+                        item.name,
+                        <div className="edge-item__circle">ƒ</div>,
+                        <LongMenu
+                          className="kebab-menu"
+                          onOpenChange={(open) =>
+                            setMenuOpenId(open ? `custom-${item.id}` : null)
+                          }
+                          onEdit={() => handleEditCustomEdge(item)}
+                          onDelete={() => handleDeleteCustomEdge(item.name)}
+                          isPublic={Boolean(item.isPublic)}
+                          onToggleVisibility={(nextValue) =>
+                            handleToggleEdgeVisibility(item, nextValue)
+                          }
+                        />,
+                        {
+                          draggable: true,
+                          onDragStart: (event) =>
+                            onEdgeDragStart(
+                              event,
+                              item.name,
+                              item.code,
+                              "filterEdge",
+                              item.id
+                            ),
+                          onDragEnd: handleDragEnd,
+                          className: "node-item edge-item edge-item--custom",
+                          style: {
+                            width: "100%",
+                            display: "flex",
+                            alignItems: "center",
+                            color: "white",
+                          },
+                        }
+                      )}
+                    />
+                  ))}
+                </CustomTreeItem>
+              )}
+            </CustomTreeItem>
+
+            {/* Prompts Section */}
+            <CustomTreeItem itemId="section-prompts" label="Prompts">
+              {customPrompts.length > 0 && (
+                <CustomTreeItem
+                  itemId="section-custom-prompts"
+                  label="Custom Prompts"
+                >
+                  {customPrompts.map((p) => (
+                    <CustomTreeItem
+                      key={p.name}
+                      itemId={`prompt-${p.name}`}
+                      label={commonTreeItemLabel(
+                        p.name,
+                        <TbPrompt />,
+                        <LongMenu
+                          className="kebab-menu"
+                          onOpenChange={(open) =>
+                            setMenuOpenId(open ? `prompt-${p.name}` : null)
+                          }
+                          onEdit={() => handleEditCustomPrompt(p)}
+                          onDelete={() => handleDeleteCustomPrompt(p.name)}
+                          isPublic={Boolean(p.isPublic)}
+                          onToggleVisibility={(nextValue) =>
+                            handleTogglePromptVisibility(p, nextValue)
+                          }
+                        />,
+                        {
+                          draggable: true,
+                          onDragStart: (event) => onPromptDragStart(event, p),
+                          onDragEnd: handleDragEnd,
+                        }
+                      )}
+                    />
+                  ))}
+                </CustomTreeItem>
+              )}
+            </CustomTreeItem>
+
+            {/* Tools Section */}
+            <CustomTreeItem itemId="section-tools" label="Tools">
+              {customTools.length > 0 && (
+                <CustomTreeItem
+                  itemId="section-custom-tools"
+                  label="Custom Tools"
+                >
+                  {customTools.map((t) => (
+                    <CustomTreeItem
+                      key={t.name}
+                      itemId={`tool-${t.name}`}
+                      label={commonTreeItemLabel(
+                        t.name,
+                        <FaTools />,
+                        <LongMenu
+                          className="kebab-menu"
+                          onOpenChange={(open) =>
+                            setMenuOpenId(open ? `tool-${t.name}` : null)
+                          }
+                          onEdit={() => handleEditCustomTool(t)}
+                          onDelete={() => handleDeleteCustomTool(t.name)}
+                          isPublic={Boolean(t.isPublic)}
+                          onToggleVisibility={(nextValue) =>
+                            handleToggleToolVisibility(t, nextValue)
+                          }
+                        />,
+                        {
+                          draggable: true,
+                          onDragStart: (event) => onToolDragStart(event, t),
+                          onDragEnd: handleDragEnd,
+                        }
+                      )}
+                    />
+                  ))}
+                </CustomTreeItem>
+              )}
+            </CustomTreeItem>
+
+            {/* Chains Section */}
+            <CustomTreeItem itemId="section-chains" label="Chains">
+              {customChains.length > 0 && (
+                <CustomTreeItem
+                  itemId="section-custom-chains"
+                  label="Custom Chains"
+                >
+                  {customChains.map((c) => (
+                    <CustomTreeItem
+                      key={c.name}
+                      itemId={`chain-${c.name}`}
+                      label={commonTreeItemLabel(
+                        c.name,
+                        <GiCrossedChains />,
+                        <LongMenu
+                          className="kebab-menu"
+                          onOpenChange={(open) =>
+                            setMenuOpenId(open ? `chain-${c.name}` : null)
+                          }
+                          onEdit={() => handleEditCustomChain(c)}
+                          onDelete={() => handleDeleteCustomChain(c.name)}
+                          isPublic={Boolean(c.isPublic)}
+                          onToggleVisibility={(nextValue) =>
+                            handleToggleChainVisibility(c, nextValue)
+                          }
+                        />,
+                        {
+                          draggable: true,
+                          onDragStart: (event) => onChainDragStart(event, c),
+                          onDragEnd: handleDragEnd,
+                        }
+                      )}
+                    />
+                  ))}
+                </CustomTreeItem>
+              )}
             </CustomTreeItem>
           </SimpleTreeView>
         </Box>
 
-    {/* Footer with Add Button */}
-    <div
-      style={{
-        height: "60px",
-        background: "#1b1b1b",
-        borderTop: "1px solid #333",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        flexShrink: 0,
-      }}
-    >
-      <button
-        onClick={handleAddClick}
-        style={{
-          background: "#2196f3",
-          border: "none",
-          borderRadius: "4px",
-          color: "white",
-          cursor: "pointer",
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-          padding: "8px 16px",
-          fontSize: "0.9rem",
-          fontWeight: 600,
-          width: "90%",
-          justifyContent: "center",
-        }}
-      >
-        <FaPlus /> Add
-      </button>
-      <Menu
-        anchorEl={anchorElAdd}
-        open={openAddMenu}
-        onClose={handleAddClose}
-        anchorOrigin={{
-          vertical: "top",
-          horizontal: "center",
-        }}
-        transformOrigin={{
-          vertical: "bottom",
-          horizontal: "center",
-        }}
-      >
-        <MenuItem onClick={() => handleAddOption("node")}>Custom Node</MenuItem>
-        <MenuItem onClick={() => handleAddOption("edge")}>Custom Edge</MenuItem>
-        <MenuItem onClick={() => handleAddOption("prompt")}>Custom Prompt</MenuItem>
-        <MenuItem onClick={() => handleAddOption("tool")}>Custom Tool</MenuItem>
-        <MenuItem onClick={() => handleAddOption("chain")}>Custom Chain</MenuItem>
-      </Menu>
-    </div>
-  </div>
+        {/* Footer with Add Button */}
+        <div
+          style={{
+            height: "60px",
+            background: "#1b1b1b",
+            borderTop: "1px solid #333",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+          }}
+        >
+          <button
+            onClick={handleAddClick}
+            style={{
+              background: "#2196f3",
+              border: "none",
+              borderRadius: "4px",
+              color: "white",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "8px 16px",
+              fontSize: "0.9rem",
+              fontWeight: 600,
+              width: "90%",
+              justifyContent: "center",
+            }}
+          >
+            <FaPlus /> Add
+          </button>
+          <Menu
+            anchorEl={anchorElAdd}
+            open={openAddMenu}
+            onClose={handleAddClose}
+            anchorOrigin={{
+              vertical: "top",
+              horizontal: "center",
+            }}
+            transformOrigin={{
+              vertical: "bottom",
+              horizontal: "center",
+            }}
+          >
+            <MenuItem onClick={() => handleAddOption("node")}>
+              Custom Node
+            </MenuItem>
+            <MenuItem onClick={() => handleAddOption("edge")}>
+              Custom Edge
+            </MenuItem>
+            <MenuItem onClick={() => handleAddOption("prompt")}>
+              Custom Prompt
+            </MenuItem>
+            <MenuItem onClick={() => handleAddOption("tool")}>
+              Custom Tool
+            </MenuItem>
+            <MenuItem onClick={() => handleAddOption("chain")}>
+              Custom Chain
+            </MenuItem>
+          </Menu>
+        </div>
+      </div>
     );
   };
 
@@ -1422,7 +1813,15 @@ const Sidebar = ({ onLoadDiagram }) => {
     <>
       <aside
         className="chatgpt-sidebar"
-        style={{ width: isCollapsed ? "50px" : "300px", display: "flex", flexDirection: "column", overflow: "hidden", background: "#0f0f11", borderRight: "1px solid #333", transition: "width 0.3s ease" }}
+        style={{
+          width: isCollapsed ? "50px" : "300px",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+          background: "#0f0f11",
+          borderRight: "1px solid #333",
+          transition: "width 0.3s ease",
+        }}
       >
         {renderSidebarContent()}
       </aside>
