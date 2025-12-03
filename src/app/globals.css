@@ -63,8 +63,8 @@ body {
 .diagram-section-header {
   position: absolute;
   top: var(--top-nav-height);
-  left: 0;
-  right: 0;
+  left: -15px;
+  right: -22px;
   z-index: 10;
   display: flex;
   align-items: center;
@@ -301,7 +301,7 @@ body {
 
 .diagram-resource-tabs {
   position: fixed;
-  top: 20.45%;
+  top: 27%;
   right: 0px;
   display: flex;
   flex-direction: column;

@@ -1674,15 +1674,7 @@ function Diagram() {
               <FiMenu className="hamburger-nav-bar" />
             </button>
             <div id={topNavActionsId} className={topNavActionsClassName}>
-              {user && (
-                <button
-                  type="button"
-                  className="top-nav__button top-nav__button--secondary"
-                  onClick={handleSaveButtonClick}
-                >
-                  Guardar diagrama
-                </button>
-              )}
+              {/* Botón Guardar diagrama eliminado a petición del usuario */}
               <button
                 type="button"
                 className="top-nav__button top-nav__button--secondary"
