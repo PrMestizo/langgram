@@ -40,6 +40,8 @@ import {
   CircularProgress,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
+import SaveOutlinedIcon from "@mui/icons-material/SaveOutlined";
+import SearchIcon from "@mui/icons-material/Search";
 import { FiMenu } from "react-icons/fi";
 import {
   loadPersistedDiagram,
@@ -606,6 +608,7 @@ function Diagram() {
   });
   const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
   const [diagramName, setDiagramName] = useState("");
+  const [currentDiagramTitle, setCurrentDiagramTitle] = useState("Untitled");
   const [isCodeDialogOpen, setIsCodeDialogOpen] = useState(false);
   const [generatedFiles, setGeneratedFiles] = useState(null);
   const [activeGeneratedTab, setActiveGeneratedTab] = useState("agent.py");
@@ -1066,7 +1069,7 @@ function Diagram() {
       const isConditionalDrag = dragPayload?.type === "conditionalNode";
       const isStart = dragPayload?.type === "START";
       const isEnd = dragPayload?.type === "END";
-      
+
       let nodeId = getId();
       if (isStart) nodeId = "START";
       if (isEnd) nodeId = "END";
@@ -1461,6 +1464,22 @@ function Diagram() {
     openSaveDialog();
   }, [closeTopNavMenu, openSaveDialog]);
 
+  const handleDiagramLoad = useCallback(
+    (diagramPayload) => {
+      const graph =
+        diagramPayload?.graph ?? diagramPayload?.content ?? diagramPayload;
+
+      if (graph) {
+        applyGraphData(graph);
+      }
+
+      const incomingName = diagramPayload?.name;
+      setCurrentDiagramTitle(incomingName?.trim() || "Untitled");
+      setDiagramName(incomingName || "");
+    },
+    [applyGraphData]
+  );
+
   const saveDiagram = async () => {
     const graph = GraphJSON();
     try {
@@ -1486,6 +1505,7 @@ function Diagram() {
       // Cerrar el diálogo y limpiar el nombre
       setIsSaveDialogOpen(false);
       setDiagramName("");
+      setCurrentDiagramTitle(name);
 
       // Mostrar mensaje de éxito
       setAlert({
@@ -1557,6 +1577,7 @@ function Diagram() {
     setStategraphCode("");
     setIsSaveDialogOpen(false);
     setDiagramName("");
+    setCurrentDiagramTitle("Untitled");
     closeFilterEditor();
     closeFilterContextMenu();
     resetDrag();
@@ -1625,16 +1646,18 @@ function Diagram() {
   // Rebuilds React Flow state accordingly
   useEffect(() => {
     const handler = (ev) => {
-      const graph = ev?.detail;
-      applyGraphData(graph);
+      const detail = ev?.detail;
+      handleDiagramLoad(detail);
     };
     window.addEventListener("load-diagram", handler);
     return () => window.removeEventListener("load-diagram", handler);
-  }, [applyGraphData]);
+  }, [handleDiagramLoad]);
+
+  const displayedDiagramTitle = currentDiagramTitle?.trim() || "Untitled";
 
   return (
     <div className="dndflow">
-      <Sidebar onLoadDiagram={applyGraphData} />
+      <Sidebar onLoadDiagram={handleDiagramLoad} />
       <div className="workspace">
         <header className="top-nav">
           <div className="top-nav__content">
@@ -1692,6 +1715,35 @@ function Diagram() {
             </div>
           </div>
         </header>
+
+        <section className="diagram-section-header" aria-label="Diagram header">
+          <div className="diagram-section-header__left">
+            <span className="diagram-section-header__label">Diagram</span>
+            <h2 className="diagram-section-header__title">
+              {displayedDiagramTitle}
+            </h2>
+          </div>
+          <div className="diagram-section-header__actions">
+            <button
+              type="button"
+              className="diagram-section-header__action diagram-section-header__action--link"
+              onClick={handleSaveButtonClick}
+              disabled={!user}
+            >
+              <SaveOutlinedIcon fontSize="small" />
+              <span>Save diagram</span>
+            </button>
+            <div className="diagram-section-header__search" role="search">
+              <SearchIcon className="diagram-section-header__search-icon" />
+              <input
+                type="search"
+                placeholder="Search in diagram"
+                className="diagram-section-header__search-input"
+                aria-label="Search in diagram"
+              />
+            </div>
+          </div>
+        </section>
 
         {/* JSON Modal */}
         <Modal

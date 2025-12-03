@@ -45,11 +45,125 @@ body {
 }
 
 .workspace {
+  position: relative;
   display: flex;
   flex-direction: column;
   flex: 1;
   height: 100vh;
   overflow: hidden;
+}
+
+.canvas-wrapper {
+  flex: 1;
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.diagram-section-header {
+  position: absolute;
+  top: var(--top-nav-height);
+  left: 0;
+  right: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 12px clamp(16px, 4vw, 48px);
+  background: transparent;
+  pointer-events: none;
+}
+
+.diagram-section-header > * {
+  pointer-events: auto;
+}
+
+.diagram-section-header__left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.diagram-section-header__label {
+  font-size: 12px;
+  color: #94a3b8;
+  letter-spacing: 0.02em;
+}
+
+.diagram-section-header__title {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.diagram-section-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.diagram-section-header__action {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 6px 10px;
+  font-weight: 600;
+  text-decoration: none;
+  color: #2563eb;
+  transition: color 0.2s ease, opacity 0.2s ease;
+}
+
+.diagram-section-header__action:disabled {
+  color: #9ca3af;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.diagram-section-header__action:hover:not(:disabled),
+.diagram-section-header__action:focus-visible:not(:disabled) {
+  color: #1d4ed8;
+  outline: none;
+}
+
+.diagram-section-header__action svg {
+  font-size: 18px;
+}
+
+.diagram-section-header__search {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #cbd5e1;
+  min-width: 240px;
+}
+
+.diagram-section-header__search-icon {
+  color: #64748b;
+  font-size: 18px;
+}
+
+.diagram-section-header__search-input {
+  border: none;
+  outline: none;
+  width: 100%;
+  background: transparent;
+  color: #0f172a;
+  padding: 6px 0;
+  font-size: 0.95rem;
+}
+
+.diagram-section-header__search-input::placeholder {
+  color: #94a3b8;
+}
+
+.diagram-section-header__search:focus-within {
+  border-bottom-color: #2563eb;
 }
 
 .top-nav {
@@ -360,7 +474,7 @@ body {
   position: fixed;
   overflow-y: auto;
   height: 60vh;
-  top: 10.3%;
+  top: 150px; /* Moved down from the top */
   right: 0;
   border-radius: 0px 0 0 12px;
   transform: translateY(-50%) translateX(100%);

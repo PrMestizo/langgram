@@ -1168,10 +1168,12 @@ const Sidebar = ({ onLoadDiagram }) => {
       }
 
       if (onLoadDiagram) {
-        onLoadDiagram(diagramContent);
+        onLoadDiagram({ graph: diagramContent, name: diagram.name });
       } else {
         window.dispatchEvent(
-          new CustomEvent("load-diagram", { detail: diagramContent })
+          new CustomEvent("load-diagram", {
+            detail: { graph: diagramContent, name: diagram.name },
+          })
         );
       }
       // selectPanelTab("diagrams"); // Removed tab switching
@@ -1353,7 +1355,14 @@ const Sidebar = ({ onLoadDiagram }) => {
         </div>
 
         {/* Tree View */}
-        <Box sx={{ flex: 1, overflowY: "auto", padding: "10px" }}>
+        <Box
+          sx={{
+            flex: 1,
+            overflowY: "auto",
+            padding: "10px",
+            background: "#1b1b1b",
+          }}
+        >
           <SimpleTreeView>
             {/* Diagrams Section */}
             <CustomTreeItem itemId="section-diagrams" label="Diagrams">
