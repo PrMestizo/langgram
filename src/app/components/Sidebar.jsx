@@ -1252,9 +1252,23 @@ const Sidebar = ({ onLoadDiagram }) => {
           alignItems: "center",
           color: "white",
           cursor: "pointer",
+          gap: "8px",
         }}
         {...draggableProps}
       >
+                {icon && (
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: "18px",
+              height: "18px",
+            }}
+          >
+            {icon}
+          </span>
+        )}
 
         <span style={{ flex: 1 }}>{label}</span>
         {menu}
@@ -1375,7 +1389,7 @@ const Sidebar = ({ onLoadDiagram }) => {
         >
           <SimpleTreeView>
             {/* Diagrams Section */}
-    <CustomTreeItem
+            <CustomTreeItem
               itemId="section-diagrams"
               label={commonTreeItemLabel("Diagrams", <FaAnkh />)}
             >              
@@ -1384,10 +1398,9 @@ const Sidebar = ({ onLoadDiagram }) => {
                     <CustomTreeItem
                       key={d.name}
                       itemId={`diagram-${d.name}`}
-                      icon={<FaAnkh />}
                       label={commonTreeItemLabel(
                         d.name,
-                        <FaAnkh />,
+                        null,
                         <LongMenu
                           onOpenChange={(open) =>
                             setMenuOpenId(open ? "node-Base" : null)
