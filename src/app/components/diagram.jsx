@@ -1682,13 +1682,7 @@ function Diagram() {
               >
                 Generar código
               </button>
-              <button
-                type="button"
-                className="top-nav__button top-nav__button--secondary"
-                onClick={handleAutoLayout}
-              >
-                Ordenar
-              </button>
+              {/* Botón Ordenar eliminado a petición del usuario */}
               <button
                 type="button"
                 className="top-nav__button top-nav__button--secondary"

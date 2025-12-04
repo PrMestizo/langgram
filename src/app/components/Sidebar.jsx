@@ -1211,10 +1211,20 @@ const Sidebar = ({ onLoadDiagram }) => {
           sx: {
             borderRadius: "10px",
             color: "white",
+            display: "flex",
+            flexDirection: "row-reverse", 
+            alignItems: "center",
+            paddingRight: "8px",
+            height: "40px",
 
             "&:hover": {
               backgroundColor: "rgba(109, 116, 156, 0.48)",
             },
+          },
+        },
+        iconContainer: {
+          sx: {
+            color: "white",
           },
         },
         label: {
@@ -1236,16 +1246,16 @@ const Sidebar = ({ onLoadDiagram }) => {
   const renderSidebarContent = () => {
     const commonTreeItemLabel = (label, icon, menu, draggableProps = {}) => (
       <div
-        className="node-item"
         style={{
           width: "100%",
           display: "flex",
           alignItems: "center",
           color: "white",
+          cursor: "pointer",
         }}
         {...draggableProps}
       >
-        <div className="node-icon">{icon}</div>
+
         <span style={{ flex: 1 }}>{label}</span>
         {menu}
       </div>
@@ -1365,52 +1375,20 @@ const Sidebar = ({ onLoadDiagram }) => {
         >
           <SimpleTreeView>
             {/* Diagrams Section */}
-            <CustomTreeItem itemId="section-diagrams" label="Diagrams">
-              <CustomTreeItem
-                itemId="section-diagrams-tools"
-                label="Diagram Tools"
-              >
-                <CustomTreeItem
-                  itemId="create-flow"
-                  label={commonTreeItemLabel(
-                    "Create Flow",
-                    <FaAnkh />,
-                    <LongMenu
-                      className="kebab-menu"
-                      onOpenChange={(open) =>
-                        setMenuOpenId(open ? "create-flow" : null)
-                      }
-                    />
-                  )}
-                />
-                <CustomTreeItem
-                  itemId="save-diagram"
-                  label={commonTreeItemLabel(
-                    "Save Diagram",
-                    <FaAnkh />,
-                    <LongMenu
-                      className="kebab-menu"
-                      onOpenChange={(open) =>
-                        setMenuOpenId(open ? "node-Base" : null)
-                      }
-                    />
-                  )}
-                />
-              </CustomTreeItem>
-              {customDiagrams.length > 0 && (
-                <CustomTreeItem
-                  itemId="section-saved-diagrams"
-                  label="Saved Diagrams"
-                >
-                  {customDiagrams.map((d) => (
+    <CustomTreeItem
+              itemId="section-diagrams"
+              label={commonTreeItemLabel("Diagrams", <FaAnkh />)}
+            >              
+            {customDiagrams.length > 0 && (
+                  customDiagrams.map((d) => (
                     <CustomTreeItem
                       key={d.name}
                       itemId={`diagram-${d.name}`}
+                      icon={<FaAnkh />}
                       label={commonTreeItemLabel(
                         d.name,
                         <FaAnkh />,
                         <LongMenu
-                          className="kebab-menu"
                           onOpenChange={(open) =>
                             setMenuOpenId(open ? "node-Base" : null)
                           }
@@ -1433,60 +1411,14 @@ const Sidebar = ({ onLoadDiagram }) => {
                         }
                       )}
                     />
-                  ))}
-                </CustomTreeItem>
+                  ))
               )}
             </CustomTreeItem>
 
             {/* Nodes Section */}
             <CustomTreeItem itemId="section-nodes" label="Nodes">
-              <CustomTreeItem
-                itemId="section-essential-nodes"
-                label="Essential Nodes"
-              >
-                <CustomTreeItem
-                  itemId="node-start"
-                  label={commonTreeItemLabel(
-                    "START",
-                    <FaApple />,
-                    <LongMenu
-                      className="kebab-menu"
-                      onOpenChange={(open) =>
-                        setMenuOpenId(open ? "START" : null)
-                      }
-                    />,
-                    {
-                      draggable: true,
-                      onDragStart: (event) => onDragStart(event, "START"),
-                      onDragEnd: handleDragEnd,
-                    }
-                  )}
-                />
-                <CustomTreeItem
-                  itemId="node-end"
-                  label={commonTreeItemLabel(
-                    "END",
-                    <FaApple />,
-                    <LongMenu
-                      className="kebab-menu"
-                      onOpenChange={(open) =>
-                        setMenuOpenId(open ? "END" : null)
-                      }
-                    />,
-                    {
-                      draggable: true,
-                      onDragStart: (event) => onDragStart(event, "END"),
-                      onDragEnd: handleDragEnd,
-                    }
-                  )}
-                />
-              </CustomTreeItem>
               {customNodes.length > 0 && (
-                <CustomTreeItem
-                  itemId="section-custom-nodes"
-                  label="Custom Nodes"
-                >
-                  {customNodes.map((n) => (
+                  customNodes.map((n) => (
                     <CustomTreeItem
                       key={n.name}
                       itemId={`node-${n.name}`}
@@ -1513,8 +1445,7 @@ const Sidebar = ({ onLoadDiagram }) => {
                         }
                       )}
                     />
-                  ))}
-                </CustomTreeItem>
+                  ))
               )}
             </CustomTreeItem>
 
@@ -1644,11 +1575,7 @@ const Sidebar = ({ onLoadDiagram }) => {
             {/* Prompts Section */}
             <CustomTreeItem itemId="section-prompts" label="Prompts">
               {customPrompts.length > 0 && (
-                <CustomTreeItem
-                  itemId="section-custom-prompts"
-                  label="Custom Prompts"
-                >
-                  {customPrompts.map((p) => (
+                  customPrompts.map((p) => (
                     <CustomTreeItem
                       key={p.name}
                       itemId={`prompt-${p.name}`}
@@ -1674,19 +1601,14 @@ const Sidebar = ({ onLoadDiagram }) => {
                         }
                       )}
                     />
-                  ))}
-                </CustomTreeItem>
+                  ))
               )}
             </CustomTreeItem>
 
             {/* Tools Section */}
             <CustomTreeItem itemId="section-tools" label="Tools">
               {customTools.length > 0 && (
-                <CustomTreeItem
-                  itemId="section-custom-tools"
-                  label="Custom Tools"
-                >
-                  {customTools.map((t) => (
+                  customTools.map((t) => (
                     <CustomTreeItem
                       key={t.name}
                       itemId={`tool-${t.name}`}
@@ -1712,19 +1634,14 @@ const Sidebar = ({ onLoadDiagram }) => {
                         }
                       )}
                     />
-                  ))}
-                </CustomTreeItem>
+                  ))
               )}
             </CustomTreeItem>
 
             {/* Chains Section */}
             <CustomTreeItem itemId="section-chains" label="Chains">
               {customChains.length > 0 && (
-                <CustomTreeItem
-                  itemId="section-custom-chains"
-                  label="Custom Chains"
-                >
-                  {customChains.map((c) => (
+                  customChains.map((c) => (
                     <CustomTreeItem
                       key={c.name}
                       itemId={`chain-${c.name}`}
@@ -1750,8 +1667,7 @@ const Sidebar = ({ onLoadDiagram }) => {
                         }
                       )}
                     />
-                  ))}
-                </CustomTreeItem>
+                  ))
               )}
             </CustomTreeItem>
           </SimpleTreeView>
