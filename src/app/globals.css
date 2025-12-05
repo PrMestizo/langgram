@@ -299,261 +299,233 @@ body {
   outline: none;
 }
 
-.diagram-resource-tabs {
+.diagram-resource-shell {
   position: fixed;
-  top: 27%;
-  right: 0px;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  transform: translateY(-50%);
-  transition: transform 0.3s ease;
+  inset: 0;
+  pointer-events: none;
   z-index: 1100;
 }
 
-.diagram-resource-tabs--open {
-  transform: translateY(-50%)
-    translateX(calc(-1.1479 * var(--resource-sidebar-width)));
-}
-
-.diagram-resource-tab-button {
-  width: 140px;
-  height: 42px;
-  background: #1b1b1b;
-  color: #f8fafc;
-  border: 3px solid red;
-  border-right: none;
-  padding: 0;
-  font-size: 1rem;
-  display: flex;
+.diagram-resource-launcher {
+  pointer-events: auto;
+  position: absolute;
+  right: 24px;
+  bottom: 24px;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  clip-path: polygon(15px 0, 100% 0, 100% 100%, 0 100%, 0 43px);
-  cursor: pointer;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #0f172a, #111827);
+  color: #e2e8f0;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
   font-weight: 600;
-  box-shadow: -6px 12px 24px rgba(15, 23, 42, 0.35);
-  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease,
+    background 0.2s ease;
 }
 
-.diagram-resource-tab-button:hover,
-.diagram-resource-tab-button:focus-visible {
-  background: linear-gradient(135deg, #334155, #1e293b);
-  box-shadow: -10px 16px 28px rgba(15, 23, 42, 0.45);
+.diagram-resource-launcher:hover,
+.diagram-resource-launcher:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: 0 30px 50px rgba(0, 0, 0, 0.35);
+  border-color: white;
   outline: none;
 }
 
-.diagram-resource-tab-button--active {
-  background: linear-gradient(135deg, #1f2937, #0f172a);
-  box-shadow: -10px 18px 32px rgba(15, 23, 42, 0.5);
+.diagram-resource-launcher--open {
+  background: linear-gradient(135deg, #111827, #0b1220);
+  border-color: white(255, 255, 255, 0.6);
 }
 
-.diagram-resource-sidebar__stategraph {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  color: rgba(226, 232, 240, 0.85);
+.diagram-resource-launcher__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: rgba(94, 234, 212, 0.12);
+  color: white;
+  font-size: 18px;
 }
 
-.diagram-resource-sidebar__stategraph-intro p {
-  margin: 0;
-  line-height: 1.6;
+.diagram-resource-launcher__label {
+  font-size: 0.95rem;
+  letter-spacing: 0.01em;
 }
 
-.diagram-resource-sidebar__stategraph-metrics {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 1rem;
-}
-
-.diagram-resource-sidebar__stategraph-metric {
-  background: rgba(15, 23, 42, 0.75);
-  border: 1px solid rgba(59, 130, 246, 0.2);
-  border-radius: 12px;
-  padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.35);
-}
-
-.diagram-resource-sidebar__stategraph-metric-label {
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: rgba(148, 163, 184, 0.85);
-}
-
-.diagram-resource-sidebar__stategraph-metric-value {
-  font-size: 1.5rem;
+.diagram-resource-launcher__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: rgba(94, 234, 212, 0.18);
+  color: white;
   font-weight: 700;
-  color: #f8fafc;
-}
-
-.diagram-resource-sidebar__stategraph-hint p {
-  margin: 0;
-  font-size: 0.9rem;
-  line-height: 1.6;
-  color: rgba(148, 163, 184, 0.9);
-}
-
-.button-stategraph {
-  position: fixed;
-  top: 13%;
-  right: 0px;
-  width: 130px;
-  height: 41.5px;
-  z-index: 1100;
-  background: #1b1b1b;
-  color: #f8fafc;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  clip-path: polygon(15px 0, 100% 0, 100% 100%, 0 100%, 0 43px);
-  border: 3px solid red;
-  border-right: none;
-  transition: transform 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease;
-}
-
-.button-stategraph:hover,
-.button-stategraph:focus-visible {
-  background: linear-gradient(135deg, #334155, #1e293b);
-  box-shadow: -10px 16px 28px rgba(15, 23, 42, 0.45);
-  outline: none;
-}
-
-.button-stategraph--open {
-  transform: translate(50%, -50%)
-    translateX(calc(-1.339 * var(--resource-sidebar-width)));
-}
-
-.diagram-resource-tab {
-  position: fixed;
-  top: 20%;
-  right: 0px;
-  width: 130px;
-  height: 41.5px;
-  background: #1b1b1b;
-  color: #f8fafc;
-  border: none;
-  padding: 0;
-  font-size: 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  clip-path: polygon(15px 0, 100% 0, 100% 100%, 0 100%, 0 43px);
-  cursor: pointer;
-  font-weight: 600;
-  box-shadow: -6px 12px 24px rgba(15, 23, 42, 0.35);
-  z-index: 1100;
-  border: 3px solid red;
-  border-right: none;
-  transition: transform 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease;
-}
-
-.diagram-resource-tab:hover,
-.diagram-resource-tab:focus-visible {
-  background: linear-gradient(135deg, #334155, #1e293b);
-  box-shadow: -10px 16px 28px rgba(15, 23, 42, 0.45);
-  outline: none;
-}
-
-.diagram-resource-tab:focus-visible {
-  outline: 3px solid rgba(59, 130, 246, 0.6);
-  outline-offset: 4px;
-}
-
-.diagram-resource-tab--open {
-  transform: translate(50%, -50%)
-    translateX(calc(-1.339 * var(--resource-sidebar-width)));
 }
 
 .diagram-resource-sidebar {
-  position: fixed;
-  overflow-y: auto;
-  height: 60vh;
-  top: 150px; /* Moved down from the top */
-  right: 0;
-  border-radius: 0px 0 0 12px;
-  transform: translateY(-50%) translateX(100%);
+  pointer-events: none;
+  position: absolute;
+  top: 130px;
+  right: 20px;
+  height: calc(100vh - 60px);
   width: var(--resource-sidebar-width);
-  transform: translateX(100%);
   background: #1b1b1b;
   color: #f8fafc;
+  border-radius: 24px;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  box-shadow: -20px 20px 60px rgba(0, 0, 0, 0.45);
+  padding: 20px 20px 22px;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
-  padding: 1.75rem 1.5rem 2.25rem;
-  box-shadow: -14px 0 40px rgba(15, 23, 42, 0.45);
-  transition: transform 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease;
-  pointer-events: none;
-  opacity: 0;
-  z-index: 1050;
-  border: 3px solid red;
+  gap: 16px;
+  transform: translateX(calc(100% + 16px));
+  transition: transform 0.28s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  overflow: hidden;
 }
 
 .diagram-resource-sidebar--open {
-  transform: translateX(0);
   pointer-events: auto;
-  opacity: 1;
+  transform: translateX(0);
+  border-color: white;
+  box-shadow: -24px 28px 72px rgba(0, 0, 0, 0.55);
 }
 
 .diagram-resource-sidebar--active-drop {
-  box-shadow: -18px 0 48px rgba(59, 130, 246, 0.4);
+  box-shadow: -24px 28px 72px white;
+  border-color: rgba(94, 234, 212, 0.6);
 }
 
 .diagram-resource-sidebar--active-drop::after {
   content: "";
   position: absolute;
-  inset: 18px 18px 24px 18px;
-  border: 2px dashed rgba(148, 163, 184, 0.35);
+  inset: 16px;
+  border: 2px dashed rgba(198, 231, 226, 0.35);
   border-radius: 18px;
   pointer-events: none;
 }
 
 .diagram-resource-sidebar__header {
   display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.diagram-resource-sidebar__heading {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.diagram-resource-sidebar__eyebrow {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.7rem;
+  color: rgba(148, 163, 184, 0.85);
 }
 
 .diagram-resource-sidebar__title {
   margin: 0;
-  font-size: 1.2rem;
-  font-weight: 600;
-  line-height: 1.5;
-}
-
-.diagram-resource-sidebar__tooltip {
-  color: white;
-  width: 20px;
-  height: 20px;
-  padding: 2px;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #e2e8f0;
 }
 
 .diagram-resource-sidebar__subtitle {
   margin: 0;
-  color: rgba(241, 245, 249, 0.75);
-  font-size: 0.8rem;
-  line-height: 1.4;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: rgba(226, 232, 240, 0.78);
+}
+
+.diagram-resource-sidebar__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.diagram-resource-sidebar__tooltip {
+  color: #e2e8f0;
+}
+
+.diagram-resource-tablist {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 6px;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  width: fit-content;
+}
+
+.diagram-resource-tab-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #e2e8f0;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem;
+  transition: all 0.18s ease;
+}
+
+.diagram-resource-tab-chip:hover,
+.diagram-resource-tab-chip:focus-visible {
+  border-color: rgba(148, 163, 184, 0.35);
+  background: rgba(255, 255, 255, 0.04);
+  outline: none;
+}
+
+.diagram-resource-tab-chip--active {
+  border-color: rgba(94, 234, 212, 0.55);
+  background: radial-gradient(
+    circle at 20% 30%,
+    rgba(94, 234, 212, 0.18),
+    rgba(94, 234, 212, 0.05)
+  );
+  color: #a5f3fc;
+}
+
+.diagram-resource-content {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 8px;
+  margin-right: -6px;
 }
 
 .diagram-resource-sidebar__section {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 1rem;
+  border-radius: 18px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.diagram-resource-sidebar__section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
 }
 
 .diagram-resource-sidebar__section-title {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: 1.05rem;
+  font-weight: 700;
   margin: 0;
   color: #e2e8f0;
 }
@@ -564,50 +536,38 @@ body {
 
 .diagram-resource-sidebar__count {
   margin-left: auto;
-  background: rgba(59, 130, 246, 0.2);
-  color: #bfdbfe;
+  background: rgba(94, 234, 212, 0.22);
+  color: #a5f3fc;
   border-radius: 999px;
   padding: 0.1rem 0.6rem;
   font-size: 0.8rem;
+  border: 1px solid rgba(94, 234, 212, 0.35);
 }
 
 .diagram-resource-sidebar__empty {
   margin: 0;
   padding: 0.85rem 1rem;
-  border-radius: 10px;
+  border-radius: 12px;
   background: rgba(148, 163, 184, 0.12);
-  color: rgba(226, 232, 240, 0.8);
+  color: rgba(226, 232, 240, 0.9);
   font-size: 0.9rem;
+  border: 1px solid rgba(148, 163, 184, 0.35);
 }
 
 .diagram-resource-sidebar__memory-preview {
-  background: rgba(15, 23, 42, 0.65);
+  background: #1b1b1b;
   border: 1px solid rgba(148, 163, 184, 0.25);
-  border-radius: 12px;
+  border-radius: 16px;
   padding: 1rem;
-  margin-top: 0.75rem;
+  margin-bottom: 10px;
+  margin-top: -3px;
 }
 
 .diagram-resource-sidebar__memory-description {
   margin: 0 0 0.5rem 0;
-  color: rgba(226, 232, 240, 0.85);
-  font-size: 0.9rem;
+  color: rgba(226, 232, 240, 0.9);
+  font-size: 0.95rem;
   line-height: 1.4;
-}
-
-.diagram-resource-sidebar__memory-code-block {
-  margin: 0;
-  padding: 0.75rem;
-  background: #0f172a;
-  border-radius: 8px;
-  border: 1px solid rgba(30, 41, 59, 0.9);
-  color: #f8fafc;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-    "Liberation Mono", "Courier New", monospace;
-  font-size: 0.8rem;
-  white-space: pre-wrap;
-  word-break: break-word;
-  line-height: 1.5;
 }
 
 .diagram-resource-sidebar__list {
@@ -623,11 +583,10 @@ body {
   display: flex;
   align-items: flex-start;
   gap: 0.75rem;
-  padding: 0.85rem 0.9rem;
-  background: rgba(15, 23, 42, 0.75);
-  border: 1px solid rgba(59, 130, 246, 0.15);
-  border-radius: 12px;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.25);
+  padding: 1rem;
+  background: #1b1b1b;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 14px;
 }
 
 .diagram-resource-sidebar__item--prompt {
@@ -646,9 +605,9 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
   background: rgba(59, 130, 246, 0.18);
   color: #bfdbfe;
   flex-shrink: 0;
@@ -678,13 +637,13 @@ body {
 }
 
 .diagram-resource-sidebar__item-title {
-  font-weight: 600;
+  font-weight: 700;
   color: #f8fafc;
 }
 
 .diagram-resource-sidebar__item-description {
-  font-size: 0.85rem;
-  color: rgba(226, 232, 240, 0.75);
+  font-size: 0.9rem;
+  color: rgba(226, 232, 240, 0.78);
   line-height: 1.4;
 }
 
@@ -696,7 +655,7 @@ body {
   font-size: 1.2rem;
   line-height: 1;
   padding: 0.15rem;
-  border-radius: 6px;
+  border-radius: 8px;
   transition: background 0.2s ease, color 0.2s ease;
 }
 
