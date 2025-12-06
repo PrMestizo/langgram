@@ -19,6 +19,7 @@ export default function LongMenu({
   const [anchorEl, setAnchorEl] = React.useState(null);
   const open = Boolean(anchorEl);
   const handleClick = (event) => {
+    event.stopPropagation();
     setAnchorEl(event.currentTarget);
     onOpenChange?.(true);
   };

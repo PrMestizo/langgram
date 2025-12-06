@@ -74,9 +74,9 @@ const Sidebar = ({ onLoadDiagram }) => {
       nameLabel: "Nombre",
       namePlaceholder: "Nombre del prompt",
       initialCode: "",
-      editorType: "text",
+      editorType: "code",
+      language: "markdown",
       contentLabel: "Contenido del prompt",
-      textPlaceholder: "Escribe aquí el prompt...",
     },
     chain: {
       title: "Nueva chain personalizada",
@@ -1246,7 +1246,13 @@ const Sidebar = ({ onLoadDiagram }) => {
   ));
 
   const renderSidebarContent = () => {
-    const commonTreeItemLabel = (label, icon, menu, draggableProps = {}) => (
+    const commonTreeItemLabel = (
+      label,
+      icon,
+      menu,
+      draggableProps = {},
+      onAdd = null
+    ) => (
       <div
         style={{
           width: "100%",
@@ -1255,25 +1261,62 @@ const Sidebar = ({ onLoadDiagram }) => {
           color: "white",
           cursor: "pointer",
           gap: "8px",
+          justifyContent: "space-between",
         }}
         {...draggableProps}
       >
-        {icon && (
-          <span
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: "18px",
-              height: "18px",
-            }}
-          >
-            {icon}
-          </span>
-        )}
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          {icon && (
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: "18px",
+                height: "18px",
+              }}
+            >
+              {icon}
+            </span>
+          )}
 
-        <span style={{ flex: 1 }}>{label}</span>
-        {menu}
+          <span>{label}</span>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          {onAdd && (
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onAdd();
+              }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: "22px",
+                height: "22px",
+                borderRadius: "50%",
+                background: "rgba(255, 255, 255, 0.1)",
+                border: "none",
+                color: "white",
+                cursor: "pointer",
+                fontSize: "10px",
+                transition: "background 0.2s",
+              }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.background = "rgba(255, 255, 255, 0.2)")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.background = "rgba(255, 255, 255, 0.1)")
+              }
+            >
+              <FaPlus />
+            </button>
+          )}
+          {menu}
+        </div>
       </div>
     );
 
@@ -1498,7 +1541,13 @@ const Sidebar = ({ onLoadDiagram }) => {
               {/* Diagrams Section */}
               <CustomTreeItem
                 itemId="section-diagrams"
-                label={commonTreeItemLabel("Diagrams", <MdOutlineSchema />)}
+                label={commonTreeItemLabel(
+                  "Diagrams",
+                  <MdOutlineSchema />,
+                  null,
+                  {},
+                  () => handleAddOption("diagram")
+                )}
               >
                 {customDiagrams.length > 0 &&
                   customDiagrams.map((d) => (
@@ -1537,7 +1586,13 @@ const Sidebar = ({ onLoadDiagram }) => {
               {/* Nodes Section */}
               <CustomTreeItem
                 itemId="section-nodes"
-                label={commonTreeItemLabel("Nodes", <FaCircle />)}
+                label={commonTreeItemLabel(
+                  "Nodes",
+                  <FaCircle />,
+                  null,
+                  {},
+                  () => handleAddOption("node")
+                )}
               >
                 {customNodes.length > 0 &&
                   customNodes.map((n) => (
@@ -1572,7 +1627,13 @@ const Sidebar = ({ onLoadDiagram }) => {
               {/* Edges Section */}
               <CustomTreeItem
                 itemId="section-edges"
-                label={commonTreeItemLabel("Edges", <FaFilter />)}
+                label={commonTreeItemLabel(
+                  "Edges",
+                  <FaFilter />,
+                  null,
+                  {},
+                  () => handleAddOption("edge")
+                )}
               >
                 {standardEdges.length > 0 &&
                   standardEdges.map((item) => (
@@ -1619,7 +1680,13 @@ const Sidebar = ({ onLoadDiagram }) => {
               {/* Conditional Edges Section */}
               <CustomTreeItem
                 itemId="section-conditional-edges"
-                label={commonTreeItemLabel("Filtros Condicional", <IfIcon />)}
+                label={commonTreeItemLabel(
+                  "Filtros Condicional",
+                  <IfIcon />,
+                  null,
+                  {},
+                  () => handleAddOption("edge")
+                )}
               >
                 {conditionalEdges.map((itemE) => (
                   <CustomTreeItem
@@ -1664,7 +1731,13 @@ const Sidebar = ({ onLoadDiagram }) => {
               {/* Prompts Section */}
               <CustomTreeItem
                 itemId="section-prompts"
-                label={commonTreeItemLabel("Prompts", <TbPrompt />)}
+                label={commonTreeItemLabel(
+                  "Prompts",
+                  <TbPrompt />,
+                  null,
+                  {},
+                  () => handleAddOption("prompt")
+                )}
               >
                 {customPrompts.length > 0 &&
                   customPrompts.map((p) => (
@@ -1699,7 +1772,13 @@ const Sidebar = ({ onLoadDiagram }) => {
               {/* Tools Section */}
               <CustomTreeItem
                 itemId="section-tools"
-                label={commonTreeItemLabel("Tools", <FiTool />)}
+                label={commonTreeItemLabel(
+                  "Tools",
+                  <FiTool />,
+                  null,
+                  {},
+                  () => handleAddOption("tool")
+                )}
               >
                 {customTools.length > 0 &&
                   customTools.map((t) => (
@@ -1734,7 +1813,13 @@ const Sidebar = ({ onLoadDiagram }) => {
               {/* Chains Section */}
               <CustomTreeItem
                 itemId="section-chains"
-                label={commonTreeItemLabel("Chains", <HiLink />)}
+                label={commonTreeItemLabel(
+                  "Chains",
+                  <HiLink />,
+                  null,
+                  {},
+                  () => handleAddOption("chain")
+                )}
               >
                 {customChains.length > 0 &&
                   customChains.map((c) => (
