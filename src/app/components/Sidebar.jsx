@@ -1258,7 +1258,7 @@ const Sidebar = ({ onLoadDiagram }) => {
         }}
         {...draggableProps}
       >
-                {icon && (
+        {icon && (
           <span
             style={{
               display: "inline-flex",
@@ -1280,15 +1280,93 @@ const Sidebar = ({ onLoadDiagram }) => {
     const conditionalEdges = customEdges.filter((edge) => edge.conditionalEdge);
     const standardEdges = customEdges.filter((edge) => !edge.conditionalEdge);
 
-    if (isCollapsed) {
-      return (
+    const sidebarIcons = (
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "24px",
+          marginTop: "45px",
+          color: "white",
+          fontSize: "1.2rem",
+        }}
+      >
+        <span
+          title="Diagrams"
+          style={{ display: "flex", justifyContent: "center" }}
+        >
+          <MdOutlineSchema />
+        </span>
+        <span
+          title="Nodes"
+          style={{ display: "flex", justifyContent: "center" }}
+        >
+          <FaCircle />
+        </span>
+        <span
+          title="Edges"
+          style={{ display: "flex", justifyContent: "center" }}
+        >
+          <FaFilter />
+        </span>
+        <span
+          title="Conditional Edges"
+          style={{ display: "flex", justifyContent: "center" }}
+        >
+          <IfIcon />
+        </span>
+        <span
+          title="Prompts"
+          style={{ display: "flex", justifyContent: "center" }}
+        >
+          <TbPrompt />
+        </span>
+        <span
+          title="Tools"
+          style={{ display: "flex", justifyContent: "center" }}
+        >
+          <FiTool />
+        </span>
+        <span
+          title="Chains"
+          style={{ display: "flex", justifyContent: "center" }}
+        >
+          <HiLink />
+        </span>
+      </div>
+    );
+
+    return (
+      <aside
+        className="chatgpt-sidebar"
+        style={{
+          width: isCollapsed ? "50px" : "300px",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+          background: "#0f0f11",
+          borderRight: "1px solid #333",
+          transition: "width 0.3s ease",
+          position: "relative",
+        }}
+      >
+        {/* Collapsed View Container */}
         <div
           style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "50px",
+            height: "100%",
             display: "flex",
             flexDirection: "column",
-            height: "100%",
             alignItems: "center",
             paddingTop: "10px",
+            gap: "20px",
+            opacity: isCollapsed ? 1 : 0,
+            pointerEvents: isCollapsed ? "auto" : "none",
+            transition: "opacity 0.2s ease",
+            zIndex: 10,
           }}
         >
           <button
@@ -1304,98 +1382,111 @@ const Sidebar = ({ onLoadDiagram }) => {
           >
             <AiOutlineMenu />
           </button>
+          {sidebarIcons}
         </div>
-      );
-    }
 
-    return (
-      <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-        {/* Sidebar Header */}
+        {/* Expanded View Container */}
         <div
           style={{
-            height: "60px",
-            background: "#1b1b1b",
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "300px", // Fixed width to prevent squishing
+            height: "100%",
             display: "flex",
-            alignItems: "center",
-            padding: "0 16px",
-            gap: "12px",
-            borderBottom: "1px solid #333",
-            flexShrink: 0,
+            flexDirection: "column",
+            opacity: isCollapsed ? 0 : 1,
+            pointerEvents: isCollapsed ? "none" : "auto",
+            transition: "opacity 0.2s ease",
+            zIndex: 5,
           }}
         >
-          <button
-            onClick={() => router.push("/store")}
+          {/* Sidebar Header */}
+          <div
             style={{
-              background: "transparent",
-              border: "none",
-              color: "white",
-              cursor: "pointer",
+              height: "60px",
+              background: "#1b1b1b",
               display: "flex",
               alignItems: "center",
-              gap: "8px",
-              fontSize: "0.9rem",
-              fontWeight: 600,
+              padding: "0 16px",
+              gap: "12px",
+              borderBottom: "1px solid #333",
+              flexShrink: 0,
             }}
           >
-            <FaStore /> Store
-          </button>
-          <button
-            onClick={() => selectPanelTab("settings")} // Or open modal directly if preferred
+            <button
+              onClick={() => router.push("/store")}
+              style={{
+                background: "transparent",
+                border: "none",
+                color: "white",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                fontSize: "0.9rem",
+                fontWeight: 600,
+              }}
+            >
+              <FaStore /> Store
+            </button>
+            <button
+              onClick={() => selectPanelTab("settings")}
+              style={{
+                background: "transparent",
+                border: "none",
+                color: "white",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                fontSize: "0.9rem",
+                fontWeight: 600,
+              }}
+            >
+              <AiOutlineSetting /> Settings
+            </button>
+          </div>
+
+          {/* Toggle Bar */}
+          <div
             style={{
-              background: "transparent",
-              border: "none",
-              color: "white",
-              cursor: "pointer",
               display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              fontSize: "0.9rem",
-              fontWeight: 600,
+              justifyContent: "flex-end",
+              padding: "5px 10px",
+              background: "#1b1b1b",
             }}
           >
-            <AiOutlineSetting /> Settings
-          </button>
-        </div>
+            <button
+              onClick={() => setIsCollapsed(true)}
+              style={{
+                background: "transparent",
+                border: "none",
+                color: "white",
+                cursor: "pointer",
+                fontSize: "1.2rem",
+              }}
+            >
+              <AiOutlineMenu />
+            </button>
+          </div>
 
-        {/* Toggle Bar */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "flex-end",
-            padding: "5px 10px",
-            background: "#1b1b1b",
-          }}
-        >
-          <button
-            onClick={() => setIsCollapsed(true)}
-            style={{
-              background: "transparent",
-              border: "none",
-              color: "white",
-              cursor: "pointer",
-              fontSize: "1.2rem",
+          {/* Tree View */}
+          <Box
+            sx={{
+              flex: 1,
+              overflowY: "auto",
+              padding: "10px",
+              background: "#1b1b1b",
             }}
           >
-            <AiOutlineMenu />
-          </button>
-        </div>
-
-        {/* Tree View */}
-        <Box
-          sx={{
-            flex: 1,
-            overflowY: "auto",
-            padding: "10px",
-            background: "#1b1b1b",
-          }}
-        >
-          <SimpleTreeView>
-            {/* Diagrams Section */}
-            <CustomTreeItem
-              itemId="section-diagrams"
-              label={commonTreeItemLabel("Diagrams", <MdOutlineSchema />)}
-            >              
-            {customDiagrams.length > 0 && (
+            <SimpleTreeView>
+              {/* Diagrams Section */}
+              <CustomTreeItem
+                itemId="section-diagrams"
+                label={commonTreeItemLabel("Diagrams", <MdOutlineSchema />)}
+              >
+                {customDiagrams.length > 0 &&
                   customDiagrams.map((d) => (
                     <CustomTreeItem
                       key={d.name}
@@ -1426,15 +1517,15 @@ const Sidebar = ({ onLoadDiagram }) => {
                         }
                       )}
                     />
-                  ))
-              )}
-            </CustomTreeItem>
+                  ))}
+              </CustomTreeItem>
 
-            {/* Nodes Section */}
-            <CustomTreeItem itemId="section-nodes" 
-            label={commonTreeItemLabel("Nodes", <FaCircle />)}
->
-              {customNodes.length > 0 && (
+              {/* Nodes Section */}
+              <CustomTreeItem
+                itemId="section-nodes"
+                label={commonTreeItemLabel("Nodes", <FaCircle />)}
+              >
+                {customNodes.length > 0 &&
                   customNodes.map((n) => (
                     <CustomTreeItem
                       key={n.name}
@@ -1461,15 +1552,15 @@ const Sidebar = ({ onLoadDiagram }) => {
                         }
                       )}
                     />
-                  ))
-              )}
-            </CustomTreeItem>
+                  ))}
+              </CustomTreeItem>
 
-            {/* Edges Section */}
-            <CustomTreeItem itemId="section-edges"
-              label={commonTreeItemLabel("Edges", <FaFilter />)}
-            >
-              {standardEdges.length > 0 && (
+              {/* Edges Section */}
+              <CustomTreeItem
+                itemId="section-edges"
+                label={commonTreeItemLabel("Edges", <FaFilter />)}
+              >
+                {standardEdges.length > 0 &&
                   standardEdges.map((item) => (
                     <CustomTreeItem
                       key={item.id}
@@ -1508,12 +1599,11 @@ const Sidebar = ({ onLoadDiagram }) => {
                         }
                       )}
                     />
-                  ))
-              )}
-            </CustomTreeItem>
+                  ))}
+              </CustomTreeItem>
 
-            {/* Conditional Edges Section */}
-            <CustomTreeItem
+              {/* Conditional Edges Section */}
+              <CustomTreeItem
                 itemId="section-conditional-edges"
                 label={commonTreeItemLabel("Filtros Condicional", <IfIcon />)}
               >
@@ -1557,9 +1647,12 @@ const Sidebar = ({ onLoadDiagram }) => {
                 ))}
               </CustomTreeItem>
 
-            {/* Prompts Section */}
-            <CustomTreeItem itemId="section-prompts" label={commonTreeItemLabel("Prompts", <TbPrompt />)}>
-              {customPrompts.length > 0 && (
+              {/* Prompts Section */}
+              <CustomTreeItem
+                itemId="section-prompts"
+                label={commonTreeItemLabel("Prompts", <TbPrompt />)}
+              >
+                {customPrompts.length > 0 &&
                   customPrompts.map((p) => (
                     <CustomTreeItem
                       key={p.name}
@@ -1586,13 +1679,15 @@ const Sidebar = ({ onLoadDiagram }) => {
                         }
                       )}
                     />
-                  ))
-              )}
-            </CustomTreeItem>
+                  ))}
+              </CustomTreeItem>
 
-            {/* Tools Section */}
-            <CustomTreeItem itemId="section-tools" label={commonTreeItemLabel("Tools", <FiTool />)}>
-              {customTools.length > 0 && (
+              {/* Tools Section */}
+              <CustomTreeItem
+                itemId="section-tools"
+                label={commonTreeItemLabel("Tools", <FiTool />)}
+              >
+                {customTools.length > 0 &&
                   customTools.map((t) => (
                     <CustomTreeItem
                       key={t.name}
@@ -1619,13 +1714,15 @@ const Sidebar = ({ onLoadDiagram }) => {
                         }
                       )}
                     />
-                  ))
-              )}
-            </CustomTreeItem>
+                  ))}
+              </CustomTreeItem>
 
-            {/* Chains Section */}
-            <CustomTreeItem itemId="section-chains" label={commonTreeItemLabel("Chains", <HiLink />)}>
-              {customChains.length > 0 && (
+              {/* Chains Section */}
+              <CustomTreeItem
+                itemId="section-chains"
+                label={commonTreeItemLabel("Chains", <HiLink />)}
+              >
+                {customChains.length > 0 &&
                   customChains.map((c) => (
                     <CustomTreeItem
                       key={c.name}
@@ -1652,94 +1749,81 @@ const Sidebar = ({ onLoadDiagram }) => {
                         }
                       )}
                     />
-                  ))
-              )}
-            </CustomTreeItem>
-          </SimpleTreeView>
-        </Box>
+                  ))}
+              </CustomTreeItem>
+            </SimpleTreeView>
+          </Box>
 
-        {/* Footer with Add Button */}
-        <div
-          style={{
-            height: "60px",
-            background: "#1b1b1b",
-            borderTop: "1px solid #333",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            flexShrink: 0,
-          }}
-        >
-          <button
-            onClick={handleAddClick}
+          {/* Footer with Add Button */}
+          <div
             style={{
-              background: "#2196f3",
-              border: "none",
-              borderRadius: "4px",
-              color: "white",
-              cursor: "pointer",
+              height: "60px",
+              background: "#1b1b1b",
+              borderTop: "1px solid #333",
               display: "flex",
               alignItems: "center",
-              gap: "8px",
-              padding: "8px 16px",
-              fontSize: "0.9rem",
-              fontWeight: 600,
-              width: "90%",
               justifyContent: "center",
+              flexShrink: 0,
             }}
           >
-            <FaPlus /> Add
-          </button>
-          <Menu
-            anchorEl={anchorElAdd}
-            open={openAddMenu}
-            onClose={handleAddClose}
-            anchorOrigin={{
-              vertical: "top",
-              horizontal: "center",
-            }}
-            transformOrigin={{
-              vertical: "bottom",
-              horizontal: "center",
-            }}
-          >
-            <MenuItem onClick={() => handleAddOption("node")}>
-              Custom Node
-            </MenuItem>
-            <MenuItem onClick={() => handleAddOption("edge")}>
-              Custom Edge
-            </MenuItem>
-            <MenuItem onClick={() => handleAddOption("prompt")}>
-              Custom Prompt
-            </MenuItem>
-            <MenuItem onClick={() => handleAddOption("tool")}>
-              Custom Tool
-            </MenuItem>
-            <MenuItem onClick={() => handleAddOption("chain")}>
-              Custom Chain
-            </MenuItem>
-          </Menu>
+            <button
+              onClick={handleAddClick}
+              style={{
+                background: "#2196f3",
+                border: "none",
+                borderRadius: "4px",
+                color: "white",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "8px 16px",
+                fontSize: "0.9rem",
+                fontWeight: 600,
+                width: "90%",
+                justifyContent: "center",
+              }}
+            >
+              <FaPlus /> Add
+            </button>
+            <Menu
+              anchorEl={anchorElAdd}
+              open={openAddMenu}
+              onClose={handleAddClose}
+              anchorOrigin={{
+                vertical: "top",
+                horizontal: "center",
+              }}
+              transformOrigin={{
+                vertical: "bottom",
+                horizontal: "center",
+              }}
+            >
+              <MenuItem onClick={() => handleAddOption("node")}>
+                Custom Node
+              </MenuItem>
+              <MenuItem onClick={() => handleAddOption("edge")}>
+                Custom Edge
+              </MenuItem>
+              <MenuItem onClick={() => handleAddOption("prompt")}>
+                Custom Prompt
+              </MenuItem>
+              <MenuItem onClick={() => handleAddOption("tool")}>
+                Custom Tool
+              </MenuItem>
+              <MenuItem onClick={() => handleAddOption("chain")}>
+                Custom Chain
+              </MenuItem>
+            </Menu>
+          </div>
         </div>
-      </div>
+      </aside>
     );
   };
 
   return (
     <>
-      <aside
-        className="chatgpt-sidebar"
-        style={{
-          width: isCollapsed ? "50px" : "300px",
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
-          background: "#0f0f11",
-          borderRight: "1px solid #333",
-          transition: "width 0.3s ease",
-        }}
-      >
-        {renderSidebarContent()}
-      </aside>
+      {renderSidebarContent()}
 
       <CustomModal
         key={`${popupMode}-${editingContext?.item?.id ?? "new"}`}
