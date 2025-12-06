@@ -72,7 +72,7 @@ const StategraphSummary = ({ value, onChange }) => {
     <Box
       sx={{
         flex: 1,
-        Height: "60vh",
+        height: "60vh",
         border: "1px solid #eeededff",
         borderRadius: 1,
         overflow: "hidden",
@@ -93,7 +93,7 @@ const StategraphSummary = ({ value, onChange }) => {
       }}
     >
       <MonacoEditor
-        height="100%"
+        height="48vh"
         defaultLanguage="python"
         theme="vs-dark"
         value={value ?? ""}

@@ -1344,7 +1344,7 @@ const Sidebar = ({ onLoadDiagram }) => {
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",
-          background: "#0f0f11",
+          background: "#1b1b1b",
           borderRight: "1px solid #333",
           transition: "width 0.3s ease",
           position: "relative",
@@ -1478,6 +1478,20 @@ const Sidebar = ({ onLoadDiagram }) => {
               overflowY: "auto",
               padding: "10px",
               background: "#1b1b1b",
+              scrollbarGutter: "stable",
+              "&::-webkit-scrollbar": {
+                width: "12px",
+              },
+              "&::-webkit-scrollbar-track": {
+                background: "transparent",
+              },
+              "&::-webkit-scrollbar-thumb": {
+                backgroundColor: "rgba(255, 255, 255, 0.2)",
+                borderRadius: "15px",
+              },
+              "&::-webkit-scrollbar-thumb:hover": {
+                backgroundColor: "rgba(255, 255, 255, 0.4)",
+              },
             }}
           >
             <SimpleTreeView>
