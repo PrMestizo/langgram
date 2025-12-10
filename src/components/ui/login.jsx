@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { FiEye, FiEyeOff, FiMail, FiStar } from "react-icons/fi";
-import "@/components/ui/login.css"; // Import the custom CSS
+import "./login.css"; // Import the custom CSS
 
 function Pupil({ size = 12, maxDistance = 5, pupilColor = "black", forceLookX, forceLookY }) {
   const [mouseX, setMouseX] = useState(0);
@@ -265,7 +265,7 @@ function LoginPage() {
           <div className="brand-logo-box">
             <FiStar />
           </div>
-          <span>YourBrand</span>
+          <span>LangGram</span>
         </div>
 
         <div className="character-scene">
@@ -561,9 +561,9 @@ function LoginPage() {
         </div>
 
         <div className="footer-links">
-          <a href="#">Privacy Policy</a>
-          <a href="#">Terms of Service</a>
-          <a href="#">Contact</a>
+          <a href="#">Política de Privacidad</a>
+          <a href="#">Terminos de Servicio</a>
+          <a href="#">Contacto</a>
         </div>
       </div>
 
@@ -574,12 +574,12 @@ function LoginPage() {
             <div className="brand-logo-box">
               <FiStar />
             </div>
-            <span>YourBrand</span>
+            <span>LangGram</span>
           </div>
 
           <div className="login-header">
-            <h1 className="login-title">Welcome back!</h1>
-            <p className="login-subtitle">Please enter your details</p>
+            <h1 className="login-title">Bienvenido de vuelta!</h1>
+            <p className="login-subtitle">Rellena tus datos</p>
           </div>
 
           <form onSubmit={handleSubmit}>
@@ -603,7 +603,7 @@ function LoginPage() {
 
             <div className="form-group">
               <label className="form-label" htmlFor="password">
-                Password
+                Contraseña
               </label>
               <div className="password-input-wrapper">
                 <input
@@ -629,18 +629,18 @@ function LoginPage() {
               <div className="remember-me">
                 <input type="checkbox" id="remember" className="login-checkbox" />
                 <label htmlFor="remember" className="remember-label">
-                  Remember for 30 days
+                  Recuerdame por 30 dias
                 </label>
               </div>
               <a href="#" className="forgot-password">
-                Forgot password?
+                ¿Has olvidado tu contraseña?
               </a>
             </div>
 
             {error && <div className="error-message">{error}</div>}
 
             <button type="submit" className="login-btn-primary" disabled={isLoading}>
-              {isLoading ? "Signing in..." : "Log in"}
+              {isLoading ? "Iniciando sesión..." : "Iniciar sesión"}
             </button>
           </form>
 
@@ -650,14 +650,14 @@ function LoginPage() {
               type="button"
             >
               <FiMail style={{ marginRight: "0.5rem" }} size={20} />
-              Log in with Google
+              Iniciar sesión con Google
             </button>
           </div>
 
           <p className="signup-text">
-            Don't have an account?
+            ¿No tienes una cuenta?
             <a href="#" className="signup-link">
-              Sign Up
+              Regístrate
             </a>
           </p>
         </div>
