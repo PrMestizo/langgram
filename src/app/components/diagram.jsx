@@ -46,7 +46,7 @@ import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import SearchIcon from "@mui/icons-material/Search";
 import { FiMenu } from "react-icons/fi";
-import { FaPencilAlt, FaTrash, FaCopy } from "react-icons/fa";
+import { FaPencilAlt, FaTrash, FaCopy, FaPlus } from "react-icons/fa";
 import DropdownMenu from "./DropdownMenu";
 import {
   loadPersistedDiagram,
@@ -1504,6 +1504,31 @@ function Diagram() {
     resetDiagram();
   }, [closeTopNavMenu, resetDiagram]);
 
+  const handleAddNode = useCallback(
+    (type, label, isConditional = false) => {
+      const newNode = {
+        id: getId(),
+        type: type,
+        position: {
+          x: 250 + Math.random() * 100,
+          y: 250 + Math.random() * 100,
+        },
+        data: {
+          label: label,
+          nodeType: label,
+          prompts: [],
+          chains: [],
+          tools: [],
+          conditionalEdge: isConditional,
+          componentType: type,
+        },
+        code: "",
+      };
+      setNodes((nds) => nds.concat(newNode));
+    },
+    [setNodes]
+  );
+
   const headerMenuOptions = useMemo(
     () => [
       {
@@ -1769,25 +1794,31 @@ function Diagram() {
               <span>Save diagram</span>
             </button>
             <DropdownMenu
+              backgroundColor="#2563eb"
               options={[
                 {
-                  label: "Edit",
-                  onClick: () => console.log("Edit"),
+                  label: "Node",
+                  onClick: () => handleAddNode("langgramNode", "nodo nuevo"),
                   Icon: <FaPencilAlt style={{ fontSize: "14px" }} />,
                 },
                 {
-                  label: "Duplicate",
-                  onClick: () => console.log("Duplicate"),
+                  label: "Conditional Edge",
+                  onClick: () =>
+                    handleAddNode(
+                      "conditionalNode",
+                      "Filtro Condicional",
+                      true
+                    ),
                   Icon: <FaCopy style={{ fontSize: "14px" }} />,
                 },
                 {
-                  label: "Delete",
+                  label: "Tool Node",
                   onClick: () => console.log("Delete"),
                   Icon: <FaTrash style={{ fontSize: "14px" }} />,
                 },
               ]}
             >
-              Options
+              <FaPlus style={{ fontSize: "12px" }} /> Nuevo Elemento
             </DropdownMenu>
           </div>
         </section>

@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { useTransition, animated } from "@react-spring/web";
 import { FaChevronDown } from "react-icons/fa";
 
-const DropdownMenu = ({ options, children }) => {
+const DropdownMenu = ({ options, children, backgroundColor = "rgba(17, 17, 17, 0.6)" }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -32,7 +32,7 @@ const DropdownMenu = ({ options, children }) => {
         onClick={toggleDropdown}
         style={{
           padding: "8px 16px",
-          backgroundColor: "rgba(17, 17, 17, 0.6)",
+          backgroundColor: backgroundColor,
           color: "white",
           border: "none",
           borderRadius: "12px",
@@ -46,8 +46,18 @@ const DropdownMenu = ({ options, children }) => {
           fontWeight: 500,
           outline: "none",
         }}
-        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "rgba(17, 17, 17, 0.8)"}
-        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "rgba(17, 17, 17, 0.6)"}
+        onMouseEnter={(e) => {
+           if (backgroundColor === "rgba(17, 17, 17, 0.6)") {
+             e.currentTarget.style.backgroundColor = "rgba(17, 17, 17, 0.8)";
+           } else {
+             // Simply darken slightly/add opacity for other colors if needed, or leave as is
+             e.currentTarget.style.opacity = "0.9";
+           }
+        }}
+        onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = backgroundColor;
+            e.currentTarget.style.opacity = "1";
+        }}
       >
         {children ?? "Menu"}
         <div style={{
@@ -71,7 +81,7 @@ const DropdownMenu = ({ options, children }) => {
               marginTop: "8px",
               width: "192px",
               padding: "4px",
-              backgroundColor: "rgba(17, 17, 17, 0.6)",
+              backgroundColor: "#2564ebc9",
               backdropFilter: "blur(4px)",
               borderRadius: "12px",
               boxShadow: "0 0 20px rgba(0,0,0,0.2)",
