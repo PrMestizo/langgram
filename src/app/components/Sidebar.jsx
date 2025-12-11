@@ -1204,46 +1204,56 @@ const Sidebar = ({ onLoadDiagram }) => {
     );
   }
 
-  const CustomTreeItem = React.forwardRef((props, ref) => (
-    <TreeItem
-      {...props}
-      slots={{ groupTransition: TransitionComponent, ...props.slots }}
-      slotProps={{
-        content: {
-          sx: {
-            borderRadius: "10px",
-            color: "white",
-            display: "flex",
-            flexDirection: "row-reverse", 
-            alignItems: "center",
-            paddingRight: "8px",
-            height: "40px",
+  const CustomTreeItem = React.forwardRef((props, ref) => {
+    const { children, ...other } = props;
+    return (
+      <TreeItem
+        {...other}
+        slots={{ groupTransition: TransitionComponent, ...other.slots }}
+        slotProps={{
+          content: {
+            sx: {
+              borderRadius: "10px",
+              color: "white",
+              display: "flex",
+              flexDirection: "row-reverse", 
+              alignItems: "center",
+              height: "40px",
 
-            "&:hover": {
-              backgroundColor: "rgba(109, 116, 156, 0.48)",
+              "&:hover": {
+                backgroundColor: "rgba(109, 116, 156, 0.48)",
+              },
             },
           },
-        },
-        iconContainer: {
-          sx: {
-            color: "white",
+          iconContainer: {
+            sx: {
+              color: "white",
+              display: children ? "flex" : "none",
+            },
           },
-        },
-        label: {
-          sx: {
-            color: "white",
+          label: {
+            sx: {
+              color: "white",
+              flexGrow: 1,
+              width: "100%",
+              minWidth: 0,
+              display: "flex",
+              alignItems: "center",
+            },
           },
-        },
-        groupTransition: {
-          sx: {
-            ml: "15.5px",
-            borderLeft: "2px dashed rgba(255, 255, 255, 1)",
+          groupTransition: {
+            sx: {
+              ml: "15.5px",
+              borderLeft: "2px dashed rgba(255, 255, 255, 1)",
+            },
           },
-        },
-      }}
-      ref={ref}
-    />
-  ));
+        }}
+        ref={ref}
+      >
+        {children}
+      </TreeItem>
+    );
+  });
 
   const renderSidebarContent = () => {
     const commonTreeItemLabel = (
@@ -1283,7 +1293,7 @@ const Sidebar = ({ onLoadDiagram }) => {
           <span>{label}</span>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginLeft: "auto" }}>
           {onAdd && (
             <button
               onClick={(e) => {

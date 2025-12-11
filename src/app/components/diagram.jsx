@@ -44,13 +44,16 @@ import SaveOutlinedIcon from "@mui/icons-material/SaveOutlined";
 import CodeIcon from "@mui/icons-material/Code";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import VisibilityIcon from "@mui/icons-material/Visibility";
+import SearchIcon from "@mui/icons-material/Search";
 import { FiMenu } from "react-icons/fi";
+import { FaPencilAlt, FaTrash, FaCopy } from "react-icons/fa";
+import DropdownMenu from "./DropdownMenu";
 import {
   loadPersistedDiagram,
   savePersistedDiagram,
 } from "../lib/diagramStorage";
 import ProfileMenu from "./ProfileMenu";
-import { DropdownMenu } from "@/components/ui/dropdown-menu";
+
 import dagre from "dagre";
 
 let id = 0;
@@ -1449,6 +1452,30 @@ function Diagram() {
     setIsSaveDialogOpen(true);
   };
 
+  const resetDiagram = useCallback(() => {
+    const initialClone = cloneInitialNodes();
+    syncNodeIdCounter(initialClone);
+    setNodes(initialClone);
+    setEdges(cloneInitialEdges());
+    setDiagramResources(() => ({ ...initialResources }));
+    setComplements(cloneInitialComplements());
+    setAlert({ message: "", severity: "success", open: false });
+    setIsMenuOpen(false);
+    setStategraphCode("");
+    setIsSaveDialogOpen(false);
+    setDiagramName("");
+    setCurrentDiagramTitle("Untitled");
+    closeFilterEditor();
+    closeFilterContextMenu();
+    resetDrag();
+    setIsResourcePanelOpen(false);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        fitView({ padding: 0.2, includeHiddenNodes: true });
+      });
+    });
+  }, [closeFilterContextMenu, closeFilterEditor, resetDrag, fitView]);
+
   const handleDiagramNameChange = useCallback((event) => {
     setDiagramName(event.target.value);
   }, []);
@@ -1609,29 +1636,7 @@ function Diagram() {
     persistDiagram();
   }, [GraphJSON, isHydrated]);
 
-  const resetDiagram = useCallback(() => {
-    const initialClone = cloneInitialNodes();
-    syncNodeIdCounter(initialClone);
-    setNodes(initialClone);
-    setEdges(cloneInitialEdges());
-    setDiagramResources(() => ({ ...initialResources }));
-    setComplements(cloneInitialComplements());
-    setAlert({ message: "", severity: "success", open: false });
-    setIsMenuOpen(false);
-    setStategraphCode("");
-    setIsSaveDialogOpen(false);
-    setDiagramName("");
-    setCurrentDiagramTitle("Untitled");
-    closeFilterEditor();
-    closeFilterContextMenu();
-    resetDrag();
-    setIsResourcePanelOpen(false);
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        fitView({ padding: 0.2, includeHiddenNodes: true });
-      });
-    });
-  }, [closeFilterContextMenu, closeFilterEditor, resetDrag, fitView]);
+
 
   useEffect(() => {
     window.addEventListener("reset-diagram", resetDiagram);
@@ -1763,7 +1768,27 @@ function Diagram() {
               <SaveOutlinedIcon fontSize="small" />
               <span>Save diagram</span>
             </button>
-            <DropdownMenu options={headerMenuOptions}>Acciones</DropdownMenu>
+            <DropdownMenu
+              options={[
+                {
+                  label: "Edit",
+                  onClick: () => console.log("Edit"),
+                  Icon: <FaPencilAlt style={{ fontSize: "14px" }} />,
+                },
+                {
+                  label: "Duplicate",
+                  onClick: () => console.log("Duplicate"),
+                  Icon: <FaCopy style={{ fontSize: "14px" }} />,
+                },
+                {
+                  label: "Delete",
+                  onClick: () => console.log("Delete"),
+                  Icon: <FaTrash style={{ fontSize: "14px" }} />,
+                },
+              ]}
+            >
+              Options
+            </DropdownMenu>
           </div>
         </section>
 
