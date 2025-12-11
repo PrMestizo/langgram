@@ -41,13 +41,16 @@ import {
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import SaveOutlinedIcon from "@mui/icons-material/SaveOutlined";
-import SearchIcon from "@mui/icons-material/Search";
+import CodeIcon from "@mui/icons-material/Code";
+import RestartAltIcon from "@mui/icons-material/RestartAlt";
+import VisibilityIcon from "@mui/icons-material/Visibility";
 import { FiMenu } from "react-icons/fi";
 import {
   loadPersistedDiagram,
   savePersistedDiagram,
 } from "../lib/diagramStorage";
 import ProfileMenu from "./ProfileMenu";
+import { DropdownMenu } from "@/components/ui/dropdown-menu";
 import dagre from "dagre";
 
 let id = 0;
@@ -1464,6 +1467,47 @@ function Diagram() {
     openSaveDialog();
   }, [closeTopNavMenu, openSaveDialog]);
 
+  const handleJsonPreviewClick = useCallback(() => {
+    closeTopNavMenu();
+    setShowJsonModal(true);
+  }, [closeTopNavMenu]);
+
+  const handleResetClick = useCallback(() => {
+    closeTopNavMenu();
+    resetDiagram();
+  }, [closeTopNavMenu, resetDiagram]);
+
+  const headerMenuOptions = useMemo(
+    () => [
+      {
+        label: "Guardar diagrama",
+        onClick: handleSaveButtonClick,
+        Icon: <SaveOutlinedIcon fontSize="small" />,
+      },
+      {
+        label: "Generar código",
+        onClick: handleGenerateButtonClick,
+        Icon: <CodeIcon fontSize="small" />,
+      },
+      {
+        label: "Ver JSON",
+        onClick: handleJsonPreviewClick,
+        Icon: <VisibilityIcon fontSize="small" />,
+      },
+      {
+        label: "Reset",
+        onClick: handleResetClick,
+        Icon: <RestartAltIcon fontSize="small" />,
+      },
+    ],
+    [
+      handleGenerateButtonClick,
+      handleJsonPreviewClick,
+      handleResetClick,
+      handleSaveButtonClick,
+    ]
+  );
+
   const handleDiagramLoad = useCallback(
     (diagramPayload) => {
       const graph =
@@ -1719,15 +1763,7 @@ function Diagram() {
               <SaveOutlinedIcon fontSize="small" />
               <span>Save diagram</span>
             </button>
-            <div className="diagram-section-header__search" role="search">
-              <SearchIcon className="diagram-section-header__search-icon" />
-              <input
-                type="search"
-                placeholder="Search in diagram"
-                className="diagram-section-header__search-input"
-                aria-label="Search in diagram"
-              />
-            </div>
+            <DropdownMenu options={headerMenuOptions}>Acciones</DropdownMenu>
           </div>
         </section>
 
