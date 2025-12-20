@@ -3,6 +3,7 @@ import { useState, useCallback, useEffect, useMemo } from "react";
 import { ConditionalNode } from "./conditional_node";
 import { useSession } from "next-auth/react";
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -1748,6 +1749,12 @@ function Diagram() {
               <FiMenu className="hamburger-nav-bar" />
             </button>
             <div id={topNavActionsId} className={topNavActionsClassName}>
+              <Link
+                href="/"
+                className="top-nav__button top-nav__button--secondary"
+              >
+                Home
+              </Link>
               {/* Botón Guardar diagrama eliminado a petición del usuario */}
               <button
                 type="button"

@@ -1,5 +1,5 @@
 /** @type {import('tailwindcss').Config} */
-export default {
+const config = {
     darkMode: ["class"],
     content: [
       './pages/**/*.{js,jsx}',
@@ -77,4 +77,6 @@ export default {
     // but in ESM config we can import.
     // However, tailwindcss-animate matches standard plugin structure.
     plugins: [],
-  }
+  };
+
+export default config;

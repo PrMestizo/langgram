@@ -1,0 +1,30 @@
+<svg width="1280" height="720" viewBox="0 0 1280 720" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1280" height="720" rx="32" fill="#0F1116"/>
+  <rect x="32" y="32" width="1216" height="656" rx="28" fill="#161920" stroke="#1F2431"/>
+  <rect x="60" y="72" width="180" height="576" rx="18" fill="#0D1016" stroke="#1F2431"/>
+  <rect x="60" y="140" width="180" height="2" fill="#242A38"/>
+  <rect x="60" y="222" width="180" height="2" fill="#242A38"/>
+  <text x="88" y="110" fill="#E5E7EB" font-family="Inter, system-ui, sans-serif" font-weight="600" font-size="16">Langgram Studio</text>
+
+  <rect x="320" y="64" width="560" height="52" rx="14" fill="#11131B" stroke="#252B3A"/>
+  <text x="340" y="96" fill="#AAB4C4" font-family="Inter, system-ui, sans-serif" font-size="15">Generar código   ·   Ver JSON   ·   Reset</text>
+
+  <rect x="420" y="150" width="320" height="120" rx="18" fill="#1F2431" stroke="#2E3547"/>
+  <text x="448" y="188" fill="#D7DCE9" font-family="Inter, system-ui, sans-serif" font-weight="700" font-size="18">START</text>
+
+  <rect x="420" y="330" width="320" height="120" rx="18" fill="#1F2431" stroke="#2E3547"/>
+  <text x="448" y="368" fill="#D7DCE9" font-family="Inter, system-ui, sans-serif" font-weight="700" font-size="18">assistant_with_tools</text>
+
+  <rect x="420" y="510" width="320" height="120" rx="18" fill="#1F2431" stroke="#2E3547"/>
+  <text x="448" y="548" fill="#D7DCE9" font-family="Inter, system-ui, sans-serif" font-weight="700" font-size="18">END</text>
+
+  <rect x="560" y="270" width="8" height="70" rx="4" fill="#5EEAD4"/>
+  <rect x="560" y="452" width="8" height="70" rx="4" fill="#5EEAD4"/>
+
+  <rect x="920" y="140" width="260" height="460" rx="18" fill="#10131C" stroke="#2A3140"/>
+  <text x="944" y="180" fill="#CBD5E1" font-family="Inter, system-ui, sans-serif" font-weight="700" font-size="16">Panel de recursos</text>
+  <rect x="940" y="220" width="220" height="70" rx="14" fill="#1B2030" stroke="#2E3648"/>
+  <text x="956" y="260" fill="#E2E8F0" font-family="Inter, system-ui, sans-serif" font-size="15">assistant_with_tools</text>
+
+  <rect x="260" y="652" width="760" height="4" rx="2" fill="#12141C" opacity="0.6"/>
+</svg>
