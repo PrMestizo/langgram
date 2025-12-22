@@ -77,11 +77,11 @@ function ProfileMenu() {
       }
     };
 
-    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside, { capture: true });
     document.addEventListener("keydown", handleEscape);
 
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside, { capture: true });
       document.removeEventListener("keydown", handleEscape);
     };
   }, [isDropdownOpen, closeDropdown]);
