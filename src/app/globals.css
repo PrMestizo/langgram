@@ -1213,6 +1213,13 @@ body {
   min-width: 160px;
   box-shadow: 0 8px 18px rgba(15, 23, 42, 0.1);
   pointer-events: all;
+  transition: all 0.2s ease;
+}
+
+.langgram-node--selected {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5), 0 8px 24px rgba(59, 130, 246, 0.25);
+  background: linear-gradient(135deg, #eff6ff, #dbeafe);
 }
 
 .langgram-node__label {

@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import { Handle, Position } from "reactflow";
 
 // Un nodo básico de React Flow con manejadores de entrada y salida
-export function ConditionalNode({ data }) {
+export function ConditionalNode({ data, selected }) {
   // Puedes acceder a las props del nodo a través de `data`
   const { label = "Nodo condicional" } = data;
 
@@ -67,8 +67,12 @@ export function ConditionalNode({ data }) {
           right: 0;
           bottom: 0;
           border: 1px solid rgba(148, 163, 184, 0.4);
-          background: linear-gradient(135deg, #f8fafc, #eef2ff);
-          box-shadow: 0 8px 18px rgba(15, 23, 42, 0.1);
+          background: ${selected 
+            ? "linear-gradient(135deg, #e0f2fe, #bae6fd)" 
+            : "linear-gradient(135deg, #f8fafc, #eef2ff)"};
+          box-shadow: ${selected 
+            ? "0 0 0 2px #0ea5e9, 0 8px 18px rgba(14, 165, 233, 0.25)" 
+            : "0 8px 18px rgba(15, 23, 42, 0.1)"};
           color: #0f172a;
           transform: rotate(45deg);
           z-index: 1;

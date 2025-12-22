@@ -37,7 +37,7 @@ const ATTACHMENT_KINDS = {
 
 const normalizeAttachmentList = (value) => (Array.isArray(value) ? value : []);
 
-const NodeWithAttachments = ({ id, data }) => {
+const NodeWithAttachments = ({ id, data, selected }) => {
   const label = data?.label ?? data?.nodeType ?? "Node";
   const prompts = normalizeAttachmentList(data?.prompts);
   const chains = normalizeAttachmentList(data?.chains);
@@ -170,7 +170,7 @@ const NodeWithAttachments = ({ id, data }) => {
 
   return (
     <div
-      className="langgram-node"
+      className={`langgram-node ${selected ? "langgram-node--selected" : ""}`}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
       role="group"
