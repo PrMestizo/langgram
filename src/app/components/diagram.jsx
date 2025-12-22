@@ -96,6 +96,15 @@ const layoutWithDagre = (nodes, edges) => {
     return nodes;
   }
 
+  // Si solo hay nodos START y END, restablecer a posiciones iniciales fijas
+  if (nodes.length === 2 && nodes.some(n => n.id === 'START') && nodes.some(n => n.id === 'END')) {
+    return nodes.map(node => {
+        if (node.id === 'START') return { ...node, position: { x: 0, y: 0 } };
+        if (node.id === 'END') return { ...node, position: { x: 0, y: 300 } };
+        return node;
+    });
+  }
+
   const dagreGraph = new dagre.graphlib.Graph();
   dagreGraph.setDefaultEdgeLabel(() => ({}));
   dagreGraph.setGraph({ ...DAGRE_LAYOUT_CONFIG });
@@ -1021,8 +1030,18 @@ function Diagram() {
   );
 
   const onNodesChange = useCallback(
-    (changes) =>
-      setNodes((nodesSnapshot) => applyNodeChanges(changes, nodesSnapshot)),
+    (changes) => {
+      const filteredChanges = changes.filter(
+        (change) =>
+          !(
+            change.type === "remove" &&
+            (change.id === "START" || change.id === "END")
+          )
+      );
+      setNodes((nodesSnapshot) =>
+        applyNodeChanges(filteredChanges, nodesSnapshot)
+      );
+    },
     []
   );
   const onEdgesChange = useCallback(
