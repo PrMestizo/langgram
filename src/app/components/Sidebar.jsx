@@ -1228,7 +1228,10 @@ const Sidebar = ({ onLoadDiagram }) => {
           iconContainer: {
             sx: {
               color: "white",
-              display: children ? "flex" : "none",
+              display: "flex",
+              visibility: children ? "visible" : "hidden",
+              width: "24px",
+              justifyContent: "center",
             },
           },
           label: {
